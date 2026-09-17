@@ -46,6 +46,7 @@ export const Game: React.FC<GameProps> = ({
   // Authoritative drawer prompt options
   const [drawerPromptOptions, setDrawerPromptOptions] = useState<Array<{ optionIndex: number; previewText: string; difficulty: string }>>([]);
   const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(null);
+  const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
 
   // Authoritative round feedback and transitions
   const [clueSolvedBanner, setClueSolvedBanner] = useState<{ solverName: string; drawerName: string; objective: string; solverPoints: number; drawerPoints: number } | null>(null);
@@ -140,6 +141,7 @@ export const Game: React.FC<GameProps> = ({
       // Sent ONLY to active drawer
       setDrawerPromptOptions([]);
       setSecretDrawObjective(payload.objective);
+      setSecretDrawHint(payload.hint || null);
     });
 
     const unsubClueSolved = backend.on('CLUE_SOLVED', (payload: any) => {
@@ -219,6 +221,9 @@ export const Game: React.FC<GameProps> = ({
       }));
       if (payload?.drawerPrivateState?.selectedObjective) {
         setSecretDrawObjective(payload.drawerPrivateState.selectedObjective);
+      }
+      if (payload?.drawerPrivateState?.hint) {
+        setSecretDrawHint(payload.drawerPrivateState.hint);
       }
       if (payload?.drawerPrivateState?.options) {
         setDrawerPromptOptions(payload.drawerPrivateState.options);
@@ -601,6 +606,7 @@ export const Game: React.FC<GameProps> = ({
           currentUser={currentUser}
           secretClue={secretClue}
           secretDrawObjective={secretDrawObjective}
+          secretDrawHint={secretDrawHint}
           roomCode={room.code}
           channel={channel}
           onSubmitDrawing={handleSubmitDrawing}

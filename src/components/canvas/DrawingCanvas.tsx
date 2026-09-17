@@ -38,6 +38,7 @@ interface DrawingCanvasProps {
   currentUser: Player;
   secretClue: PlayerSecretClue | null;
   secretDrawObjective?: string | null;
+  secretDrawHint?: string | null;
   roomCode?: string;
   channel: RoomChannelManager;
   onSubmitDrawing: (previewDataUrl: string, strokes: Stroke[]) => void;
@@ -57,6 +58,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   currentUser,
   secretClue,
   secretDrawObjective,
+  secretDrawHint,
   roomCode,
   channel,
   onSubmitDrawing,
@@ -74,6 +76,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(30);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isHintVisible, setIsHintVisible] = useState<boolean>(false);
 
   // Live Guesses state
   const [guessInput, setGuessInput] = useState<string>('');
@@ -541,7 +544,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* REAL-TIME GUESS FEED & INPUT (FOR GUESSERS) */}
           {!isCurrentDrawer && (
-            <div className="bg-[#0e131f]/95 border border-slate-700/80 rounded-2xl p-4 shadow-xl flex flex-col gap-3 backdrop-blur-md">
+            <div className="hidden lg:flex bg-[#0e131f]/95 border border-slate-700/80 rounded-2xl p-4 shadow-xl flex-col gap-3 backdrop-blur-md">
               <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2">
                 <span>Deduction Feed</span>
                 {guessFeedback && (
@@ -770,6 +773,50 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
             )}
           </div>
+
+          {isCurrentDrawer && secretDrawHint && (
+            <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono uppercase tracking-[0.16em] text-amber-300">Private drawing hint</div>
+                {isHintVisible && <div className="mt-1 text-xs text-amber-50 leading-relaxed">{secretDrawHint}</div>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHintVisible((visible) => !visible)}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-400/15 border border-amber-400/35 text-[10px] font-bold uppercase tracking-wider text-amber-200"
+              >
+                {isHintVisible ? 'Hide' : 'Show hint'}
+              </button>
+            </div>
+          )}
+
+          {!isCurrentDrawer && (
+            <div className="lg:hidden rounded-2xl border border-sky-500/35 bg-[#101722]/95 p-3.5 shadow-xl">
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div>
+                  <div className="text-[9px] font-mono uppercase tracking-[0.16em] text-sky-300">Guess now</div>
+                  <div className="text-xs font-semibold text-white">Two key words can solve the clue.</div>
+                </div>
+                {guessFeedback && <span className="text-[10px] text-amber-300 text-right">{guessFeedback}</span>}
+              </div>
+              <form onSubmit={handleGuessSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={guessInput}
+                  onChange={(e) => setGuessInput(e.target.value)}
+                  placeholder="e.g. train ticket"
+                  className="min-w-0 flex-1 px-3 py-2.5 bg-slate-950 border border-slate-600 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!guessInput.trim()}
+                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider"
+                >
+                  Guess
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* BOTTOM TOOLBAR BELOW CANVAS: UNDO, REDO, BRUSH SIZE, ZOOM */}
           <div className="bg-[#10131c]/95 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
