@@ -17,6 +17,7 @@ import { GameHeader } from '../components/common/GameHeader';
 import { RoomChat } from '../components/common/RoomChat';
 import { AvatarBadge } from '../components/common/AvatarBadge';
 import { GameService } from '../services/gameService';
+import { buildInviteUrl } from '../utils/inviteCrypto';
 
 interface LobbyProps {
   room: Room;
@@ -82,7 +83,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   };
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/?join=${room.code}`;
+    const url = buildInviteUrl(room.code);
     navigator.clipboard.writeText(url);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
@@ -590,10 +591,14 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="space-y-2">
               <button
                 onClick={handleCopyLink}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
               >
-                {hasCopied ? '✓ Direct Link Copied' : 'Copy Direct Invite Link'}
+                <Link className="w-3.5 h-3.5" />
+                <span>{hasCopied ? '✓ Encrypted Link Copied!' : 'Copy Encrypted Invite Link'}</span>
               </button>
+              <p className="text-[11px] font-mono text-slate-400 text-center">
+                Invited detectives go straight to this lobby when opening the link.
+              </p>
             </div>
           </div>
         </div>

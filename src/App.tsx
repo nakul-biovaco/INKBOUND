@@ -9,6 +9,7 @@ import { BackendClient } from './realtime/backendClient';
 import { Home } from './pages/Home';
 import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
+import { decodeInviteCode } from './utils/inviteCrypto';
 
 type AppView = 'HOME' | 'LOBBY' | 'GAME';
 
@@ -18,12 +19,13 @@ const ACTIVE_VIEW_KEY = 'inkbound_active_view';
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Player>(() => AuthService.getProfile());
 
-  // Restore room synchronously on page refresh or direct URL (?room=CODE)
+  // Restore room synchronously on page refresh or direct URL (?invite=TOKEN, ?join=CODE, or ?room=CODE)
   const [currentRoom, setCurrentRoom] = useState<Room | null>(() => {
     try {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('room') || urlParams.get('join');
+        const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
+        const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
         const storedRoomId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null;
 
         if (storedRoomId) {
@@ -47,7 +49,8 @@ export const App: React.FC = () => {
     try {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('room') || urlParams.get('join');
+        const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
+        const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
         const storedRoomId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null;
 
         if (storedRoomId) {
@@ -71,7 +74,8 @@ export const App: React.FC = () => {
     try {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('room') || urlParams.get('join');
+        const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
+        const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
         let storedRoomId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null;
 
         if (!storedRoomId && codeFromUrl) {
@@ -95,7 +99,8 @@ export const App: React.FC = () => {
     try {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('room') || urlParams.get('join');
+        const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
+        const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
         let storedRoomId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null;
 
         if (!storedRoomId && codeFromUrl) {
@@ -262,16 +267,19 @@ export const App: React.FC = () => {
   }, [currentUser.id]);
 
 
-  // Check URL query parameters for direct invite/reconnect (?join=CODE or ?room=CODE)
+  // Check URL query parameters for direct invite/reconnect (?invite=TOKEN, ?join=CODE, or ?room=CODE)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('room') || params.get('join');
-    if (code) {
-      if (!currentRoom) {
-        handleJoinRoom(code);
-      } else {
-        // If room is already in state, connect backend socket
-        BackendClient.getInstance().connect().catch(() => {});
+    const raw = params.get('invite') || params.get('join') || params.get('room');
+    if (raw) {
+      const code = decodeInviteCode(raw);
+      if (code) {
+        if (!currentRoom) {
+          handleJoinRoom(code);
+        } else {
+          // If room is already in state, connect backend socket
+          BackendClient.getInstance().connect().catch(() => {});
+        }
       }
     }
   }, []);
@@ -499,11 +507,17 @@ export const App: React.FC = () => {
 
   const handleJoinRoom = async (code: string) => {
     if (isJoiningRoom) return;
+    const cleanCode = decodeInviteCode(code);
+    if (!cleanCode) {
+      setErrorMessage('Invalid room code or invite link.');
+      setView('HOME');
+      return;
+    }
     setIsJoiningRoom(true);
     setErrorMessage('');
     try {
       const backend = BackendClient.getInstance();
-      const res = await backend.joinRoom(code, currentUser.nickname, currentUser.avatar);
+      const res = await backend.joinRoom(cleanCode, currentUser.nickname, currentUser.avatar);
       const serverRoom = res.room;
       const mappedRoom: Room = {
         id: serverRoom.roomId,
@@ -547,7 +561,7 @@ export const App: React.FC = () => {
     } catch (err: any) {
       // Fallback
       try {
-        const res = await RoomService.joinRoom(code, currentUser);
+        const res = await RoomService.joinRoom(cleanCode, currentUser);
         if ('error' in res) {
           setErrorMessage(res.error);
           setView('HOME');

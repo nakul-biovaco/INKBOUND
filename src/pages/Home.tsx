@@ -12,6 +12,7 @@ import {
 import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
 import { AvatarBadge, AvatarPicker } from '../components/common/AvatarBadge';
+import { decodeInviteCode } from '../utils/inviteCrypto';
 
 interface HomeProps {
   currentUser: Player;
@@ -44,13 +45,7 @@ export const Home: React.FC<HomeProps> = ({
   const [activeNav, setActiveNav] = useState('Home');
 
   const extractCode = (input: string): string => {
-    const trimmed = input.trim();
-    if (trimmed.includes('join=') || trimmed.includes('room=')) {
-      const match = trimmed.match(/[?&](?:join|room)=([A-Za-z0-9]+)/);
-      if (match && match[1]) return match[1].toUpperCase();
-    }
-    const cleaned = trimmed.replace(/^https?:\/\/[^\/]+\/?\??/, '');
-    return cleaned.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
+    return decodeInviteCode(input);
   };
 
   const handleJoinSubmit = (e: React.FormEvent) => {

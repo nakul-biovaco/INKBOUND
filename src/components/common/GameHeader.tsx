@@ -17,6 +17,7 @@ import { GameStatus } from '../../types/game';
 import { Player } from '../../types/player';
 import { AuthService } from '../../services/authService';
 import { AvatarBadge, AvatarPicker } from './AvatarBadge';
+import { buildInviteUrl } from '../../utils/inviteCrypto';
 
 interface GameHeaderProps {
   currentUser: Player;
@@ -63,7 +64,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   const [selectedAvatar, setSelectedAvatar] = useState(currentUser.avatar);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(roomCode);
+    if (!roomCode) return;
+    const url = buildInviteUrl(roomCode);
+    navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
