@@ -442,36 +442,48 @@ export const Game: React.FC<GameProps> = ({
       )}
 
       {/* DRAWER SECRET PROMPT SELECTION OVERLAY */}
+      {/* DRAWER SECRET PROMPT SELECTION OVERLAY */}
       {drawerPromptOptions.length > 0 && gameState.currentTurnPlayerId === currentUser.id && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-[#0e131f] border border-red-600/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center animate-fadeIn">
-            <div className="text-xs font-mono uppercase text-red-400 font-bold tracking-widest mb-1">
-              Secret Drawer Mission
+          <div className="max-w-3xl w-full bg-[#0e131f] border border-red-600/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center animate-fadeIn">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest font-bold mb-2">
+              <Sparkles className="w-3.5 h-3.5" /> SECRET MISSION
             </div>
-            <h2 className="text-xl sm:text-2xl font-black font-serif text-white mb-2">
-              Select What You Will Draw
+            <h2 className="text-xl sm:text-3xl font-black font-serif text-white mb-2">
+              Pick Your Secret Clue
             </h2>
-            <p className="text-xs text-slate-400 mb-6">
-              Only you see these options. Choose one secret event to sketch for the other detectives.
+            <p className="text-xs sm:text-sm text-slate-400 mb-6 max-w-md mx-auto">
+              Only you see these cards! Pick one clue to sketch for the room.
             </p>
 
-            <div className="space-y-3 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
               {drawerPromptOptions.map((opt) => (
                 <div
                   key={opt.optionIndex}
-                  onClick={() => handleSelectPrompt(opt.optionIndex)}
-                  className="p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-red-500 cursor-pointer transition-all flex items-center justify-between group"
+                  onMouseEnter={() => SoundService.playCardFlip()}
+                  onClick={() => {
+                    SoundService.playStamp();
+                    handleSelectPrompt(opt.optionIndex);
+                  }}
+                  className="game-card p-5 cursor-pointer flex flex-col justify-between border-slate-700/80 hover:border-red-500 group"
                 >
-                  <div>
-                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase">
-                      Option {String.fromCharCode(65 + opt.optionIndex)} • {opt.difficulty}
-                    </span>
-                    <div className="text-sm font-bold text-white group-hover:text-red-400 transition-colors font-serif mt-0.5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">
+                        CARD #{String.fromCharCode(65 + opt.optionIndex)}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        {opt.difficulty}
+                      </span>
+                    </div>
+
+                    <div className="text-sm font-bold text-white group-hover:text-red-300 transition-colors font-serif leading-snug">
                       "{opt.previewText}"
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-red-600/80 group-hover:bg-red-600 text-white rounded-xl text-xs font-bold uppercase">
-                    Choose
+
+                  <button className="mt-5 w-full py-2.5 rounded-xl game-btn-red text-white text-xs font-bold uppercase tracking-wider">
+                    Draw This Clue
                   </button>
                 </div>
               ))}
@@ -543,12 +555,16 @@ export const Game: React.FC<GameProps> = ({
                     {offeredStories.map((st) => (
                       <div
                         key={st.storyId}
-                        onClick={() => handleChooseStory(st.storyId)}
-                        className="p-6 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 hover:border-red-500 transition-all cursor-pointer transform hover:-translate-y-1.5 shadow-xl hover:shadow-[0_8px_30px_rgba(239,68,68,0.25)] group flex flex-col justify-between"
+                        onMouseEnter={() => SoundService.playCardFlip()}
+                        onClick={() => {
+                          SoundService.playStamp();
+                          handleChooseStory(st.storyId);
+                        }}
+                        className="game-card p-6 border-slate-700/80 hover:border-red-500 cursor-pointer group flex flex-col justify-between"
                       >
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
                               {st.genre}
                             </span>
                             <span className="text-[10px] font-mono text-slate-400 uppercase">
@@ -565,7 +581,7 @@ export const Game: React.FC<GameProps> = ({
                           </p>
                         </div>
 
-                        <button className="mt-6 w-full py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all">
+                        <button className="mt-6 w-full py-3 game-btn-red text-white rounded-xl text-xs font-bold uppercase tracking-wider">
                           Play This Story →
                         </button>
                       </div>

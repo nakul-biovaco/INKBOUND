@@ -2,16 +2,19 @@ import React, { useEffect, useState } from 'react';
 import {
   UserPlus,
   LogIn,
-  Search,
-  Pencil,
   X,
-  User,
-  Menu,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  BookOpen,
+  Trophy,
+  Check,
+  Shield,
 } from 'lucide-react';
 import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
-import { AvatarBadge, AvatarPicker } from '../components/common/AvatarBadge';
+import { AvatarBadge, AvatarPicker, AvatarId } from '../components/common/AvatarBadge';
 import { decodeInviteCode } from '../utils/inviteCrypto';
 import { AudioControl } from '../components/common/AudioControl';
 import { SoundService } from '../services/soundService';
@@ -25,6 +28,17 @@ interface HomeProps {
   isJoining?: boolean;
 }
 
+const AVATAR_LIST: AvatarId[] = [
+  'detective',
+  'magnifier',
+  'casefile',
+  'scroll',
+  'shield',
+  'crown',
+  'spark',
+  'eye',
+];
+
 export const Home: React.FC<HomeProps> = ({
   currentUser,
   onUpdateProfile,
@@ -33,18 +47,19 @@ export const Home: React.FC<HomeProps> = ({
   isCreating = false,
   isJoining = false,
 }) => {
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCasesModalOpen, setIsCasesModalOpen] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
-  const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
+
+  // In-card states
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [nicknameInput, setNicknameInput] = useState(currentUser.nickname);
-  const [selectedAvatar, setSelectedAvatar] = useState(currentUser.avatar);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [activeNav, setActiveNav] = useState('Home');
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarId>(
+    (currentUser.avatar as AvatarId) || 'detective'
+  );
+  const [cardErrorMsg, setCardErrorMsg] = useState('');
+  const [badgeSavedFeedback, setBadgeSavedFeedback] = useState(false);
 
   const extractCode = (input: string): string => {
     return decodeInviteCode(input);
@@ -54,31 +69,48 @@ export const Home: React.FC<HomeProps> = ({
     e.preventDefault();
     const code = extractCode(roomCodeInput);
     if (!code) {
-      setErrorMsg('Please enter a valid room code.');
+      SoundService.playAlert();
+      setCardErrorMsg('Please enter a valid 5-6 letter room code.');
       return;
     }
-    setErrorMsg('');
-    setIsJoinModalOpen(false);
+    setCardErrorMsg('');
+    SoundService.playStamp();
     onJoinRoom(code);
   };
 
   const handlePasteCode = async () => {
+    SoundService.playClick();
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         const clean = extractCode(text);
-        if (clean) setRoomCodeInput(clean);
+        if (clean) {
+          setRoomCodeInput(clean);
+          setCardErrorMsg('');
+        }
       }
     } catch {
-      // ignore
+      // ignore clipboard permission
     }
   };
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
+  const handleCycleAvatar = (direction: 'prev' | 'next') => {
+    SoundService.playBadgeClick();
+    const currentIdx = AVATAR_LIST.indexOf(selectedAvatar);
+    const nextIdx =
+      direction === 'next'
+        ? (currentIdx + 1) % AVATAR_LIST.length
+        : (currentIdx - 1 + AVATAR_LIST.length) % AVATAR_LIST.length;
+    setSelectedAvatar(AVATAR_LIST[nextIdx]);
+  };
+
+  const handleSaveBadge = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updated = await AuthService.updateDetective(nicknameInput, selectedAvatar);
+    SoundService.playBadgeClick();
+    const updated = await AuthService.updateDetective(nicknameInput.trim() || 'Detective', selectedAvatar);
     onUpdateProfile(updated);
-    setIsProfileModalOpen(false);
+    setBadgeSavedFeedback(true);
+    setTimeout(() => setBadgeSavedFeedback(false), 2200);
   };
 
   const [leaderboardList, setLeaderboardList] = useState<
@@ -89,505 +121,583 @@ export const Home: React.FC<HomeProps> = ({
     AuthService.getLeaderboard().then(setLeaderboardList);
   }, []);
 
-  const navItems = ['Home', 'How to Play', 'Features', 'Cases', 'Leaderboard'];
-
   return (
     <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* 1. PHOTOREALISTIC NOIR DESK BACKGROUND */}
       <div
-        className="absolute top-0 left-0 right-0 h-[650px] sm:h-[700px] md:h-[750px] bg-cover bg-center bg-no-repeat opacity-65 mix-blend-luminosity filter brightness-95 pointer-events-none"
+        className="absolute top-0 left-0 right-0 h-[720px] md:h-[800px] bg-cover bg-center bg-no-repeat opacity-60 mix-blend-luminosity filter brightness-90 pointer-events-none"
         style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
       />
-      {/* Vignette Overlay Gradients */}
-      <div className="absolute top-0 left-0 right-0 h-[650px] sm:h-[700px] md:h-[750px] bg-gradient-to-b from-black/80 via-transparent to-[#08090d] pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 h-[650px] sm:h-[700px] md:h-[750px] bg-radial-vignette opacity-70 pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-[720px] md:h-[800px] bg-gradient-to-b from-black/85 via-[#08090d]/60 to-[#08090d] pointer-events-none" />
 
-      {/* 2. TOP FLOATING NAVBAR */}
-      <nav className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
+      {/* 2. TOP HEADER BAR */}
+      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between">
         {/* Left: INKBOUND Official Logo */}
-        <div
-          className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
-          onClick={() => setActiveNav('Home')}
-        >
+        <div className="flex items-center gap-3">
           <img
             src="/assets/logo.png"
             alt="INKBOUND"
-            className="h-7 sm:h-8 md:h-9 object-contain filter drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
+            className="h-8 sm:h-9 object-contain filter drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"
           />
+          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-red-950/70 text-red-300 border border-red-700/50 text-[10px] font-mono uppercase tracking-widest font-bold">
+            Mystery Party Game
+          </span>
         </div>
 
-        {/* Center: Desktop Nav Links with Red Underline */}
-        <div className="hidden md:flex items-center gap-8 lg:gap-10 text-xs font-medium tracking-wide text-slate-300">
-          {navItems.map((item) => {
-            const isActive = activeNav === item;
-            return (
+        {/* Right: Quick Table Buttons & Audio */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsRulesModalOpen(true);
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 text-xs font-medium transition-all shadow"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <span>How to Play</span>
+          </button>
+
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsLeaderboardModalOpen(true);
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 text-xs font-medium transition-all shadow"
+          >
+            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+            <span>Top Scores</span>
+          </button>
+
+          <AudioControl />
+        </div>
+      </header>
+
+      {/* 3. HERO GAME HUB */}
+      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 max-w-6xl mx-auto w-full pt-4 pb-12">
+        {/* BIG HERO LOGO & CASUAL TAGLINE */}
+        <div className="text-center mb-6 sm:mb-8 space-y-2">
+          <div className="relative inline-block mb-1">
+            <img
+              src="/assets/logo.png"
+              alt="INKBOUND"
+              className="h-20 sm:h-28 md:h-32 object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.95)] transform hover:scale-[1.01] transition-transform"
+            />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-light leading-relaxed">
+            A multiplayer mystery drawing game where everyone gets a secret clue.
+            <br className="hidden sm:inline" />
+            <span className="text-amber-300 font-medium"> Sketch your clue, spot the liar, and solve the crime together!</span>
+          </p>
+        </div>
+
+        {/* 4. THE THREE TACTILE GAME CARDS */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+          {/* ======================================================== */}
+          {/* CARD 1: HOST A GAME (CONFIDENTIAL CASE DOSSIER)          */}
+          {/* ======================================================== */}
+          <div
+            onMouseEnter={() => SoundService.playCardFlip()}
+            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-red-500/80"
+          >
+            {/* Top Red Wax Seal Stamp Badge */}
+            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+              <span className="text-[10px] font-mono tracking-widest text-red-400 font-bold uppercase flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                CASE DOSSIER #01
+              </span>
+              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-600/30">
+                HOST
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-3 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-red-950/40 border border-red-600/40 flex items-center justify-center text-red-400 shadow-inner group-hover:scale-110 transition-transform">
+                <UserPlus className="w-6 h-6" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white font-serif">Host a Game</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Start a private room for your squad. You'll get an invite code and link to share with friends.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-slate-300">
+                <span className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                  👥 2 to 8 Players
+                </span>
+                <span className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                  🎨 Mystery Stories
+                </span>
+              </div>
+            </div>
+
+            {/* 3D Action Button */}
+            <div className="pt-6">
               <button
-                key={item}
                 onClick={() => {
-                  setActiveNav(item);
-                  if (item === 'How to Play') {
-                    setIsRulesModalOpen(true);
-                  } else if (item === 'Cases') {
-                    setIsCasesModalOpen(true);
-                  } else if (item === 'Leaderboard') {
-                    setIsLeaderboardModalOpen(true);
-                  } else if (item === 'Features') {
-                    setIsFeaturesModalOpen(true);
-                  }
+                  SoundService.playStamp();
+                  onCreateRoom();
                 }}
-                className={`relative py-1 transition-colors hover:text-white ${
-                  isActive ? 'text-white font-semibold' : 'text-slate-400'
-                }`}
+                disabled={isCreating}
+                className="w-full py-3.5 px-4 rounded-xl game-btn-red text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {item}
-                {isActive && (
-                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-red-600 rounded-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    <span>Setting Up Room...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 text-white" />
+                    <span>Start New Game</span>
+                  </>
                 )}
               </button>
-            );
-          })}
-        </div>
+            </div>
+          </div>
 
-        {/* Right: Audio Control, User Badge & Mobile Menu Button */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <AudioControl />
-
-          {/* Profile Badge Avatar */}
-          <button
-            onClick={() => {
-              SoundService.playClick();
-              setIsProfileModalOpen(true);
-            }}
-            title="Edit Detective Alias"
-            className="p-1.5 rounded-full bg-black/60 hover:bg-slate-850 border border-slate-700/80 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs shadow-md backdrop-blur-xs"
+          {/* ======================================================== */}
+          {/* CARD 2: JOIN A GAME (EVIDENCE ACCESS TICKET)             */}
+          {/* ======================================================== */}
+          <div
+            onMouseEnter={() => SoundService.playCardFlip()}
+            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-amber-500/80"
           >
-            <AvatarBadge avatar={currentUser.avatar} size="sm" />
-            <span className="hidden sm:inline font-mono font-medium max-w-[90px] truncate text-slate-200">
-              {currentUser.nickname}
-            </span>
-            <User className="w-3.5 h-3.5 text-slate-400 sm:hidden" />
-          </button>
+            {/* Top Gold Stamp Badge */}
+            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+              <span className="text-[10px] font-mono tracking-widest text-amber-400 font-bold uppercase flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                EVIDENCE PASS
+              </span>
+              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/60 text-amber-300 border border-amber-600/30">
+                JOIN
+              </span>
+            </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => {
-              SoundService.playClick();
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }}
-            className="md:hidden p-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-300"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Drawer */}
-      {isMobileMenuOpen && (
-        <div className="relative z-30 md:hidden bg-[#0c1017]/95 border-b border-slate-800 px-6 py-4 flex flex-col gap-3 text-xs backdrop-blur-md">
-          {navItems.map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                SoundService.playClick();
-                setActiveNav(item);
-                setIsMobileMenuOpen(false);
-                if (item === 'How to Play') setIsRulesModalOpen(true);
-                else if (item === 'Cases') setIsCasesModalOpen(true);
-                else if (item === 'Leaderboard') setIsLeaderboardModalOpen(true);
-                else if (item === 'Features') setIsFeaturesModalOpen(true);
-              }}
-              className="text-left py-1 text-slate-300 hover:text-white"
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 3. HERO CENTER CONTENT */}
-      <main className="relative z-20 flex-1 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto pt-8 pb-14 sm:py-16">
-        {/* BIG INKBOUND LOGO (Splattered letters + dripping red 'O') */}
-        <div className="relative mb-3 flex justify-center w-full">
-          <img
-            src="/assets/logo.png"
-            alt="INKBOUND"
-            className="h-20 sm:h-28 md:h-36 lg:h-40 max-w-full object-contain filter drop-shadow-[0_20px_35px_rgba(0,0,0,0.95)] transform hover:scale-[1.01] transition-transform duration-300"
-          />
-        </div>
-
-        {/* Tagline */}
-        <h2 className="text-[11px] sm:text-xs md:text-sm font-sans uppercase tracking-[0.25em] text-slate-200 font-bold mb-2.5">
-          EVERY PLAYER KNOWS A PIECE OF THE TRUTH.
-        </h2>
-
-        {/* Subtitle */}
-        <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto mb-8 font-light leading-relaxed">
-          A multiplayer visual investigation game where drawing, deduction and deception collide.
-        </p>
-
-        {/* ACTION BUTTONS (Exact shape & icons from reference) */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-sm sm:max-w-md">
-          {/* Create a Room Button */}
-          <button
-            onClick={() => {
-              SoundService.playClick();
-              onCreateRoom();
-            }}
-            disabled={isCreating}
-            className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-gradient-to-r from-[#991b1b] via-[#b91c1c] to-[#991b1b] hover:from-[#b91c1c] hover:to-[#dc2626] text-white font-medium text-xs sm:text-sm shadow-[0_4px_25px_rgba(185,28,28,0.6)] border border-red-500/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="w-4 h-4 text-white animate-spin" />
-                <span>Creating Room...</span>
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4 text-white" />
-                <span>Create a Room</span>
-              </>
-            )}
-          </button>
-
-          {/* Join a Room Button */}
-          <button
-            onClick={() => {
-              SoundService.playClick();
-              setIsJoinModalOpen(true);
-            }}
-            className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-black/65 hover:bg-slate-900 border border-slate-700/80 hover:border-slate-500 text-slate-200 hover:text-white font-medium text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-xs"
-          >
-            <LogIn className="w-4 h-4 text-slate-300" />
-            <span>Join a Room</span>
-          </button>
-        </div>
-      </main>
-
-      {/* 4. TORN PAPER EDGE TRANSITION DIVIDER */}
-      <div className="relative z-20 w-full overflow-hidden leading-none -mb-[1px]">
-        <svg
-          viewBox="0 0 1440 48"
-          preserveAspectRatio="none"
-          className="w-full h-8 sm:h-12 text-[#08090d] fill-current"
-        >
-          <path d="M0,48 L0,18 Q35,8 70,22 T140,12 T210,24 T280,10 T350,22 T420,11 T490,25 T560,12 T630,23 T700,9 T770,24 T840,11 T910,23 T980,10 T1050,25 T1120,11 T1190,24 T1260,10 T1330,22 T1400,12 L1440,20 L1440,48 Z" />
-        </svg>
-      </div>
-
-      {/* 5. "HOW IT WORKS" SECTION */}
-      <section
-        id="how-it-works"
-        className="relative z-20 w-full bg-[#08090d] pt-4 pb-12 px-4 sm:px-8 border-b border-slate-900"
-      >
-        {/* Title Bar with Horizontal Rule */}
-        <div className="flex items-center justify-center gap-4 max-w-xs sm:max-w-sm mx-auto mb-10">
-          <div className="flex-1 h-[1px] bg-slate-800" />
-          <span className="text-[11px] font-mono tracking-[0.25em] text-slate-400 uppercase font-semibold">
-            HOW IT WORKS
-          </span>
-          <div className="flex-1 h-[1px] bg-slate-800" />
-        </div>
-
-        {/* 4 Horizontal Steps with Arrows */}
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-3 text-center">
-          {/* STEP 1: DRAW */}
-          <div className="flex flex-col items-center max-w-[200px] group">
-            <div className="relative mb-3 flex flex-col items-center">
-              {/* Hand-drawn style pencil */}
-              <div className="w-12 h-12 rounded-full flex items-center justify-center">
-                <Pencil className="w-7 h-7 text-white transform -rotate-45" />
+            {/* Content & Inline Form */}
+            <div className="space-y-3 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-amber-950/40 border border-amber-600/40 flex items-center justify-center text-amber-400 shadow-inner group-hover:scale-110 transition-transform">
+                <LogIn className="w-6 h-6" />
               </div>
-              {/* Red brush stroke underline */}
-              <div className="w-9 h-1.5 bg-red-600 rounded-full mt-1 shadow-[0_0_10px_rgba(220,38,38,0.9)] -rotate-3" />
-            </div>
-            <h3 className="text-xs font-mono font-bold tracking-[0.2em] uppercase text-white mb-1.5">
-              DRAW
-            </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Get your secret clue and express it through art.
-            </p>
-          </div>
 
-          {/* Thin Arrow */}
-          <span className="text-slate-600 text-lg hidden md:block">→</span>
-
-          {/* STEP 2: INVESTIGATE */}
-          <div className="flex flex-col items-center max-w-[200px] group">
-            <div className="relative mb-3 flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center">
-                <Search className="w-7 h-7 text-white" />
+              <div>
+                <h3 className="text-lg font-bold text-white font-serif">Join a Game</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Got a room code or link from a friend? Type or paste it here to enter the room.
+                </p>
               </div>
-              <div className="w-9 h-1.5 opacity-0 mt-1" />
-            </div>
-            <h3 className="text-xs font-mono font-bold tracking-[0.2em] uppercase text-white mb-1.5">
-              INVESTIGATE
-            </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Study the evidence, spot the patterns.
-            </p>
-          </div>
 
-          {/* Thin Arrow */}
-          <span className="text-slate-600 text-lg hidden md:block">→</span>
+              {/* Direct In-Card Room Code Form */}
+              <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-2 space-y-2">
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={roomCodeInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.includes('http') || val.includes('join=') || val.includes('room=')) {
+                        setRoomCodeInput(extractCode(val));
+                      } else {
+                        setRoomCodeInput(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
+                      }
+                      setCardErrorMsg('');
+                    }}
+                    placeholder="ROOM CODE"
+                    className="w-full py-2.5 pl-3 pr-16 bg-slate-950 border border-slate-700/80 focus:border-amber-400 rounded-xl text-center text-base font-mono font-bold tracking-widest uppercase text-amber-300 outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePasteCode}
+                    className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-mono font-bold text-slate-300 hover:text-white transition-colors border border-slate-600"
+                  >
+                    PASTE
+                  </button>
+                </div>
 
-          {/* STEP 3: CONNECT */}
-          <div className="flex flex-col items-center max-w-[200px] group">
-            <div className="relative mb-3 flex flex-col items-center">
-              {/* 3 Red nodes connected by lines */}
-              <div className="w-12 h-12 flex items-center justify-center">
-                <svg viewBox="0 0 36 36" className="w-8 h-8">
-                  <line x1="8" y1="28" x2="18" y2="8" stroke="#ffffff" strokeWidth="2" />
-                  <line x1="18" y1="8" x2="28" y2="28" stroke="#ffffff" strokeWidth="2" />
-                  <line x1="8" y1="28" x2="28" y2="28" stroke="#ffffff" strokeWidth="2" />
-                  <circle cx="18" cy="8" r="4.5" fill="#dc2626" stroke="#ffffff" strokeWidth="1.5" />
-                  <circle cx="8" cy="28" r="4.5" fill="#dc2626" stroke="#ffffff" strokeWidth="1.5" />
-                  <circle cx="28" cy="28" r="4.5" fill="#dc2626" stroke="#ffffff" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="w-9 h-1.5 opacity-0 mt-1" />
-            </div>
-            <h3 className="text-xs font-mono font-bold tracking-[0.2em] uppercase text-white mb-1.5">
-              CONNECT
-            </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Link clues, build a timeline, ask the right questions.
-            </p>
-          </div>
-
-          {/* Thin Arrow */}
-          <span className="text-slate-600 text-lg hidden md:block">→</span>
-
-          {/* STEP 4: SOLVE */}
-          <div className="flex flex-col items-center max-w-[200px] group">
-            <div className="relative mb-3 flex flex-col items-center">
-              {/* Red & Gold Target Scope */}
-              <div className="w-12 h-12 flex items-center justify-center">
-                <svg viewBox="0 0 36 36" className="w-8 h-8">
-                  <circle cx="18" cy="18" r="14" stroke="#dc2626" strokeWidth="2" fill="none" />
-                  <circle cx="18" cy="18" r="9" stroke="#f59e0b" strokeWidth="1.5" fill="none" />
-                  <circle cx="18" cy="18" r="3.5" fill="#dc2626" />
-                  <line x1="18" y1="1" x2="18" y2="35" stroke="#dc2626" strokeWidth="1.5" />
-                  <line x1="1" y1="18" x2="35" y2="18" stroke="#dc2626" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="w-9 h-1.5 opacity-0 mt-1" />
-            </div>
-            <h3 className="text-xs font-mono font-bold tracking-[0.2em] uppercase text-white mb-1.5">
-              SOLVE
-            </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Uncover the truth. But beware... someone might be lying.
-            </p>
-          </div>
-        </div>
-
-        {/* 6. CORNER HANDWRITTEN VIGNETTES (Desktop Only) */}
-        {/* Bottom Left Note */}
-        <div className="hidden lg:block absolute bottom-6 left-12 pointer-events-none">
-          <div className="font-handwriting text-2xl text-slate-400 italic leading-snug">
-            Not just a game...<br />
-            <span className="text-slate-300">It's a case.</span>
-            <div className="w-14 h-0.5 bg-red-700 mt-0.5 -rotate-2" />
-          </div>
-        </div>
-
-        {/* Bottom Right Parchment Scrap Note */}
-        <div className="hidden lg:block absolute bottom-4 right-12 pointer-events-none">
-          <div className="bg-[#eadaaf] border border-[#c4ab75] text-[#2c1e10] p-3.5 rounded-lg shadow-2xl rotate-2 font-handwriting text-lg leading-tight max-w-[160px]">
-            Same story.<br />
-            Different eyes.<br />
-            <span className="font-bold text-[#1a1107]">Different truths.</span>
-            <div className="flex gap-1 mt-1">
-              <span className="w-3 h-0.5 bg-red-700 block -rotate-12" />
-              <span className="w-3 h-0.5 bg-red-700 block -rotate-12" />
-              <span className="w-3 h-0.5 bg-red-700 block -rotate-12" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* JOIN ROOM MODAL */}
-      {isJoinModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative space-y-4">
-            <button
-              onClick={() => setIsJoinModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Enter Room Code</h3>
-              <p className="text-xs text-slate-400">Enter the room code shared by your host or friend.</p>
+                {cardErrorMsg && (
+                  <p className="text-[11px] font-mono text-red-400 leading-tight">{cardErrorMsg}</p>
+                )}
+              </form>
             </div>
 
-            <form onSubmit={handleJoinSubmit} className="space-y-3">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  maxLength={100}
-                  value={roomCodeInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val.includes('http') || val.includes('join=') || val.includes('room=')) {
-                      setRoomCodeInput(extractCode(val));
-                    } else {
-                      setRoomCodeInput(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
-                    }
-                  }}
-                  placeholder="e.g. X7K9P"
-                  className="w-full py-3 pl-4 pr-16 bg-slate-950 border border-slate-700 rounded-xl text-center text-xl font-mono tracking-widest uppercase text-amber-400 focus:border-red-500 outline-none"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handlePasteCode}
-                  className="absolute right-2 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-mono font-bold text-slate-300 hover:text-white transition-colors border border-slate-600"
-                >
-                  PASTE
-                </button>
-              </div>
-              {errorMsg && <p className="text-xs text-red-400">{errorMsg}</p>}
-
+            {/* 3D Action Button */}
+            <div className="pt-6">
               <button
                 type="submit"
+                form="join-card-form"
                 disabled={isJoining}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 text-white font-bold text-xs uppercase tracking-wider hover:from-red-600 hover:to-rose-600 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-full py-3.5 px-4 rounded-xl game-btn-gold text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isJoining ? (
                   <>
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    <span>Joining Room...</span>
+                    <span>Entering Game...</span>
                   </>
                 ) : (
-                  <span>Join Room</span>
+                  <>
+                    <LogIn className="w-4 h-4 text-white" />
+                    <span>Enter Game</span>
+                  </>
                 )}
               </button>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* PROFILE CUSTOMIZATION MODAL */}
-      {isProfileModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-2xl w-[min(94vw,42rem)] max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto p-5 sm:p-6 shadow-2xl relative space-y-4">
-            <button
-              onClick={() => setIsProfileModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Detective Badge</h3>
-              <p className="text-xs text-slate-400">Choose your detective alias and profile icon.</p>
+          {/* ======================================================== */}
+          {/* CARD 3: DETECTIVE BADGE (POLAROID & IDENTITY)           */}
+          {/* ======================================================== */}
+          <div
+            onMouseEnter={() => SoundService.playCardFlip()}
+            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-sky-500/80"
+          >
+            {/* Top Badge Stamp */}
+            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+              <span className="text-[10px] font-mono tracking-widest text-sky-400 font-bold uppercase flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-sky-400" />
+                DETECTIVE BADGE
+              </span>
+              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/60 text-sky-300 border border-sky-600/30">
+                PROFILE
+              </span>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div>
-                <label className="block text-xs font-mono text-slate-400 mb-2">Avatar Icon</label>
-                <AvatarPicker value={selectedAvatar} onChange={setSelectedAvatar} className="xl:grid-cols-8" />
-              </div>
+            {/* Interactive Polaroid Badge */}
+            <div className="space-y-3 flex-1 flex flex-col items-center text-center">
+              {/* Avatar Selector with Left / Right Arrows */}
+              <div className="flex items-center gap-3 my-1">
+                <button
+                  type="button"
+                  onClick={() => handleCycleAvatar('prev')}
+                  title="Previous Icon"
+                  className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
 
-              <div>
-                <label className="block text-xs font-mono text-slate-400 mb-1.5">Detective Alias</label>
-                <input
-                  type="text"
-                  maxLength={18}
-                  value={nicknameInput}
-                  onChange={(e) => setNicknameInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm outline-none focus:border-red-500"
-                  required
-                />
+                <div
+                  onClick={() => {
+                    SoundService.playClick();
+                    setIsAvatarPickerOpen(true);
+                  }}
+                  className="cursor-pointer transform hover:scale-105 transition-transform"
+                  title="Click to view all icons"
+                >
+                  <AvatarBadge avatar={selectedAvatar} size="lg" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleCycleAvatar('next')}
+                  title="Next Icon"
+                  className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
 
               <button
-                type="submit"
-                className="w-full py-2.5 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md"
+                type="button"
+                onClick={() => {
+                  SoundService.playClick();
+                  setIsAvatarPickerOpen(true);
+                }}
+                className="text-[10px] text-sky-400 hover:text-sky-300 font-mono underline"
               >
-                Save Badge
+                Choose from gallery
               </button>
-            </form>
+
+              {/* Inline Detective Name Input */}
+              <form onSubmit={handleSaveBadge} id="badge-card-form" className="w-full pt-1 space-y-2">
+                <div className="text-left">
+                  <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">
+                    Your Detective Name
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={18}
+                    value={nicknameInput}
+                    onChange={(e) => setNicknameInput(e.target.value)}
+                    placeholder="Enter name"
+                    className="w-full py-2 px-3 bg-slate-950 border border-slate-700/80 focus:border-sky-400 rounded-xl text-sm font-semibold text-white outline-none transition-colors"
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* 3D Action Button */}
+            <div className="pt-6">
+              <button
+                type="submit"
+                form="badge-card-form"
+                className="w-full py-3.5 px-4 rounded-xl game-btn-dark text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {badgeSavedFeedback ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-300">Badge Saved!</span>
+                  </>
+                ) : (
+                  <>
+                    <Shield className="w-4 h-4 text-sky-400" />
+                    <span>Save My Badge</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* CASES ARCHIVE MODAL */}
-      {isCasesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4 max-h-[85vh] overflow-y-auto">
+        {/* 5. TABLE ITEMS: CASE STORIES, FIELD RULES, HALL OF FAME */}
+        <div className="w-full max-w-4xl mx-auto mt-10 pt-8 border-t border-slate-800/80">
+          <div className="text-center mb-4">
+            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 font-bold">
+              INVESTIGATION DESK FILES
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* FILE 1: CASE STORIES */}
+            <div
+              onClick={() => {
+                SoundService.playCardFlip();
+                setIsCasesModalOpen(true);
+              }}
+              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-red-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+            >
+              <div className="w-9 h-9 rounded-lg bg-red-950/40 border border-red-800/40 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+                <Folder className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-red-300 transition-colors">
+                  Mystery Stories
+                </div>
+                <div className="text-[10px] text-slate-400">3 pre-built crime cases</div>
+              </div>
+            </div>
+
+            {/* FILE 2: HOW TO PLAY */}
+            <div
+              onClick={() => {
+                SoundService.playCardFlip();
+                setIsRulesModalOpen(true);
+              }}
+              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-amber-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+            >
+              <div className="w-9 h-9 rounded-lg bg-amber-950/40 border border-amber-800/40 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
+                  How to Play
+                </div>
+                <div className="text-[10px] text-slate-400">Simple 4-step guide</div>
+              </div>
+            </div>
+
+            {/* FILE 3: HALL OF FAME */}
+            <div
+              onClick={() => {
+                SoundService.playCardFlip();
+                setIsLeaderboardModalOpen(true);
+              }}
+              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-yellow-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+            >
+              <div className="w-9 h-9 rounded-lg bg-yellow-950/40 border border-yellow-800/40 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-yellow-300 transition-colors">
+                  Top Detectives
+                </div>
+                <div className="text-[10px] text-slate-400">High scores & rankings</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* 6. BOTTOM FOOTER */}
+      <footer className="relative z-20 w-full max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-mono gap-2 border-t border-slate-900">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-slate-400 font-serif">INKBOUND</span>
+          <span>• A game of drawings, deductions and secrets</span>
+        </div>
+        <div className="text-slate-500 text-[11px]">
+          Grab your friends and crack the case together.
+        </div>
+      </footer>
+
+      {/* ======================================================== */}
+      {/* MODAL 1: HOW TO PLAY (SIMPLE & HUMAN)                    */}
+      {/* ======================================================== */}
+      {isRulesModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
             <button
-              onClick={() => setIsCasesModalOpen(false)}
+              onClick={() => {
+                SoundService.playClick();
+                setIsRulesModalOpen(false);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Declassified Case Files</h3>
-              <p className="text-xs text-slate-400">Select an investigation to launch in your room.</p>
+              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">
+                GAME RULES
+              </span>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">How to Play INKBOUND</h3>
+              <p className="text-xs text-slate-400">Four easy steps to play with your friends:</p>
+            </div>
+
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-red-900/60 border border-red-500 text-red-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                  1
+                </span>
+                <div>
+                  <div className="font-bold text-white">Draw Your Secret Clue</div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">
+                    When it's your turn, you get a secret clue from the mystery story. Sketch it on the canvas before time runs out!
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-amber-900/60 border border-amber-500 text-amber-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                  2
+                </span>
+                <div>
+                  <div className="font-bold text-white">Guess What's Being Drawn</div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">
+                    Other players type guesses into the chat. If you match the clue (even the main words), you get points!
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-sky-900/60 border border-sky-500 text-sky-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                  3
+                </span>
+                <div>
+                  <div className="font-bold text-white">Watch Out for the Imposter</div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">
+                    One player gets a fake clue and tries to mislead the investigation without getting caught!
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-emerald-900/60 border border-emerald-500 text-emerald-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                  4
+                </span>
+                <div>
+                  <div className="font-bold text-white">Crack the Case</div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">
+                    Vote on who the culprit is and reconstruct the story to win big points!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 2: CASE STORIES (MYSTERY ARCHIVES)                 */}
+      {/* ======================================================== */}
+      {isCasesModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4 max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                SoundService.playClick();
+                setIsCasesModalOpen(false);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-left space-y-1">
+              <span className="text-[10px] font-mono text-red-400 uppercase tracking-widest font-bold">
+                STORY FILES
+              </span>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Mystery Cases</h3>
+              <p className="text-xs text-slate-400">Cases available to solve when you host a game:</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
               <div className="p-4 bg-slate-900/90 border border-red-700/60 rounded-xl space-y-2">
-                <span className="text-[10px] font-mono text-red-400 uppercase font-bold">Featured Case</span>
-                <h4 className="text-sm font-bold text-white font-serif">The Midnight Museum Heist</h4>
+                <span className="text-[10px] font-mono text-red-400 uppercase font-bold">Vault Heist</span>
+                <h4 className="text-sm font-bold text-white font-serif">The Midnight Museum</h4>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  The Eye of Osiris blue diamond vanished at 11:44 PM during an electrical blackout.
+                  The Eye of Osiris diamond vanished during an electrical blackout at midnight.
                 </p>
-                <div className="text-[10px] font-mono text-amber-400">4 Suspects • Vault Chamber</div>
+                <div className="text-[10px] font-mono text-amber-400">4 Suspects • Normal</div>
               </div>
 
               <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
-                <span className="text-[10px] font-mono text-sky-400 uppercase font-bold">Orient Mystery</span>
-                <h4 className="text-sm font-bold text-white font-serif">The Grand Express Cipher</h4>
+                <span className="text-[10px] font-mono text-sky-400 uppercase font-bold">Train Mystery</span>
+                <h4 className="text-sm font-bold text-white font-serif">The Grand Express</h4>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  An encrypted ledger was extracted from the locked luxury coach between Paris and Vienna.
+                  A locked luxury coach between Paris and Vienna with an encrypted missing ledger.
                 </p>
-                <div className="text-[10px] font-mono text-slate-500">4 Suspects • Train Coach</div>
+                <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
               </div>
 
               <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
                 <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">Gothic Manor</span>
-                <h4 className="text-sm font-bold text-white font-serif">The Blackwood Poisoning</h4>
+                <h4 className="text-sm font-bold text-white font-serif">Blackwood Poisoning</h4>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Lord Blackwood was found unconscious beside his vintage 1928 vintage decanter.
+                  Lord Blackwood was found unconscious beside a rare vintage decanter in the dining hall.
                 </p>
-                <div className="text-[10px] font-mono text-slate-500">4 Suspects • Dining Hall</div>
+                <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
               </div>
             </div>
 
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => {
+                  SoundService.playStamp();
                   setIsCasesModalOpen(false);
                   onCreateRoom();
                 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-red-700 to-rose-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:from-red-600 hover:to-rose-600 transition-all shadow-md"
+                className="px-5 py-2.5 game-btn-red text-white font-bold rounded-xl text-xs uppercase tracking-wider"
               >
-                Create Room with This Case
+                Host a Game Now
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* LEADERBOARD / HALL OF FAME MODAL */}
+      {/* ======================================================== */}
+      {/* MODAL 3: TOP DETECTIVES (HALL OF FAME)                  */}
+      {/* ======================================================== */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
             <button
-              onClick={() => setIsLeaderboardModalOpen(false)}
+              onClick={() => {
+                SoundService.playClick();
+                setIsLeaderboardModalOpen(false);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Detective Hall of Fame</h3>
-              <p className="text-xs text-slate-400">Top-rated detectives across all resolved crime scenes.</p>
+              <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest font-bold">
+                RANKINGS
+              </span>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Top Detectives</h3>
+              <p className="text-xs text-slate-400">Best scoring players across all solved cases:</p>
             </div>
 
             <div className="space-y-2 pt-2">
@@ -612,92 +722,36 @@ export const Home: React.FC<HomeProps> = ({
         </div>
       )}
 
-      {/* FEATURES MODAL */}
-      {isFeaturesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+      {/* ======================================================== */}
+      {/* MODAL 4: FULL AVATAR PICKER GALLERY                      */}
+      {/* ======================================================== */}
+      {isAvatarPickerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
             <button
-              onClick={() => setIsFeaturesModalOpen(false)}
+              onClick={() => {
+                SoundService.playClick();
+                setIsAvatarPickerOpen(false);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Game Features</h3>
-              <p className="text-xs text-slate-400">A fun mystery party game where drawing and guessing meet.</p>
+              <h3 className="text-lg font-bold text-white font-serif">Pick Your Icon</h3>
+              <p className="text-xs text-slate-400">Choose any detective avatar for your badge:</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎨 Live Visual Evidence</div>
-                <div className="text-slate-400 text-[11px]">Smooth real-time drawing with brush controls, undo, and redo.</div>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🕰 Timeline Reconstruction</div>
-                <div className="text-slate-400 text-[11px]">Put the clues in the right order as the story unfolds.</div>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎭 The Secret Impostor</div>
-                <div className="text-slate-400 text-[11px]">One player gets fake clues and tries to trick everyone without getting caught!</div>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🔒 Secret Clues</div>
-                <div className="text-slate-400 text-[11px]">Only you can see your secret clue until everyone shows their cards.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* HOW TO PLAY / RULES MODAL */}
-      {isRulesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
-            <button
-              onClick={() => setIsRulesModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">How to Play INKBOUND</h3>
-              <p className="text-xs text-slate-400">4 simple steps to play and solve the mystery.</p>
-            </div>
-
-            <div className="space-y-3 pt-2 text-xs">
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
-                <span className="font-mono text-red-400 font-bold text-sm">01</span>
-                <div>
-                  <div className="font-bold text-white">Draw Your Clue</div>
-                  <div className="text-slate-400 text-[11px]">Everyone gets a secret clue from the story. Draw it so other players can guess!</div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
-                <span className="font-mono text-red-400 font-bold text-sm">02</span>
-                <div>
-                  <div className="font-bold text-white">Review the Evidence Board</div>
-                  <div className="text-slate-400 text-[11px]">Check out all drawings and piece together what happened step by step.</div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
-                <span className="font-mono text-red-400 font-bold text-sm">03</span>
-                <div>
-                  <div className="font-bold text-white">Find the Impostor</div>
-                  <div className="text-slate-400 text-[11px]">One player got a fake clue! Spot who is bluffing or drawing something fishy.</div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
-                <span className="font-mono text-red-400 font-bold text-sm">04</span>
-                <div>
-                  <div className="font-bold text-white">Make Your Final Guess</div>
-                  <div className="text-slate-400 text-[11px]">Guess who did it, why, and how to earn points when the truth is revealed!</div>
-                </div>
-              </div>
+            <div className="py-2">
+              <AvatarPicker
+                value={selectedAvatar}
+                onChange={(avatar) => {
+                  SoundService.playBadgeClick();
+                  setSelectedAvatar(avatar as AvatarId);
+                  setIsAvatarPickerOpen(false);
+                }}
+              />
             </div>
           </div>
         </div>

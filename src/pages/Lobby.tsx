@@ -360,16 +360,16 @@ export const Lobby: React.FC<LobbyProps> = ({
             {!isHost && (
               <button
                 onClick={() => {
-                  SoundService.playClick();
+                  SoundService.playBadgeClick();
                   onToggleReady();
                 }}
-                className={`w-full py-3 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-md ${
+                className={`w-full py-3.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer ${
                   currentUser.isReady
-                    ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                    ? 'game-btn-dark text-slate-300'
+                    : 'game-btn-gold text-white'
                 }`}
               >
-                {currentUser.isReady ? 'Cancel Ready' : 'Mark Ready'}
+                {currentUser.isReady ? '✓ You Are Ready (Click to Cancel)' : 'Mark Yourself Ready'}
               </button>
             )}
 
@@ -378,11 +378,11 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="space-y-2">
                 <button
                   onClick={() => {
-                    SoundService.playClick();
+                    SoundService.playStamp();
                     onStartGame();
                   }}
                   disabled={displayPlayers.length < 2}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm tracking-wide shadow-[0_4px_25px_rgba(220,38,38,0.45)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 rounded-2xl game-btn-red text-white font-bold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-white" />
                   <span>Start Game ({displayPlayers.length}/8 Players)</span>
@@ -394,7 +394,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                       SoundService.playClick();
                       onAddBot();
                     }}
-                    className="w-full py-2.5 rounded-xl border border-red-700/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow"
+                    className="w-full py-2.5 rounded-xl border border-red-700/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow cursor-pointer"
                   >
                     <span>+ Add Bot Player</span>
                   </button>
@@ -404,10 +404,10 @@ export const Lobby: React.FC<LobbyProps> = ({
 
             <div className="text-center text-[11px] font-mono text-slate-400">
               {displayPlayers.length < 2
-                ? 'Need at least 2 players to start (invite friends or add a bot)'
+                ? 'Need at least 2 players to start (invite friends or click Add Bot)'
                 : isHost
-                ? 'Everyone is ready! Ready to start the game.'
-                : 'Waiting for host to start the game...'}
+                ? 'Ready to go! Click Start Game when everyone is ready.'
+                : 'Waiting for the host to start the game...'}
             </div>
           </div>
         </div>
@@ -583,33 +583,36 @@ export const Lobby: React.FC<LobbyProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Invite Detectives</h3>
-              <p className="text-xs text-slate-400">Share this code or link with your investigative team.</p>
+              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">
+                INVITE FRIENDS
+              </span>
+              <h3 className="text-lg font-bold text-white font-serif">Share Room Code or Link</h3>
+              <p className="text-xs text-slate-400">Send this to your friends so they can join your lobby!</p>
             </div>
 
             <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center space-y-2">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Case Room Code</span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Room Code</span>
               <div className="text-3xl font-mono font-bold tracking-widest text-amber-400">
                 {room.code}
               </div>
               <button
                 onClick={handleCopy}
-                className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-white transition-colors"
+                className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-white transition-colors cursor-pointer"
               >
-                {hasCopied ? '✓ Code Copied' : 'Copy Room Code'}
+                {hasCopied ? '✓ Code Copied!' : 'Copy Code'}
               </button>
             </div>
 
             <div className="space-y-2">
               <button
                 onClick={handleCopyLink}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl game-btn-red text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Link className="w-3.5 h-3.5" />
-                <span>{hasCopied ? '✓ Encrypted Link Copied!' : 'Copy Encrypted Invite Link'}</span>
+                <span>{hasCopied ? '✓ Game Link Copied!' : 'Copy Game Link'}</span>
               </button>
               <p className="text-[11px] font-mono text-slate-400 text-center">
-                Invited detectives go straight to this lobby when opening the link.
+                Anyone clicking the link will jump straight into this lobby.
               </p>
             </div>
           </div>

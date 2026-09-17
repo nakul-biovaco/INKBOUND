@@ -375,6 +375,7 @@ export const App: React.FC = () => {
     const unsubError = backend.on('ERROR', (payload: any) => {
       if (payload?.message) {
         const message = payload.message as string;
+        SoundService.playAlert();
         if (/No active game session|Room not found/i.test(message)) {
           // The authoritative service was restarted. A stale browser room must not
           // keep sending actions to a game session that no longer exists.
@@ -383,7 +384,7 @@ export const App: React.FC = () => {
           setCurrentRoom(null);
           setPlayers([]);
           setView('HOME');
-          setErrorMessage('The game server restarted, so this room is no longer active. Please create a new room and invite the team again.');
+          setErrorMessage('That room has closed or the server restarted. Please create or join a new room!');
           return;
         }
         setErrorMessage(message);
@@ -433,7 +434,8 @@ export const App: React.FC = () => {
     if (view === 'LOBBY' && !currentRoom && !isJoiningRoom) {
       const timer = setTimeout(() => {
         if (!currentRoom) {
-          setErrorMessage('Could not connect to investigation room. The invite link may have expired or the room was closed.');
+          SoundService.playAlert();
+          setErrorMessage('Could not connect to that room. The invite link may have expired or the room is closed.');
           setView('HOME');
           if (typeof window !== 'undefined' && window.location.search) {
             window.history.replaceState(null, '', window.location.pathname);
@@ -657,7 +659,8 @@ export const App: React.FC = () => {
         saveCachedSession(res.room, res.players, null, 'LOBBY');
         setView('LOBBY');
       } catch {
-        setErrorMessage('Failed to create investigation room.');
+        SoundService.playAlert();
+        setErrorMessage('Could not create room right now. Please try again!');
       }
     } finally {
       setIsCreatingRoom(false);
@@ -668,7 +671,8 @@ export const App: React.FC = () => {
     if (isJoiningRoom) return;
     const cleanCode = decodeInviteCode(code);
     if (!cleanCode) {
-      setErrorMessage('Invalid room code or invite link.');
+      SoundService.playAlert();
+      setErrorMessage('Please enter a valid room code or invite link.');
       setView('HOME');
       return;
     }
@@ -720,6 +724,7 @@ export const App: React.FC = () => {
       try {
         const res = await RoomService.joinRoom(cleanCode, currentUser);
         if ('error' in res) {
+          SoundService.playAlert();
           setErrorMessage(res.error);
           setView('HOME');
           window.history.replaceState(null, '', window.location.pathname);
@@ -730,7 +735,8 @@ export const App: React.FC = () => {
         saveCachedSession(res.room, res.players, null, 'LOBBY');
         setView('LOBBY');
       } catch {
-        setErrorMessage(err?.message || 'Failed to join case room. Please check the code.');
+        SoundService.playAlert();
+        setErrorMessage(err?.message || 'Could not find that room! Check the code and try again.');
         setView('HOME');
         window.history.replaceState(null, '', window.location.pathname);
       }
@@ -820,9 +826,23 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-noir-900 text-noir-100 font-sans">
       {errorMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-rose-950/90 border border-case-crimson text-rose-200 px-4 py-2.5 rounded-xl shadow-lg text-xs flex items-center justify-between gap-3">
-          <span>{errorMessage}</span>
-          <button onClick={() => setErrorMessage('')} className="text-white hover:text-rose-300 font-bold">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92vw] dispatch-banner border-2 border-amber-500/80 text-white px-4 py-3 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.9)] flex items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <span className="text-xl filter drop-shadow">🚨</span>
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300 font-bold">
+                POLICE RADIO DISPATCH
+              </div>
+              <div className="text-xs font-medium text-slate-100 leading-snug">{errorMessage}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              SoundService.playClick();
+              setErrorMessage('');
+            }}
+            className="w-7 h-7 rounded-lg bg-black/60 hover:bg-black/90 text-slate-300 hover:text-white flex items-center justify-center font-bold text-xs transition-colors border border-white/20 flex-shrink-0"
+          >
             ✕
           </button>
         </div>
