@@ -11,6 +11,7 @@ import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
 import { decodeInviteCode } from './utils/inviteCrypto';
 import { SoundService } from './services/soundService';
+import { AlertTriangle } from 'lucide-react';
 
 type AppView = 'HOME' | 'LOBBY' | 'GAME';
 
@@ -828,10 +829,12 @@ export const App: React.FC = () => {
       {errorMessage && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92vw] dispatch-banner border-2 border-amber-500/80 text-white px-4 py-3 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.9)] flex items-center justify-between gap-3 animate-fadeIn">
           <div className="flex items-center gap-3">
-            <span className="text-xl filter drop-shadow">🚨</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-950/80 border border-amber-500/50 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+            </div>
             <div>
               <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300 font-bold">
-                POLICE RADIO DISPATCH
+                POLICE DISPATCH
               </div>
               <div className="text-xs font-medium text-slate-100 leading-snug">{errorMessage}</div>
             </div>

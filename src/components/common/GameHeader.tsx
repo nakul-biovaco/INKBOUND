@@ -12,6 +12,8 @@ import {
   Trophy,
   LogOut,
   X,
+  Clock,
+  Smartphone,
 } from 'lucide-react';
 import { GameStatus } from '../../types/game';
 import { Player } from '../../types/player';
@@ -426,19 +428,31 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎨 Live Visual Evidence</div>
-                <div className="text-slate-400 text-[11px]">Smooth drawing canvas with undo, redo, and live stroke updates.</div>
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <Pencil className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Live Drawing Canvas</span>
+                </div>
+                <div className="text-slate-400 text-[11px]">Smooth drawing canvas with undo, redo, and instant stroke syncing.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🕰 Timeline Reconstruction</div>
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Case Timeline</span>
+                </div>
                 <div className="text-slate-400 text-[11px]">Piece together what happened from start to finish.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎭 Secret Impostor</div>
-                <div className="text-slate-400 text-[11px]">One player gets fake clues and tries to trick everyone without getting caught!</div>
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Secret Imposter</span>
+                </div>
+                <div className="text-slate-400 text-[11px]">One player gets a fake clue and tries to blend in without getting caught!</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">⚡ Cross Device Play</div>
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Play on Any Device</span>
+                </div>
                 <div className="text-slate-400 text-[11px]">Play with friends on phone, tablet, or laptop seamlessly.</div>
               </div>
             </div>

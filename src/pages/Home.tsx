@@ -12,6 +12,10 @@ import {
   Shield,
   FileText,
   HelpCircle,
+  AlertTriangle,
+  Search,
+  Users,
+  Eye,
 } from 'lucide-react';
 import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
@@ -135,14 +139,15 @@ export const Home: React.FC<HomeProps> = ({
 
       {/* 2. TOP POLICE CRIME SCENE CAUTION TAPE */}
       <div className="relative z-30 w-full crime-scene-tape text-[10px] sm:text-xs py-1 px-4 text-center tracking-[0.25em] shadow-2xl flex items-center justify-center gap-3">
-        <span>⚠️ POLICE LINE</span>
+        <AlertTriangle className="w-3.5 h-3.5 text-black shrink-0" />
+        <span>POLICE LINE</span>
         <span className="hidden sm:inline">•</span>
         <span className="hidden sm:inline">EVIDENCE ARCHIVE #8492</span>
         <span>•</span>
         <span>DO NOT CROSS</span>
         <span className="hidden sm:inline">•</span>
-        <span className="hidden sm:inline">CRIME INVESTIGATION DIVISION</span>
-        <span>⚠️</span>
+        <span className="hidden sm:inline">INVESTIGATION DIVISION</span>
+        <AlertTriangle className="w-3.5 h-3.5 text-black shrink-0" />
       </div>
 
       {/* 3. HEADER NAV BAR */}
@@ -172,7 +177,7 @@ export const Home: React.FC<HomeProps> = ({
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
           >
             <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Field Rules</span>
+            <span>Rules</span>
           </button>
 
           <button
@@ -183,7 +188,7 @@ export const Home: React.FC<HomeProps> = ({
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
           >
             <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-            <span>Hall of Fame</span>
+            <span>Leaderboard</span>
           </button>
 
           <AudioControl />
@@ -205,22 +210,22 @@ export const Home: React.FC<HomeProps> = ({
           <div className="flex items-center justify-center gap-3">
             <div className="h-[1px] w-12 sm:w-20 bg-gradient-to-r from-transparent to-red-600/80" />
             <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.3em] text-red-400 font-bold">
-              CASE ARCHIVE // SPECIAL CRIME SQUAD
+              CASE ARCHIVE // INKBOUND
             </span>
             <div className="h-[1px] w-12 sm:w-20 bg-gradient-to-l from-transparent to-red-600/80" />
           </div>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-light leading-relaxed">
-            Every detective holds a secret piece of the crime. One is an imposter.
+            A drawing & guessing game with a mystery twist.
             <br className="hidden sm:inline" />
-            <span className="text-amber-300 font-medium"> Sketch the clues, spot who's bluffing, and solve the mystery!</span>
+            <span className="text-amber-300 font-medium"> Sketch your secret clue, catch who is lying, and crack the case with friends!</span>
           </p>
         </div>
 
         {/* 5. THE THREE INVESTIGATION PROPS ON THE DESK */}
         <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-6 items-stretch">
           {/* ======================================================== */}
-          {/* PROP 1: 📁 MANILA CASE DOSSIER (HOST NEW CASE)            */}
+          {/* PROP 1: MANILA CASE DOSSIER (HOST NEW CASE)              */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
             {/* Ambient Bloom Flare */}
@@ -239,29 +244,31 @@ export const Home: React.FC<HomeProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-4 border-b border-red-950/80 pb-3">
                   <div className="evidence-stamp-classified text-[10px]">
-                    TOP SECRET // CASE #01
+                    CONFIDENTIAL // CASE ROOM
                   </div>
                   <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-950/80 text-red-300 border border-red-600/40">
-                    DOSSIER
+                    HOST
                   </span>
                 </div>
 
                 {/* Content */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold text-white font-serif tracking-wide flex items-center gap-2">
-                    <span>📁</span>
-                    <span>Host a Crime Case</span>
+                    <Folder className="w-5 h-5 text-red-400 shrink-0" />
+                    <span>Host a Game</span>
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                    Open a confidential crime room. Pick a story, invite your squad, and begin the investigation.
+                    Start a private room with friends. Pick a mystery story, set round times, and begin drawing!
                   </p>
 
                   <div className="pt-3 flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-300">
-                    <span className="px-2 py-1 rounded bg-black/60 border border-red-900/40 text-red-300 font-bold">
-                      👥 2-8 Detectives
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/60 border border-red-900/40 text-red-300 font-medium">
+                      <Users className="w-3 h-3 text-red-400" />
+                      <span>2–8 Players</span>
                     </span>
-                    <span className="px-2 py-1 rounded bg-black/60 border border-amber-900/40 text-amber-300 font-bold">
-                      🎭 Secret Imposter
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/60 border border-amber-900/40 text-amber-300 font-medium">
+                      <Eye className="w-3 h-3 text-amber-400" />
+                      <span>Secret Imposter</span>
                     </span>
                   </div>
                 </div>
@@ -280,12 +287,12 @@ export const Home: React.FC<HomeProps> = ({
                   {isCreating ? (
                     <>
                       <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      <span>Opening Case...</span>
+                      <span>Creating Room...</span>
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4 text-white" />
-                      <span>Open New Case</span>
+                      <span>Create Room</span>
                     </>
                   )}
                 </button>
@@ -294,7 +301,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* ======================================================== */}
-          {/* PROP 2: 🎫 POLICE DISPATCH TICKET (JOIN CASE)             */}
+          {/* PROP 2: POLICE DISPATCH TICKET (JOIN CASE)               */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
             {/* Ambient Bloom Flare */}
@@ -312,21 +319,21 @@ export const Home: React.FC<HomeProps> = ({
                 {/* Stamped Header */}
                 <div className="flex items-center justify-between mb-4 border-b border-amber-950/80 pb-3">
                   <div className="evidence-stamp-confidential text-[10px]">
-                    EVIDENCE ENTRY PASS
+                    ROOM INVITE PASS
                   </div>
                   <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-600/40">
-                    DISPATCH
+                    JOIN
                   </span>
                 </div>
 
                 {/* Content & Inline Typewriter Input */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold text-white font-serif tracking-wide flex items-center gap-2">
-                    <span>🔍</span>
-                    <span>Join Investigation</span>
+                    <Search className="w-5 h-5 text-amber-400 shrink-0" />
+                    <span>Join with Code</span>
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                    Got an invite code or link from your host? Type or paste it below to enter the lobby.
+                    Got a 6-letter room code or link from a friend? Type or paste it below to enter the lobby.
                   </p>
 
                   <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-2 space-y-2">
@@ -374,12 +381,12 @@ export const Home: React.FC<HomeProps> = ({
                   {isJoining ? (
                     <>
                       <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      <span>Entering Scene...</span>
+                      <span>Entering Room...</span>
                     </>
                   ) : (
                     <>
                       <LogIn className="w-4 h-4 text-white" />
-                      <span>Enter Crime Scene</span>
+                      <span>Enter Room</span>
                     </>
                   )}
                 </button>
@@ -388,7 +395,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* ======================================================== */}
-          {/* PROP 3: 🪪 LEATHER DETECTIVE BADGE WALLET (YOUR ID)       */}
+          {/* PROP 3: LEATHER DETECTIVE BADGE WALLET (YOUR ID)         */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
             {/* Ambient Bloom Flare */}
@@ -404,10 +411,10 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="flex items-center justify-between mb-4 border-b border-sky-950/80 pb-3">
                   <div className="flex items-center gap-2 text-sky-300 font-mono text-[10px] uppercase font-bold tracking-wider">
                     <Shield className="w-4 h-4 text-sky-400" />
-                    <span>METROPOLITAN BADGE</span>
+                    <span>DETECTIVE BADGE</span>
                   </div>
                   <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/80 text-sky-300 border border-sky-600/40">
-                    CREDENTIALS
+                    PROFILE
                   </span>
                 </div>
 
@@ -458,14 +465,14 @@ export const Home: React.FC<HomeProps> = ({
                   {/* Inline Detective Name Input */}
                   <form onSubmit={handleSaveBadge} id="badge-card-form" className="w-full pt-1 space-y-1 text-left">
                     <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                      Agent Name / Alias
+                      Your Nickname
                     </label>
                     <input
                       type="text"
                       maxLength={18}
                       value={nicknameInput}
                       onChange={(e) => setNicknameInput(e.target.value)}
-                      placeholder="Enter name"
+                      placeholder="e.g. Sherlock"
                       className="w-full py-2 px-3 bg-black/80 border border-sky-600/50 focus:border-sky-400 rounded-xl text-sm font-semibold text-white outline-none"
                     />
                   </form>
@@ -487,7 +494,7 @@ export const Home: React.FC<HomeProps> = ({
                   ) : (
                     <>
                       <Shield className="w-4 h-4 text-sky-400" />
-                      <span>Save Detective Badge</span>
+                      <span>Save Badge</span>
                     </>
                   )}
                 </button>
@@ -522,9 +529,9 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-red-300 transition-colors font-serif">
-                  Unsolved Cases
+                  Case Stories
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">3 crime scene stories</div>
+                <div className="text-[10px] text-slate-400 font-mono">3 mystery themes</div>
               </div>
             </div>
 
@@ -541,9 +548,9 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors font-serif">
-                  Field Manual
+                  How to Play
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">4-step gameplay guide</div>
+                <div className="text-[10px] text-slate-400 font-mono">Simple 4-step rules</div>
               </div>
             </div>
 
@@ -560,9 +567,9 @@ export const Home: React.FC<HomeProps> = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-white group-hover:text-yellow-300 transition-colors font-serif">
-                  Detective Honor Roll
+                  Top Detectives
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">Top forensic solvers</div>
+                <div className="text-[10px] text-slate-400 font-mono">Best case solvers</div>
               </div>
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
   Link,
   ChevronDown,
   Users,
+  Search,
 } from 'lucide-react';
 import { Room } from '../types/room';
 import { Player } from '../types/player';
@@ -529,7 +530,9 @@ export const Lobby: React.FC<LobbyProps> = ({
                 The host is setting up the game. When the game starts, a random player will choose which mystery story to play!
               </p>
               <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 flex items-center gap-3">
-                <span className="text-xl">🕵️‍♂️</span>
+                <div className="w-9 h-9 rounded-xl bg-amber-950/70 border border-amber-600/50 flex items-center justify-center text-amber-400 shrink-0">
+                  <Search className="w-5 h-5" />
+                </div>
                 <div>
                   <div className="text-xs font-bold text-white">Active Theme: {selectedCase || 'All Mysteries'}</div>
                   <div className="text-[10px] text-slate-400">Draw Time: {drawingTime}s • {rounds} round(s)</div>
