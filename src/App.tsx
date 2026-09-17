@@ -194,7 +194,8 @@ export const App: React.FC = () => {
             lastSeenAt: new Date().toISOString(),
           }));
           setPlayers(mappedPlayers);
-          const me = mappedPlayers.find((p) => p.id === currentUser.id || p.id === payload.playerId);
+          const myId = backend.getPlayerId() || currentUser.id || payload?.playerId;
+          const me = mappedPlayers.find((p) => p.id === myId || (p.id === payload?.playerId) || (p.nickname === currentUser.nickname && !p.isHost));
           if (me) setCurrentUser(me);
         }
       }
@@ -352,6 +353,11 @@ export const App: React.FC = () => {
     // Active real-time sync (checks local cache + Supabase room_players)
     const interval = setInterval(async () => {
       if (!currentRoom) return;
+
+      // If connected to authoritative server, do not overwrite live server players with stale local cache
+      if (BackendClient.getInstance().getPlayerId()) {
+        return;
+      }
 
       // 1. Check local storage cache for multi-tab updates
       const local = RoomService.getLocalRoom(currentRoom.id);
@@ -593,6 +599,7 @@ export const App: React.FC = () => {
 
   const handleLeaveRoom = () => {
     try {
+      BackendClient.getInstance().disconnect();
       sessionStorage.removeItem(ACTIVE_ROOM_ID_KEY);
       sessionStorage.removeItem(ACTIVE_VIEW_KEY);
       window.history.replaceState(null, '', window.location.pathname);

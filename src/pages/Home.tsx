@@ -39,22 +39,33 @@ export const Home: React.FC<HomeProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [activeNav, setActiveNav] = useState('Home');
 
+  const extractCode = (input: string): string => {
+    const trimmed = input.trim();
+    if (trimmed.includes('join=') || trimmed.includes('room=')) {
+      const match = trimmed.match(/[?&](?:join|room)=([A-Za-z0-9]+)/);
+      if (match && match[1]) return match[1].toUpperCase();
+    }
+    const cleaned = trimmed.replace(/^https?:\/\/[^\/]+\/?\??/, '');
+    return cleaned.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
+  };
+
   const handleJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomCodeInput.trim()) {
+    const code = extractCode(roomCodeInput);
+    if (!code) {
       setErrorMsg('Please enter a valid room code.');
       return;
     }
     setErrorMsg('');
     setIsJoinModalOpen(false);
-    onJoinRoom(roomCodeInput.trim().toUpperCase());
+    onJoinRoom(code);
   };
 
   const handlePasteCode = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        const clean = text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+        const clean = extractCode(text);
         if (clean) setRoomCodeInput(clean);
       }
     } catch {
@@ -390,9 +401,16 @@ export const Home: React.FC<HomeProps> = ({
               <div className="relative flex items-center">
                 <input
                   type="text"
-                  maxLength={6}
+                  maxLength={100}
                   value={roomCodeInput}
-                  onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.includes('http') || val.includes('join=') || val.includes('room=')) {
+                      setRoomCodeInput(extractCode(val));
+                    } else {
+                      setRoomCodeInput(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
+                    }
+                  }}
                   placeholder="e.g. X7K9P"
                   className="w-full py-3 pl-4 pr-16 bg-slate-950 border border-slate-700 rounded-xl text-center text-xl font-mono tracking-widest uppercase text-amber-400 focus:border-red-500 outline-none"
                   autoFocus

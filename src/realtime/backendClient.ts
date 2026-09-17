@@ -8,9 +8,28 @@ export interface BackendConfig {
   wsUrl: string;
 }
 
+const env =
+  typeof import.meta !== 'undefined' && (import.meta as any).env
+    ? (import.meta as any).env
+    : typeof process !== 'undefined'
+    ? (process.env as Record<string, string | undefined>)
+    : {};
+
 const DEFAULT_CONFIG: BackendConfig = {
-  httpUrl: typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? `https://${window.location.hostname}:3001` : `http://${window.location.hostname}:3001`) : 'http://localhost:3001',
-  wsUrl: typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? `wss://${window.location.hostname}:3001/ws` : `ws://${window.location.hostname}:3001/ws`) : 'ws://localhost:3001/ws',
+  httpUrl:
+    env.VITE_BACKEND_URL ||
+    (typeof window !== 'undefined'
+      ? window.location.protocol === 'https:'
+        ? `https://${window.location.hostname}:3001`
+        : `http://${window.location.hostname}:3001`
+      : 'http://localhost:3001'),
+  wsUrl:
+    env.VITE_WS_URL ||
+    (typeof window !== 'undefined'
+      ? window.location.protocol === 'https:'
+        ? `wss://${window.location.hostname}:3001/ws`
+        : `ws://${window.location.hostname}:3001/ws`
+      : 'ws://localhost:3001/ws'),
 };
 
 export type BackendEventHandler = (payload: any) => void;
@@ -38,19 +57,52 @@ export class BackendClient {
     return this.isConnecting;
   }
 
+  public getPlayerId(): string | null {
+    return this.playerId;
+  }
+
+  public getRoomId(): string | null {
+    return this.roomId;
+  }
+
   public setTokens(token: string, playerId: string, roomId: string, reconnectToken?: string): void {
+    const tokenChanged = this.token !== token;
     this.token = token;
     this.playerId = playerId;
     this.roomId = roomId;
     if (reconnectToken) this.reconnectToken = reconnectToken;
+
+    // If socket is already open but token changed to a new session, close old socket so connect() binds new session
+    if (tokenChanged && this.ws) {
+      this.disconnect();
+    }
+  }
+
+  public disconnect(): void {
+    this.stopHeartbeat();
+    if (this.ws) {
+      try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.close();
+      } catch {
+        // ignore
+      }
+      this.ws = null;
+    }
+    this.isConnecting = false;
   }
 
   /**
    * Connects to authoritative WebSocket server
    */
-  public async connect(): Promise<void> {
-    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+  public async connect(forceReconnect: boolean = false): Promise<void> {
+    if (!forceReconnect && this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
+    }
+
+    if (this.ws) {
+      this.disconnect();
     }
 
     this.isConnecting = true;
