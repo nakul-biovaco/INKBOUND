@@ -20,15 +20,19 @@ export class GameStateMachine {
   }
 
   /**
-   * Asserts and executes a state transition. Throws if illegal.
+   * Asserts and executes a state transition. Never crashes process on race conditions.
    */
   public transition(nextStatus: GameStatus): GameStatus {
+    // 1. Idempotent check: if already in target state, gracefully return
+    if (this.currentStatus === nextStatus) {
+      return this.currentStatus;
+    }
+
+    // 2. Transition validation
     if (!this.canTransitionTo(nextStatus)) {
       const allowed = VALID_TRANSITIONS[this.currentStatus] || [];
       const err = new Error(
-        `Invalid state transition: Cannot transition from ${this.currentStatus} to ${nextStatus}. Allowed: [${allowed.join(
-          ', '
-        )}]`
+        `Invalid state transition: Cannot transition from ${this.currentStatus} to ${nextStatus}. Allowed: [${allowed.join(', ')}]`
       );
       (err as any).code = ErrorCode.INVALID_GAME_STATE;
       logger.warn('State transition rejected', { from: this.currentStatus, to: nextStatus });

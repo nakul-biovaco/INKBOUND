@@ -124,7 +124,7 @@ export class GuessEngine {
       return {
         verdict: 'CLOSE',
         confidence: 0.65,
-        feedbackMessage: `You found 1 clue word ("${word}")! Add 1 more word!`,
+        feedbackMessage: `Almost! You are close, found 1 clue word ("${word}")! Keep guessing!`,
       };
     }
 

@@ -13,6 +13,7 @@ import {
   SubmitTheorySchema,
   WSClientEvent,
   WSServerEvent,
+  GameStatus,
 } from '../types/index.js';
 import { AuthService, AuthSession } from '../auth/AuthService.js';
 import { RoomManager } from '../rooms/RoomManager.js';
@@ -415,19 +416,44 @@ export class WSServer {
         const engine = GameEngine.getEngine(room.roomId);
         if (engine) {
           engine.handlePlayerReconnect(player);
-          const publicState = Serializer.serializePublicState(engine.getSession(), room);
-          const strokes = await DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex);
+          const session = engine.getSession();
+          const publicState = Serializer.serializePublicState(session, room);
+          const strokes = await DrawingManager.getTurnStrokes(room.roomId, session.turnIndex);
 
           // Full state restoration payload
           this.sendToSocket(ws, WSServerEvent.PLAYER_RECONNECTED, {
             gameState: publicState,
             strokeHistory: strokes,
-            isDrawer: engine.getSession().currentDrawerId === player.playerId,
+            isDrawer: session.currentDrawerId === player.playerId,
             drawerPrivateState:
-              engine.getSession().currentDrawerId === player.playerId
-                ? Serializer.serializePrivateDrawerState(engine.getSession())
+              session.currentDrawerId === player.playerId
+                ? Serializer.serializePrivateDrawerState(session)
                 : null,
           });
+
+          // If reconnected in PROMPT_SELECTION and player is drawer, immediately restore prompt options!
+          if (
+            session.state === GameStatus.PROMPT_SELECTION &&
+            session.currentDrawerId === player.playerId &&
+            session.activePromptOptions
+          ) {
+            this.sendToSocket(ws, WSServerEvent.PROMPT_OPTIONS, {
+              options: session.activePromptOptions,
+              timeLimitSeconds: 30,
+            });
+          }
+
+          // If reconnected in STORY_SELECTION and player is chooser, immediately restore story options!
+          if (
+            session.state === GameStatus.STORY_SELECTION &&
+            session.storyChooserPlayerId === player.playerId &&
+            session.offeredStoryOptions
+          ) {
+            this.sendToSocket(ws, WSServerEvent.STORY_OPTIONS, {
+              options: session.offeredStoryOptions,
+              timeLimitSeconds: 20,
+            });
+          }
         } else {
           this.sendToSocket(ws, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
         }

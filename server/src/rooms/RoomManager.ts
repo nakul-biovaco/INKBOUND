@@ -93,8 +93,22 @@ export class RoomManager {
     displayName: string,
     avatar: string = 'detective-2'
   ): Promise<{ room: Room; player: Player; token: string }> {
-    const normalizedCode = joinCode.trim().toUpperCase();
-    const roomId = this.codeToRoomId.get(normalizedCode);
+    const cleanCode = joinCode.trim();
+    const normalizedCode = cleanCode.toUpperCase();
+    let roomId = this.codeToRoomId.get(normalizedCode);
+
+    if (!roomId) {
+      if (this.rooms.has(cleanCode)) {
+        roomId = cleanCode;
+      } else {
+        for (const r of this.rooms.values()) {
+          if (r.joinCode.toUpperCase() === normalizedCode || r.roomId === cleanCode) {
+            roomId = r.roomId;
+            break;
+          }
+        }
+      }
+    }
 
     if (!roomId) {
       const err = new Error(`Room with code ${normalizedCode} not found`);
@@ -240,11 +254,16 @@ export class RoomManager {
     const wasHost = removedPlayer.isHost;
 
     if (room.players.length === 0) {
-      // Room empty, tear down
-      this.rooms.delete(roomId);
-      this.codeToRoomId.delete(room.joinCode);
-      logger.info('Empty room removed', { roomId });
-      return { room: null, wasHost };
+      // Don't delete immediately! Give a 5-minute grace period so refreshing/reconnecting players can re-enter
+      setTimeout(() => {
+        const checkRoom = this.rooms.get(roomId);
+        if (checkRoom && checkRoom.players.length === 0) {
+          this.rooms.delete(roomId);
+          this.codeToRoomId.delete(checkRoom.joinCode);
+          logger.info('Empty room removed after grace period', { roomId });
+        }
+      }, 5 * 60 * 1000).unref();
+      return { room, wasHost };
     }
 
     if (wasHost && room.players.length > 0) {
@@ -279,12 +298,28 @@ export class RoomManager {
   }
 
   public static getRoom(roomId: string): Room | null {
-    return this.rooms.get(roomId) || null;
+    if (!roomId) return null;
+    const clean = roomId.trim();
+    if (this.rooms.has(clean)) {
+      return this.rooms.get(clean) || null;
+    }
+    return this.getRoomByCode(clean);
   }
 
   public static getRoomByCode(joinCode: string): Room | null {
-    const roomId = this.codeToRoomId.get(joinCode.trim().toUpperCase());
-    return roomId ? this.rooms.get(roomId) || null : null;
+    if (!joinCode) return null;
+    const clean = joinCode.trim();
+    const normalized = clean.toUpperCase();
+    const roomId = this.codeToRoomId.get(normalized);
+    if (roomId && this.rooms.has(roomId)) {
+      return this.rooms.get(roomId) || null;
+    }
+    for (const r of this.rooms.values()) {
+      if (r.joinCode.toUpperCase() === normalized || r.roomId === clean) {
+        return r;
+      }
+    }
+    return null;
   }
 
   public static getPlayer(roomId: string, playerId: string): Player | null {

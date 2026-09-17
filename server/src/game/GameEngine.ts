@@ -41,6 +41,7 @@ export class GameEngine {
   private turnManager: TurnManager;
   private storyEngine: StoryEngine | null = null;
   private broadcastCallback: GameEngineCallback | null = null;
+  private drawerDisconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor(room: Room, story: StoryDefinition | null, broadcastCallback: GameEngineCallback) {
     this.roomId = room.roomId;
@@ -326,9 +327,10 @@ export class GameEngine {
     AuthService.assertDrawer(playerId, this.session.currentDrawerId);
 
     if (this.session.state !== GameStatus.PROMPT_SELECTION) {
-      const err = new Error('Not currently in prompt selection phase');
-      (err as any).code = ErrorCode.INVALID_GAME_STATE;
-      throw err;
+      logger.warn('selectPrompt received outside PROMPT_SELECTION phase, safely ignored', {
+        state: this.session.state,
+      });
+      return;
     }
 
     if (!this.session.activePromptOptions || !this.session.selectedEvent) {
@@ -587,6 +589,23 @@ export class GameEngine {
   }
 
   private advanceToNextTurn(): void {
+    if (
+      this.session.state === GameStatus.NEXT_TURN ||
+      this.session.state === GameStatus.FINAL_INVESTIGATION ||
+      this.session.state === GameStatus.ENDING ||
+      this.session.state === GameStatus.GAME_COMPLETE
+    ) {
+      logger.warn('advanceToNextTurn ignored because game is already in next turn or finished', {
+        state: this.session.state,
+      });
+      return;
+    }
+
+    if (this.drawerDisconnectTimeout) {
+      clearTimeout(this.drawerDisconnectTimeout);
+      this.drawerDisconnectTimeout = null;
+    }
+
     this.emit('TURN_ENDED', {
       completedTurnIndex: this.session.turnIndex,
       drawerPlayerId: this.session.currentDrawerId,
@@ -706,19 +725,31 @@ export class GameEngine {
       }
     }
 
-    if (this.session.currentDrawerId === playerId && this.stateMachine.isDrawingActive()) {
-      logger.warn('Active drawer disconnected during drawing', { playerId });
+    if (
+      this.session.currentDrawerId === playerId &&
+      (this.stateMachine.isDrawingActive() || this.session.state === GameStatus.PROMPT_SELECTION)
+    ) {
+      logger.warn('Active drawer disconnected during drawing/prompt selection', { playerId });
       this.timerManager.pause();
-      this.emit('TIMER_SYNC', { isPaused: true, reason: 'DRAWER_DISCONNECTED', graceSeconds: 30 });
+      this.emit('TIMER_SYNC', { isPaused: true, reason: 'DRAWER_DISCONNECTED', graceSeconds: 45 });
 
-      setTimeout(() => {
+      if (this.drawerDisconnectTimeout) {
+        clearTimeout(this.drawerDisconnectTimeout);
+      }
+
+      this.drawerDisconnectTimeout = setTimeout(() => {
+        this.drawerDisconnectTimeout = null;
         const room = RoomManager.getRoom(this.roomId);
         const player = room?.players.find((p) => p.playerId === playerId);
-        if (player && !player.isConnected) {
-          logger.info('Drawer did not reconnect; skipping turn');
+        if (
+          player &&
+          !player.isConnected &&
+          (this.stateMachine.isDrawingActive() || this.session.state === GameStatus.PROMPT_SELECTION)
+        ) {
+          logger.info('Drawer did not reconnect; skipping turn safely');
           this.advanceToNextTurn();
         }
-      }, 30000);
+      }, 45000);
     }
   }
 
@@ -726,11 +757,42 @@ export class GameEngine {
     RoomManager.markPlayerConnection(this.roomId, player.playerId, true);
     this.emit('PLAYER_RECONNECTED', { playerId: player.playerId, displayName: player.displayName });
 
+    if (this.drawerDisconnectTimeout) {
+      clearTimeout(this.drawerDisconnectTimeout);
+      this.drawerDisconnectTimeout = null;
+    }
+
     if (this.session.currentDrawerId === player.playerId) {
       const res = this.timerManager.resume();
       if (res) {
         this.emit('TIMER_SYNC', { isPaused: false, roundEndsAt: res.endsAt });
       }
+
+      if (this.session.state === GameStatus.PROMPT_SELECTION && this.session.activePromptOptions) {
+        this.emit(
+          'PROMPT_OPTIONS',
+          {
+            options: this.session.activePromptOptions,
+            timeLimitSeconds: 30,
+          },
+          player.playerId
+        );
+      }
+    }
+
+    if (
+      this.session.state === GameStatus.STORY_SELECTION &&
+      this.session.storyChooserPlayerId === player.playerId &&
+      this.session.offeredStoryOptions
+    ) {
+      this.emit(
+        'STORY_OPTIONS',
+        {
+          options: this.session.offeredStoryOptions,
+          timeLimitSeconds: 20,
+        },
+        player.playerId
+      );
     }
   }
 

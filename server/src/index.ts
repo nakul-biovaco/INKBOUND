@@ -34,6 +34,20 @@ async function bootstrap() {
   logger.info(`INKBOUND Real-Time Game Server running at http://${config.host}:${config.port}`);
   logger.info(`WebSocket Gateway available at ws://${config.host}:${config.port}/ws`);
 
+  // Process safety guards - keep server and active rooms alive
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception safely caught by server watchdog:', {
+      message: err?.message,
+      stack: err?.stack,
+    });
+  });
+
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error('Unhandled Rejection safely caught by server watchdog:', {
+      reason: reason?.message || reason,
+    });
+  });
+
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
