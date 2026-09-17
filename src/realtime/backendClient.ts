@@ -55,6 +55,8 @@ const DEFAULT_CONFIG: BackendConfig = {
   wsUrl: getBaseWsUrl(),
 };
 
+const BACKEND_SESSION_KEY = 'inkbound_backend_session';
+
 export type BackendEventHandler = (payload: any) => void;
 
 export class BackendClient {
@@ -68,6 +70,24 @@ export class BackendClient {
   private reconnectAttempts = 0;
   private isConnecting = false;
   private pingInterval: any = null;
+  private shouldSendReconnectHandshake = false;
+
+  private constructor() {
+    try {
+      const saved = sessionStorage.getItem(BACKEND_SESSION_KEY);
+      if (!saved) return;
+      const session = JSON.parse(saved);
+      if (session.token && session.playerId && session.roomId && session.reconnectToken) {
+        this.token = session.token;
+        this.playerId = session.playerId;
+        this.roomId = session.roomId;
+        this.reconnectToken = session.reconnectToken;
+        this.shouldSendReconnectHandshake = true;
+      }
+    } catch {
+      // A malformed browser session must never prevent a new game from starting.
+    }
+  }
 
   public static getInstance(): BackendClient {
     if (!this.instance) {
@@ -94,6 +114,12 @@ export class BackendClient {
     this.playerId = playerId;
     this.roomId = roomId;
     if (reconnectToken) this.reconnectToken = reconnectToken;
+    this.shouldSendReconnectHandshake = false;
+    try {
+      sessionStorage.setItem(BACKEND_SESSION_KEY, JSON.stringify({ token, playerId, roomId, reconnectToken: this.reconnectToken }));
+    } catch {
+      // Session persistence is an enhancement; the active socket still works without it.
+    }
 
     // If socket is already open but token changed to a new session, close old socket so connect() binds new session
     if (tokenChanged && this.ws) {
@@ -149,13 +175,15 @@ export class BackendClient {
           this.startHeartbeat();
           this.emitLocal('CONNECTED', {});
 
-          // If reconnect token present, send reconnect handshake
-          if (this.reconnectToken && this.roomId && this.playerId) {
+          // New create/join requests are authenticated by the URL token. Only an actual
+          // reconnect needs the extra handshake to restore the live game snapshot.
+          if (this.shouldSendReconnectHandshake && this.reconnectToken && this.roomId && this.playerId) {
             this.send('RECONNECT', {
               roomId: this.roomId,
               playerId: this.playerId,
               reconnectToken: this.reconnectToken,
             });
+            this.shouldSendReconnectHandshake = false;
           }
 
           resolve();
@@ -176,6 +204,7 @@ export class BackendClient {
           clearTimeout(timer);
           this.isConnecting = false;
           this.stopHeartbeat();
+          this.shouldSendReconnectHandshake = Boolean(this.reconnectToken && this.roomId && this.playerId);
           this.emitLocal('DISCONNECTED', {});
           this.scheduleReconnect();
         };

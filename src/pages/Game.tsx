@@ -189,8 +189,40 @@ export const Game: React.FC<GameProps> = ({
       setPlayerStatusNotice(`${payload?.displayName || 'A detective'} rejoined the investigation.`);
       setGameState((prev) => ({
         ...prev,
-        players: prev.players.map((p) => p.id === payload?.playerId ? { ...p, isOnline: true } : p),
+        ...(payload?.gameState
+          ? {
+              status:
+                payload.gameState.state === 'DRAWING' || payload.gameState.state === 'PROMPT_SELECTION'
+                  ? 'PLAYER_DRAWING'
+                  : payload.gameState.state === 'FINAL_INVESTIGATION'
+                  ? 'FINAL_THEORY'
+                  : prev.status,
+              currentTurnPlayerId: payload.gameState.currentDrawerId,
+              turnIndex: payload.gameState.turnIndex,
+              turnStartedAt: payload.gameState.roundStartedAt ? new Date(payload.gameState.roundStartedAt).toISOString() : null,
+              turnEndsAt: payload.gameState.roundEndsAt ? new Date(payload.gameState.roundEndsAt).toISOString() : null,
+            }
+          : {}),
+        players: payload?.gameState
+          ? payload.gameState.players.map((p: any) => ({
+              id: p.playerId,
+              nickname: p.displayName,
+              avatar: p.avatar,
+              isHost: p.isHost,
+              isReady: p.isReady,
+              score: p.score || 0,
+              isOnline: p.isConnected !== false,
+              joinedAt: new Date(p.joinedAt || Date.now()).toISOString(),
+              lastSeenAt: new Date().toISOString(),
+            }))
+          : prev.players.map((p) => p.id === payload?.playerId ? { ...p, isOnline: true } : p),
       }));
+      if (payload?.drawerPrivateState?.selectedObjective) {
+        setSecretDrawObjective(payload.drawerPrivateState.selectedObjective);
+      }
+      if (payload?.drawerPrivateState?.options) {
+        setDrawerPromptOptions(payload.drawerPrivateState.options);
+      }
     });
 
     const unsubFinalInvestigation = backend.on('FINAL_INVESTIGATION', () => {

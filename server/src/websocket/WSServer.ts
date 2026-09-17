@@ -359,14 +359,18 @@ export class WSServer {
           throw err;
         }
 
-        this.associateSocket(ws, {
-          playerId: player.playerId,
-          displayName: player.displayName,
-          roomId: room.roomId,
-          isHost: player.isHost,
-          reconnectToken: player.reconnectToken,
-          issuedAt: Date.now(),
-        });
+        // A token-authenticated socket is already associated. Re-associating it would
+        // broadcast a duplicate join event to the room on every reconnect.
+        if (ws.playerId !== player.playerId || ws.roomId !== room.roomId) {
+          this.associateSocket(ws, {
+            playerId: player.playerId,
+            displayName: player.displayName,
+            roomId: room.roomId,
+            isHost: player.isHost,
+            reconnectToken: player.reconnectToken,
+            issuedAt: Date.now(),
+          });
+        }
 
         const engine = GameEngine.getEngine(room.roomId);
         if (engine) {
