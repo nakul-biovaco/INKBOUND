@@ -1,0 +1,450 @@
+import { IncomingMessage, Server } from 'http';
+import { WebSocket, WebSocketServer } from 'ws';
+import {
+  ChooseStorySchema,
+  CreateRoomSchema,
+  DrawStrokeSchema,
+  ErrorCode,
+  JoinRoomSchema,
+  Player,
+  ReconnectSchema,
+  SelectPromptSchema,
+  SubmitGuessSchema,
+  SubmitTheorySchema,
+  WSClientEvent,
+  WSServerEvent,
+} from '../types/index.js';
+import { AuthService, AuthSession } from '../auth/AuthService.js';
+import { RoomManager } from '../rooms/RoomManager.js';
+import { GameEngine } from '../game/GameEngine.js';
+import { StoryLoader } from '../story/StoryLoader.js';
+import { Serializer } from './Serializer.js';
+import { DrawingManager } from '../drawing/DrawingManager.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('WSServer');
+
+interface ExtendedSocket extends WebSocket {
+  isAlive: boolean;
+  session?: AuthSession;
+  roomId?: string;
+  playerId?: string;
+}
+
+export class WSServer {
+  private wss: WebSocketServer;
+  private roomSockets: Map<string, Set<ExtendedSocket>> = new Map();
+  private playerSockets: Map<string, ExtendedSocket> = new Map();
+
+  constructor(server: Server) {
+    this.wss = new WebSocketServer({ server, path: '/ws' });
+    this.setupHeartbeat();
+    this.setupEvents();
+    logger.info('WebSocket Server initialized on path /ws');
+  }
+
+  private setupHeartbeat(): void {
+    const interval = setInterval(() => {
+      this.wss.clients.forEach((ws) => {
+        const extWs = ws as ExtendedSocket;
+        if (!extWs.isAlive) {
+          logger.info('Terminating inactive socket', { playerId: extWs.playerId });
+          return extWs.terminate();
+        }
+        extWs.isAlive = false;
+        extWs.ping();
+      });
+    }, 30000);
+
+    this.wss.on('close', () => clearInterval(interval));
+  }
+
+  private setupEvents(): void {
+    this.wss.on('connection', (ws: ExtendedSocket, req: IncomingMessage) => {
+      ws.isAlive = true;
+
+      ws.on('pong', () => {
+        ws.isAlive = true;
+      });
+
+      // Query-string token authentication support: ws://host/ws?token=...
+      const url = new URL(req.url || '', `http://${req.headers.host}`);
+      const token = url.searchParams.get('token');
+      if (token) {
+        const session = AuthService.verifySessionToken(token);
+        if (session) {
+          this.associateSocket(ws, session);
+        }
+      }
+
+      ws.on('message', async (data: string) => {
+        try {
+          const raw = JSON.parse(data.toString());
+          await this.handleClientMessage(ws, raw);
+        } catch (err: any) {
+          logger.error('Error handling WS message', err);
+          this.sendToSocket(ws, WSServerEvent.ERROR, {
+            code: err.code || ErrorCode.INVALID_PAYLOAD,
+            message: err.message || 'Invalid WebSocket message format',
+          });
+        }
+      });
+
+      ws.on('close', () => {
+        this.handleSocketDisconnect(ws);
+      });
+    });
+  }
+
+  private associateSocket(ws: ExtendedSocket, session: AuthSession, skipBroadcast: boolean = false): void {
+    ws.session = session;
+    ws.roomId = session.roomId;
+    ws.playerId = session.playerId;
+
+    this.playerSockets.set(session.playerId, ws);
+
+    let roomSet = this.roomSockets.get(session.roomId);
+    if (!roomSet) {
+      roomSet = new Set();
+      this.roomSockets.set(session.roomId, roomSet);
+    }
+    roomSet.add(ws);
+
+    logger.info('Socket associated with player', { playerId: session.playerId, roomId: session.roomId });
+
+    if (!skipBroadcast) {
+      const room = RoomManager.getRoom(session.roomId);
+      if (room) {
+        RoomManager.markPlayerConnection(session.roomId, session.playerId, true);
+        const player = room.players.find((p) => p.playerId === session.playerId);
+
+        // Send ROOM_STATE to the connecting player
+        this.sendToSocket(ws, WSServerEvent.ROOM_STATE, {
+          room: Serializer.serializeRoom(room),
+          playerId: session.playerId,
+        });
+
+        // Broadcast to other players in the room that this player joined / is online
+        if (player) {
+          this.broadcastToRoom(
+            room.roomId,
+            WSServerEvent.PLAYER_JOINED,
+            {
+              player: {
+                playerId: player.playerId,
+                displayName: player.displayName,
+                avatar: player.avatar,
+                score: player.score,
+                isHost: player.isHost,
+                isReady: player.isReady,
+              },
+            },
+            ws
+          );
+        }
+
+        // Also broadcast full updated ROOM_STATE to everyone else in the room
+        this.broadcastToRoom(
+          room.roomId,
+          WSServerEvent.ROOM_STATE,
+          {
+            room: Serializer.serializeRoom(room),
+          },
+          ws
+        );
+      }
+    }
+  }
+
+  private async handleClientMessage(ws: ExtendedSocket, message: { event: string; payload: any }): Promise<void> {
+    const { event, payload } = message;
+
+    switch (event) {
+      // ==========================================
+      // ROOM ACTIONS
+      // ==========================================
+      case WSClientEvent.CREATE_ROOM: {
+        const valid = CreateRoomSchema.parse(payload);
+        const { room, hostPlayer, token } = await RoomManager.createRoom(
+          valid.displayName,
+          valid.avatar,
+          valid.settings
+        );
+
+        this.associateSocket(
+          ws,
+          {
+            playerId: hostPlayer.playerId,
+            displayName: hostPlayer.displayName,
+            roomId: room.roomId,
+            isHost: true,
+            reconnectToken: hostPlayer.reconnectToken,
+            issuedAt: Date.now(),
+          },
+          true
+        );
+
+        this.sendToSocket(ws, WSServerEvent.ROOM_STATE, {
+          room: Serializer.serializeRoom(room),
+          token,
+          playerId: hostPlayer.playerId,
+        });
+        break;
+      }
+
+      case WSClientEvent.JOIN_ROOM: {
+        const valid = JoinRoomSchema.parse(payload);
+        const { room, player, token } = await RoomManager.joinRoom(valid.joinCode, valid.displayName, valid.avatar);
+
+        this.associateSocket(
+          ws,
+          {
+            playerId: player.playerId,
+            displayName: player.displayName,
+            roomId: room.roomId,
+            isHost: false,
+            reconnectToken: player.reconnectToken,
+            issuedAt: Date.now(),
+          },
+          true
+        );
+
+        // Broadcast to existing room players
+        this.broadcastToRoom(room.roomId, WSServerEvent.PLAYER_JOINED, {
+          player: {
+            playerId: player.playerId,
+            displayName: player.displayName,
+            avatar: player.avatar,
+            score: player.score,
+            isHost: player.isHost,
+            isReady: player.isReady,
+          },
+        });
+
+        // Send full room state to joiner
+        this.sendToSocket(ws, WSServerEvent.ROOM_STATE, {
+          room: Serializer.serializeRoom(room),
+          token,
+          playerId: player.playerId,
+        });
+        break;
+      }
+
+      case WSClientEvent.READY: {
+        this.assertSocketAuthenticated(ws);
+        const isReady = Boolean(payload?.isReady);
+        const room = RoomManager.setPlayerReady(ws.roomId!, ws.playerId!, isReady);
+        this.broadcastToRoom(ws.roomId!, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
+        break;
+      }
+
+      case (WSClientEvent as any).UPDATE_SETTINGS || 'UPDATE_SETTINGS': {
+        this.assertSocketAuthenticated(ws);
+        const s = payload?.settings || {};
+        const room = RoomManager.updateRoomSettings(ws.roomId!, ws.playerId!, {
+          storyId: s.selectedCaseId || s.storyId,
+          drawingTimeLimit: s.turnDuration || s.drawingTimeLimit,
+          roundsPerGame: s.rounds || s.roundsPerGame,
+          maxPlayers: s.maxPlayers,
+        });
+        this.broadcastToRoom(room.roomId, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
+        break;
+      }
+
+      case WSClientEvent.START_GAME: {
+        this.assertSocketAuthenticated(ws);
+        const room = RoomManager.getRoomOrThrow(ws.roomId!);
+        const storyId = payload?.storyId || room.settings.storyId || 'all';
+        if (storyId && storyId !== 'all') {
+          room.settings.storyId = storyId;
+        }
+
+        let engine = GameEngine.getEngine(room.roomId);
+        if (!engine) {
+          engine = new GameEngine(room, null, (evt, data, recipientId) => {
+            if (recipientId) {
+              this.sendToPlayer(recipientId, evt, data);
+            } else {
+              this.broadcastToRoom(room.roomId, evt, data);
+            }
+          });
+        }
+
+        await engine.startGame(ws.playerId!);
+        break;
+      }
+
+      // ==========================================
+      // STORY SELECTION
+      // ==========================================
+      case WSClientEvent.CHOOSE_STORY: {
+        this.assertSocketAuthenticated(ws);
+        const valid = ChooseStorySchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        engine.chooseStory(ws.playerId!, valid.storyId);
+        break;
+      }
+
+      // ==========================================
+      // GAMEPLAY ACTIONS
+      // ==========================================
+      case WSClientEvent.SELECT_PROMPT: {
+        this.assertSocketAuthenticated(ws);
+        const valid = SelectPromptSchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        engine.selectPrompt(ws.playerId!, valid.optionIndex);
+        break;
+      }
+
+      case WSClientEvent.DRAW_STROKE: {
+        this.assertSocketAuthenticated(ws);
+        const valid = DrawStrokeSchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        await engine.handleStroke(ws.playerId!, valid.chunk as any);
+        break;
+      }
+
+      case WSClientEvent.DRAW_CLEAR: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (engine) await engine.handleClear(ws.playerId!);
+        break;
+      }
+
+      case WSClientEvent.SUBMIT_GUESS: {
+        this.assertSocketAuthenticated(ws);
+        const valid = SubmitGuessSchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        await engine.handleGuess(ws.playerId!, valid.guess);
+        break;
+      }
+
+      case WSClientEvent.SUBMIT_THEORY: {
+        this.assertSocketAuthenticated(ws);
+        const valid = SubmitTheorySchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        engine.submitFinalTheory(ws.playerId!, valid.answer, valid.confidence);
+        break;
+      }
+
+      // ==========================================
+      // RECONNECTION & STATE RESTORATION
+      // ==========================================
+      case WSClientEvent.RECONNECT: {
+        const valid = ReconnectSchema.parse(payload);
+        const room = RoomManager.getRoom(valid.roomId);
+        if (!room) {
+          const err = new Error('Room not found for reconnection');
+          (err as any).code = ErrorCode.ROOM_NOT_FOUND;
+          throw err;
+        }
+
+        const player = room.players.find((p) => p.playerId === valid.playerId);
+        if (!player || player.reconnectToken !== valid.reconnectToken) {
+          const err = new Error('Invalid reconnection credentials');
+          (err as any).code = ErrorCode.NOT_AUTHORIZED;
+          throw err;
+        }
+
+        this.associateSocket(ws, {
+          playerId: player.playerId,
+          displayName: player.displayName,
+          roomId: room.roomId,
+          isHost: player.isHost,
+          reconnectToken: player.reconnectToken,
+          issuedAt: Date.now(),
+        });
+
+        const engine = GameEngine.getEngine(room.roomId);
+        if (engine) {
+          engine.handlePlayerReconnect(player);
+          const publicState = Serializer.serializePublicState(engine.getSession(), room);
+          const strokes = await DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex);
+
+          // Full state restoration payload
+          this.sendToSocket(ws, WSServerEvent.PLAYER_RECONNECTED, {
+            gameState: publicState,
+            strokeHistory: strokes,
+            isDrawer: engine.getSession().currentDrawerId === player.playerId,
+            drawerPrivateState:
+              engine.getSession().currentDrawerId === player.playerId
+                ? Serializer.serializePrivateDrawerState(engine.getSession())
+                : null,
+          });
+        } else {
+          this.sendToSocket(ws, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
+        }
+        break;
+      }
+
+      case WSClientEvent.PING: {
+        this.sendToSocket(ws, WSServerEvent.PONG, { timestamp: Date.now() });
+        break;
+      }
+
+      default:
+        logger.warn(`Unknown WebSocket event: ${event}`);
+    }
+  }
+
+  private handleSocketDisconnect(ws: ExtendedSocket): void {
+    if (!ws.roomId || !ws.playerId) return;
+
+    logger.info('Player disconnected', { playerId: ws.playerId, roomId: ws.roomId });
+
+    this.playerSockets.delete(ws.playerId);
+    const roomSet = this.roomSockets.get(ws.roomId);
+    if (roomSet) {
+      roomSet.delete(ws);
+      if (roomSet.size === 0) {
+        this.roomSockets.delete(ws.roomId);
+      }
+    }
+
+    const engine = GameEngine.getEngine(ws.roomId);
+    if (engine) {
+      engine.handlePlayerDisconnect(ws.playerId);
+    } else {
+      RoomManager.markPlayerConnection(ws.roomId, ws.playerId, false);
+      this.broadcastToRoom(ws.roomId, WSServerEvent.PLAYER_LEFT, { playerId: ws.playerId });
+    }
+  }
+
+  private assertSocketAuthenticated(ws: ExtendedSocket): void {
+    if (!ws.roomId || !ws.playerId) {
+      const err = new Error('Unauthorized socket connection');
+      (err as any).code = ErrorCode.NOT_AUTHORIZED;
+      throw err;
+    }
+  }
+
+  public broadcastToRoom(roomId: string, event: string, payload: unknown, omitSocket?: ExtendedSocket): void {
+    const roomSet = this.roomSockets.get(roomId);
+    if (!roomSet) return;
+
+    const message = JSON.stringify({ event, payload, timestamp: Date.now() });
+    roomSet.forEach((client) => {
+      if (client !== omitSocket && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+
+  public sendToPlayer(playerId: string, event: string, payload: unknown): void {
+    const socket = this.playerSockets.get(playerId);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      this.sendToSocket(socket, event, payload);
+    }
+  }
+
+  private sendToSocket(ws: WebSocket, event: string, payload: unknown): void {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ event, payload, timestamp: Date.now() }));
+    }
+  }
+}

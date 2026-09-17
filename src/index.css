@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    width: 100%;
+  }
+  
+  body {
+    background-color: #0b0f19;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      radial-gradient(rgba(234, 179, 8, 0.015) 1px, transparent 1px);
+    background-size: 32px 32px, 64px 64px;
+    background-position: 0 0, 16px 16px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Custom Sleek Noir Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0f19;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+}
+
+@layer components {
+  /* Detective Case Stamp Style */
+  .evidence-stamp-classified {
+    border: 3px dashed #dc2626;
+    color: #ef4444;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transform: rotate(-6deg);
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    user-select: none;
+    text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+  }
+
+  .evidence-stamp-confidential {
+    border: 3px solid #eab308;
+    color: #eab308;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transform: rotate(4deg);
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    user-select: none;
+    text-shadow: 0 0 10px rgba(234, 179, 8, 0.3);
+  }
+
+  /* Evidence Photo Card Paper Feel */
+  .evidence-card {
+    background: #161f30;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .evidence-card:hover {
+    border-color: rgba(234, 179, 8, 0.4);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.8), 0 0 20px -3px rgba(234, 179, 8, 0.2);
+    transform: translateY(-2px);
+  }
+
+  /* Corkboard Texture */
+  .corkboard-bg {
+    background-color: #120d09;
+    background-image: 
+      radial-gradient(#2d1e15 1px, transparent 1px),
+      radial-gradient(#1a110a 1px, #120d09 1px);
+    background-size: 20px 20px;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+  }
+
+  /* Red Investigation Thread Line */
+  .red-thread {
+    stroke: #dc2626;
+    stroke-width: 2.5;
+    stroke-dasharray: 4, 3;
+    filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.7));
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

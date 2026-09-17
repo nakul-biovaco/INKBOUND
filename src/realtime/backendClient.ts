@@ -1,0 +1,242 @@
+/**
+ * INKBOUND Real-Time Authoritative Backend Client
+ * Connects the frontend to the Node.js Fastify + WebSocket Game Engine
+ */
+
+export interface BackendConfig {
+  httpUrl: string;
+  wsUrl: string;
+}
+
+const DEFAULT_CONFIG: BackendConfig = {
+  httpUrl: typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? `https://${window.location.hostname}:3001` : `http://${window.location.hostname}:3001`) : 'http://localhost:3001',
+  wsUrl: typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? `wss://${window.location.hostname}:3001/ws` : `ws://${window.location.hostname}:3001/ws`) : 'ws://localhost:3001/ws',
+};
+
+export type BackendEventHandler = (payload: any) => void;
+
+export class BackendClient {
+  private static instance: BackendClient | null = null;
+  private ws: WebSocket | null = null;
+  private token: string | null = null;
+  private playerId: string | null = null;
+  private roomId: string | null = null;
+  private reconnectToken: string | null = null;
+  private eventHandlers: Map<string, Set<BackendEventHandler>> = new Map();
+  private reconnectAttempts = 0;
+  private isConnecting = false;
+  private pingInterval: any = null;
+
+  public static getInstance(): BackendClient {
+    if (!this.instance) {
+      this.instance = new BackendClient();
+    }
+    return this.instance;
+  }
+
+  public get connecting(): boolean {
+    return this.isConnecting;
+  }
+
+  public setTokens(token: string, playerId: string, roomId: string, reconnectToken?: string): void {
+    this.token = token;
+    this.playerId = playerId;
+    this.roomId = roomId;
+    if (reconnectToken) this.reconnectToken = reconnectToken;
+  }
+
+  /**
+   * Connects to authoritative WebSocket server
+   */
+  public async connect(): Promise<void> {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    this.isConnecting = true;
+    const wsUrl = this.token
+      ? `${DEFAULT_CONFIG.wsUrl}?token=${encodeURIComponent(this.token)}`
+      : DEFAULT_CONFIG.wsUrl;
+
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(wsUrl);
+
+        this.ws.onopen = () => {
+          this.isConnecting = false;
+          this.reconnectAttempts = 0;
+          this.startHeartbeat();
+          this.emitLocal('CONNECTED', {});
+
+          // If reconnect token present, send reconnect handshake
+          if (this.reconnectToken && this.roomId && this.playerId) {
+            this.send('RECONNECT', {
+              roomId: this.roomId,
+              playerId: this.playerId,
+              reconnectToken: this.reconnectToken,
+            });
+          }
+
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.event) {
+              this.emitLocal(data.event, data.payload);
+            }
+          } catch (err) {
+            console.error('[BackendClient] Message parse error', err);
+          }
+        };
+
+        this.ws.onclose = () => {
+          this.isConnecting = false;
+          this.stopHeartbeat();
+          this.emitLocal('DISCONNECTED', {});
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (err) => {
+          this.isConnecting = false;
+          console.warn('[BackendClient] WebSocket error', err);
+          reject(err);
+        };
+      } catch (err) {
+        this.isConnecting = false;
+        reject(err);
+      }
+    });
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectAttempts > 10) return;
+    const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 10000);
+    this.reconnectAttempts++;
+    setTimeout(() => {
+      if (this.token) {
+        this.connect().catch(() => {});
+      }
+    }, delay);
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.pingInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.send('PING', { timestamp: Date.now() });
+      }
+    }, 20000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  public on(event: string, handler: BackendEventHandler): () => void {
+    let set = this.eventHandlers.get(event);
+    if (!set) {
+      set = new Set();
+      this.eventHandlers.set(event, set);
+    }
+    set.add(handler);
+    return () => set?.delete(handler);
+  }
+
+  private emitLocal(event: string, payload: any): void {
+    const handlers = this.eventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach((h) => {
+        try {
+          h(payload);
+        } catch (err) {
+          console.error(`[BackendClient] Error in handler for ${event}`, err);
+        }
+      });
+    }
+  }
+
+  public send(event: string, payload: any): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ event, payload, timestamp: Date.now() }));
+    } else {
+      console.warn('[BackendClient] WebSocket not open; message dropped', event);
+    }
+  }
+
+  // ==========================================
+  // AUTHORITATIVE ACTIONS
+  // ==========================================
+  public async createRoom(displayName: string, avatar: string = 'detective-1', settings?: any): Promise<{ room: any; hostPlayer: any; token: string }> {
+    const res = await fetch(`${DEFAULT_CONFIG.httpUrl}/api/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, avatar, settings }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to create room');
+    }
+    const data = await res.json();
+    this.setTokens(data.token, data.hostPlayer.playerId, data.room.roomId, data.hostPlayer.reconnectToken);
+    await this.connect();
+    return data;
+  }
+
+  public async joinRoom(joinCode: string, displayName: string, avatar: string = 'detective-1'): Promise<{ room: any; player: any; token: string }> {
+    const res = await fetch(`${DEFAULT_CONFIG.httpUrl}/api/rooms/${encodeURIComponent(joinCode)}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, avatar }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to join room');
+    }
+    const data = await res.json();
+    this.setTokens(data.token, data.player.playerId, data.room.roomId, data.player.reconnectToken);
+    await this.connect();
+    return data;
+  }
+
+  public selectPrompt(optionIndex: number): void {
+    this.send('SELECT_PROMPT', { optionIndex });
+  }
+
+  public drawStroke(chunk: any): void {
+    this.send('DRAW_STROKE', { chunk });
+  }
+
+  public drawClear(): void {
+    this.send('DRAW_CLEAR', {});
+  }
+
+  public submitGuess(guess: string): void {
+    this.send('SUBMIT_GUESS', { guess });
+  }
+
+  public submitTheory(answer: string, confidence: number = 8): void {
+    this.send('SUBMIT_THEORY', { answer, confidence });
+  }
+
+  public startGame(storyId?: string): void {
+    this.send('START_GAME', { storyId });
+  }
+
+  public chooseStory(storyId: string): void {
+    this.send('CHOOSE_STORY', { storyId });
+  }
+
+  public setReady(isReady: boolean): void {
+    this.send('READY', { isReady });
+  }
+
+  public updateSettings(settings: any): void {
+    this.send('UPDATE_SETTINGS', { settings });
+  }
+}
+
