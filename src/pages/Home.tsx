@@ -151,7 +151,7 @@ export const Home: React.FC<HomeProps> = ({
               SoundService.playCardFlip();
               setIsRulesModalOpen(true);
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 text-xs font-medium transition-all shadow"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/15 backdrop-blur-xl text-xs font-medium transition-all shadow-md cursor-pointer"
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
             <span>How to Play</span>
@@ -162,7 +162,7 @@ export const Home: React.FC<HomeProps> = ({
               SoundService.playCardFlip();
               setIsLeaderboardModalOpen(true);
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 text-xs font-medium transition-all shadow"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/15 backdrop-blur-xl text-xs font-medium transition-all shadow-md cursor-pointer"
           >
             <Trophy className="w-3.5 h-3.5 text-yellow-400" />
             <span>Top Scores</span>
@@ -190,268 +190,277 @@ export const Home: React.FC<HomeProps> = ({
           </p>
         </div>
 
-        {/* 4. THE THREE TACTILE GAME CARDS */}
+        {/* 4. THE THREE ULTRA-RICH GLASSMORPHIC GAME CARDS */}
         <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
           {/* ======================================================== */}
-          {/* CARD 1: HOST A GAME (CONFIDENTIAL CASE DOSSIER)          */}
+          {/* CARD 1: HOST A GAME (GLASSMORPHIC CASE DOSSIER)          */}
           {/* ======================================================== */}
-          <div
-            onMouseEnter={() => SoundService.playCardFlip()}
-            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-red-500/80"
-          >
-            {/* Top Red Wax Seal Stamp Badge */}
-            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
-              <span className="text-[10px] font-mono tracking-widest text-red-400 font-bold uppercase flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                CASE DOSSIER #01
-              </span>
-              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-950/60 text-red-300 border border-red-600/30">
-                HOST
-              </span>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-3 flex-1">
-              <div className="w-12 h-12 rounded-2xl bg-red-950/40 border border-red-600/40 flex items-center justify-center text-red-400 shadow-inner group-hover:scale-110 transition-transform">
-                <UserPlus className="w-6 h-6" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-white font-serif">Host a Game</h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Start a private room for your squad. You'll get an invite code and link to share with friends.
-                </p>
-              </div>
-
-              <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-slate-300">
-                <span className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  👥 2 to 8 Players
+          <div className="relative group flex flex-col">
+            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-red-600/35 to-rose-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
+            <div
+              onMouseEnter={() => SoundService.playCardFlip()}
+              className="glass-card-host p-6 flex-1 flex flex-col justify-between relative"
+            >
+              {/* Top Red Wax Seal Stamp Badge */}
+              <div className="flex items-center justify-between mb-4 border-b border-red-500/20 pb-3">
+                <span className="text-[10px] font-mono tracking-widest text-red-300 font-bold uppercase flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.9)]" />
+                  CASE DOSSIER #01
                 </span>
-                <span className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  🎨 Mystery Stories
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-red-500/20 text-red-200 border border-red-400/30 backdrop-blur-md">
+                  HOST
                 </span>
               </div>
-            </div>
 
-            {/* 3D Action Button */}
-            <div className="pt-6">
-              <button
-                onClick={() => {
-                  SoundService.playStamp();
-                  onCreateRoom();
-                }}
-                disabled={isCreating}
-                className="w-full py-3.5 px-4 rounded-xl game-btn-red text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    <span>Setting Up Room...</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 text-white" />
-                    <span>Start New Game</span>
-                  </>
-                )}
-              </button>
+              {/* Content */}
+              <div className="space-y-3 flex-1">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-400/30 backdrop-blur-md flex items-center justify-center text-red-300 shadow-inner group-hover:scale-110 transition-transform">
+                  <UserPlus className="w-6 h-6" />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-white font-serif tracking-wide">Host a Game</h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Start a private room for your squad. You'll get an invite code and link to share with friends.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-slate-200">
+                  <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 backdrop-blur-md">
+                    👥 2 to 8 Players
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 backdrop-blur-md">
+                    🎨 Mystery Stories
+                  </span>
+                </div>
+              </div>
+
+              {/* 3D Action Button */}
+              <div className="pt-6">
+                <button
+                  onClick={() => {
+                    SoundService.playStamp();
+                    onCreateRoom();
+                  }}
+                  disabled={isCreating}
+                  className="w-full py-3.5 px-4 rounded-xl game-btn-red text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      <span>Setting Up Room...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 text-white" />
+                      <span>Start New Game</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
           {/* ======================================================== */}
-          {/* CARD 2: JOIN A GAME (EVIDENCE ACCESS TICKET)             */}
+          {/* CARD 2: JOIN A GAME (GLASSMORPHIC EVIDENCE PASS)          */}
           {/* ======================================================== */}
-          <div
-            onMouseEnter={() => SoundService.playCardFlip()}
-            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-amber-500/80"
-          >
-            {/* Top Gold Stamp Badge */}
-            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
-              <span className="text-[10px] font-mono tracking-widest text-amber-400 font-bold uppercase flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                EVIDENCE PASS
-              </span>
-              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/60 text-amber-300 border border-amber-600/30">
-                JOIN
-              </span>
+          <div className="relative group flex flex-col">
+            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-amber-500/35 to-yellow-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
+            <div
+              onMouseEnter={() => SoundService.playCardFlip()}
+              className="glass-card-join p-6 flex-1 flex flex-col justify-between relative"
+            >
+              {/* Top Gold Stamp Badge */}
+              <div className="flex items-center justify-between mb-4 border-b border-amber-500/20 pb-3">
+                <span className="text-[10px] font-mono tracking-widest text-amber-300 font-bold uppercase flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+                  EVIDENCE PASS
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-200 border border-amber-400/30 backdrop-blur-md">
+                  JOIN
+                </span>
+              </div>
+
+              {/* Content & Inline Form */}
+              <div className="space-y-3 flex-1">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 backdrop-blur-md flex items-center justify-center text-amber-300 shadow-inner group-hover:scale-110 transition-transform">
+                  <LogIn className="w-6 h-6" />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-white font-serif tracking-wide">Join a Game</h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Got a room code or link from a friend? Type or paste it here to enter the room.
+                  </p>
+                </div>
+
+                {/* Direct In-Card Room Code Form with Glass Input */}
+                <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-2 space-y-2">
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={roomCodeInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('http') || val.includes('join=') || val.includes('room=')) {
+                          setRoomCodeInput(extractCode(val));
+                        } else {
+                          setRoomCodeInput(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
+                        }
+                        setCardErrorMsg('');
+                      }}
+                      placeholder="ROOM CODE"
+                      className="w-full py-2.5 pl-3 pr-16 glass-input rounded-xl text-center text-base font-mono font-bold tracking-widest uppercase text-amber-300 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePasteCode}
+                      className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-mono font-bold text-slate-200 hover:text-white transition-colors border border-white/15 backdrop-blur-md cursor-pointer"
+                    >
+                      PASTE
+                    </button>
+                  </div>
+
+                  {cardErrorMsg && (
+                    <p className="text-[11px] font-mono text-red-400 leading-tight">{cardErrorMsg}</p>
+                  )}
+                </form>
+              </div>
+
+              {/* 3D Action Button */}
+              <div className="pt-6">
+                <button
+                  type="submit"
+                  form="join-card-form"
+                  disabled={isJoining}
+                  className="w-full py-3.5 px-4 rounded-xl game-btn-gold text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isJoining ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      <span>Entering Game...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4 text-white" />
+                      <span>Enter Game</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+          </div>
 
-            {/* Content & Inline Form */}
-            <div className="space-y-3 flex-1">
-              <div className="w-12 h-12 rounded-2xl bg-amber-950/40 border border-amber-600/40 flex items-center justify-center text-amber-400 shadow-inner group-hover:scale-110 transition-transform">
-                <LogIn className="w-6 h-6" />
+          {/* ======================================================== */}
+          {/* CARD 3: DETECTIVE BADGE (GLASS POLAROID & IDENTITY)      */}
+          {/* ======================================================== */}
+          <div className="relative group flex flex-col">
+            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-sky-500/35 to-cyan-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
+            <div
+              onMouseEnter={() => SoundService.playCardFlip()}
+              className="glass-card-badge p-6 flex-1 flex flex-col justify-between relative"
+            >
+              {/* Top Badge Stamp */}
+              <div className="flex items-center justify-between mb-4 border-b border-sky-500/20 pb-3">
+                <span className="text-[10px] font-mono tracking-widest text-sky-300 font-bold uppercase flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-sky-400" />
+                  DETECTIVE BADGE
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-sky-500/20 text-sky-200 border border-sky-400/30 backdrop-blur-md">
+                  PROFILE
+                </span>
               </div>
 
-              <div>
-                <h3 className="text-lg font-bold text-white font-serif">Join a Game</h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Got a room code or link from a friend? Type or paste it here to enter the room.
-                </p>
-              </div>
-
-              {/* Direct In-Card Room Code Form */}
-              <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-2 space-y-2">
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    maxLength={100}
-                    value={roomCodeInput}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val.includes('http') || val.includes('join=') || val.includes('room=')) {
-                        setRoomCodeInput(extractCode(val));
-                      } else {
-                        setRoomCodeInput(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
-                      }
-                      setCardErrorMsg('');
-                    }}
-                    placeholder="ROOM CODE"
-                    className="w-full py-2.5 pl-3 pr-16 bg-slate-950 border border-slate-700/80 focus:border-amber-400 rounded-xl text-center text-base font-mono font-bold tracking-widest uppercase text-amber-300 outline-none transition-colors"
-                  />
+              {/* Interactive Polaroid Badge */}
+              <div className="space-y-3 flex-1 flex flex-col items-center text-center">
+                {/* Avatar Selector with Left / Right Arrows */}
+                <div className="flex items-center gap-3 my-1">
                   <button
                     type="button"
-                    onClick={handlePasteCode}
-                    className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-mono font-bold text-slate-300 hover:text-white transition-colors border border-slate-600"
+                    onClick={() => handleCycleAvatar('prev')}
+                    title="Previous Icon"
+                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white backdrop-blur-md transition-colors cursor-pointer"
                   >
-                    PASTE
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div
+                    onClick={() => {
+                      SoundService.playClick();
+                      setIsAvatarPickerOpen(true);
+                    }}
+                    className="cursor-pointer transform hover:scale-105 transition-transform"
+                    title="Click to view all icons"
+                  >
+                    <AvatarBadge avatar={selectedAvatar} size="lg" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCycleAvatar('next')}
+                    title="Next Icon"
+                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 hover:text-white backdrop-blur-md transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
 
-                {cardErrorMsg && (
-                  <p className="text-[11px] font-mono text-red-400 leading-tight">{cardErrorMsg}</p>
-                )}
-              </form>
-            </div>
-
-            {/* 3D Action Button */}
-            <div className="pt-6">
-              <button
-                type="submit"
-                form="join-card-form"
-                disabled={isJoining}
-                className="w-full py-3.5 px-4 rounded-xl game-btn-gold text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isJoining ? (
-                  <>
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    <span>Entering Game...</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4 text-white" />
-                    <span>Enter Game</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* CARD 3: DETECTIVE BADGE (POLAROID & IDENTITY)           */}
-          {/* ======================================================== */}
-          <div
-            onMouseEnter={() => SoundService.playCardFlip()}
-            className="game-card p-6 flex flex-col justify-between relative group border-slate-700/80 hover:border-sky-500/80"
-          >
-            {/* Top Badge Stamp */}
-            <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
-              <span className="text-[10px] font-mono tracking-widest text-sky-400 font-bold uppercase flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-sky-400" />
-                DETECTIVE BADGE
-              </span>
-              <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/60 text-sky-300 border border-sky-600/30">
-                PROFILE
-              </span>
-            </div>
-
-            {/* Interactive Polaroid Badge */}
-            <div className="space-y-3 flex-1 flex flex-col items-center text-center">
-              {/* Avatar Selector with Left / Right Arrows */}
-              <div className="flex items-center gap-3 my-1">
                 <button
                   type="button"
-                  onClick={() => handleCycleAvatar('prev')}
-                  title="Previous Icon"
-                  className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <div
                   onClick={() => {
                     SoundService.playClick();
                     setIsAvatarPickerOpen(true);
                   }}
-                  className="cursor-pointer transform hover:scale-105 transition-transform"
-                  title="Click to view all icons"
+                  className="text-[10px] text-sky-300 hover:text-sky-200 font-mono underline cursor-pointer"
                 >
-                  <AvatarBadge avatar={selectedAvatar} size="lg" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleCycleAvatar('next')}
-                  title="Next Icon"
-                  className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
+                  Choose from gallery
                 </button>
+
+                {/* Inline Detective Name Input with Glass Input */}
+                <form onSubmit={handleSaveBadge} id="badge-card-form" className="w-full pt-1 space-y-2">
+                  <div className="text-left">
+                    <label className="block text-[10px] font-mono text-slate-300 uppercase tracking-wider mb-1">
+                      Your Detective Name
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={18}
+                      value={nicknameInput}
+                      onChange={(e) => setNicknameInput(e.target.value)}
+                      placeholder="Enter name"
+                      className="w-full py-2 px-3 glass-input rounded-xl text-sm font-semibold text-white outline-none"
+                    />
+                  </div>
+                </form>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  SoundService.playClick();
-                  setIsAvatarPickerOpen(true);
-                }}
-                className="text-[10px] text-sky-400 hover:text-sky-300 font-mono underline"
-              >
-                Choose from gallery
-              </button>
-
-              {/* Inline Detective Name Input */}
-              <form onSubmit={handleSaveBadge} id="badge-card-form" className="w-full pt-1 space-y-2">
-                <div className="text-left">
-                  <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">
-                    Your Detective Name
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={18}
-                    value={nicknameInput}
-                    onChange={(e) => setNicknameInput(e.target.value)}
-                    placeholder="Enter name"
-                    className="w-full py-2 px-3 bg-slate-950 border border-slate-700/80 focus:border-sky-400 rounded-xl text-sm font-semibold text-white outline-none transition-colors"
-                  />
-                </div>
-              </form>
-            </div>
-
-            {/* 3D Action Button */}
-            <div className="pt-6">
-              <button
-                type="submit"
-                form="badge-card-form"
-                className="w-full py-3.5 px-4 rounded-xl game-btn-dark text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {badgeSavedFeedback ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-300">Badge Saved!</span>
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-4 h-4 text-sky-400" />
-                    <span>Save My Badge</span>
-                  </>
-                )}
-              </button>
+              {/* 3D Action Button */}
+              <div className="pt-6">
+                <button
+                  type="submit"
+                  form="badge-card-form"
+                  className="w-full py-3.5 px-4 rounded-xl game-btn-dark text-slate-100 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {badgeSavedFeedback ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-300">Badge Saved!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 text-sky-400" />
+                      <span>Save My Badge</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 5. TABLE ITEMS: CASE STORIES, FIELD RULES, HALL OF FAME */}
-        <div className="w-full max-w-4xl mx-auto mt-10 pt-8 border-t border-slate-800/80">
+        {/* 5. TABLE ITEMS: CASE STORIES, FIELD RULES, HALL OF FAME (GLASSMORPHIC TILES) */}
+        <div className="w-full max-w-4xl mx-auto mt-10 pt-8 border-t border-white/10">
           <div className="text-center mb-4">
             <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 font-bold">
               INVESTIGATION DESK FILES
@@ -465,9 +474,9 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsCasesModalOpen(true);
               }}
-              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-red-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+              className="p-3.5 glass-tile cursor-pointer flex items-center gap-3 group"
             >
-              <div className="w-9 h-9 rounded-lg bg-red-950/40 border border-red-800/40 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-300 group-hover:scale-110 transition-transform shadow-inner">
                 <Folder className="w-4 h-4" />
               </div>
               <div>
@@ -484,9 +493,9 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsRulesModalOpen(true);
               }}
-              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-amber-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+              className="p-3.5 glass-tile cursor-pointer flex items-center gap-3 group"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-950/40 border border-amber-800/40 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform shadow-inner">
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
@@ -503,9 +512,9 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsLeaderboardModalOpen(true);
               }}
-              className="p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-yellow-700/60 cursor-pointer transition-all flex items-center gap-3 group shadow"
+              className="p-3.5 glass-tile cursor-pointer flex items-center gap-3 group"
             >
-              <div className="w-9 h-9 rounded-lg bg-yellow-950/40 border border-yellow-800/40 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-300 group-hover:scale-110 transition-transform shadow-inner">
                 <Trophy className="w-4 h-4" />
               </div>
               <div>
@@ -534,16 +543,16 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 1: HOW TO PLAY (SIMPLE & HUMAN)                    */}
       {/* ======================================================== */}
       {isRulesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-card-base bg-[#0b1120]/90 border border-white/20 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative space-y-4">
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsRulesModalOpen(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
@@ -608,19 +617,20 @@ export const Home: React.FC<HomeProps> = ({
       )}
 
       {/* ======================================================== */}
+      {/* ======================================================== */}
       {/* MODAL 2: CASE STORIES (MYSTERY ARCHIVES)                 */}
       {/* ======================================================== */}
       {isCasesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-card-base bg-[#0b1120]/90 border border-white/20 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative space-y-4 max-h-[85vh] overflow-y-auto">
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsCasesModalOpen(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
@@ -628,32 +638,32 @@ export const Home: React.FC<HomeProps> = ({
                 STORY FILES
               </span>
               <h3 className="text-xl font-bold text-white font-serif tracking-wide">Mystery Cases</h3>
-              <p className="text-xs text-slate-400">Cases available to solve when you host a game:</p>
+              <p className="text-xs text-slate-300">Cases available to solve when you host a game:</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-              <div className="p-4 bg-slate-900/90 border border-red-700/60 rounded-xl space-y-2">
+              <div className="p-4 glass-tile rounded-2xl space-y-2 border-red-500/30">
                 <span className="text-[10px] font-mono text-red-400 uppercase font-bold">Vault Heist</span>
                 <h4 className="text-sm font-bold text-white font-serif">The Midnight Museum</h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-[11px] text-slate-300 leading-relaxed">
                   The Eye of Osiris diamond vanished during an electrical blackout at midnight.
                 </p>
-                <div className="text-[10px] font-mono text-amber-400">4 Suspects • Normal</div>
+                <div className="text-[10px] font-mono text-amber-300">4 Suspects • Normal</div>
               </div>
 
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
+              <div className="p-4 glass-tile rounded-2xl space-y-2 border-sky-500/30">
                 <span className="text-[10px] font-mono text-sky-400 uppercase font-bold">Train Mystery</span>
                 <h4 className="text-sm font-bold text-white font-serif">The Grand Express</h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-[11px] text-slate-300 leading-relaxed">
                   A locked luxury coach between Paris and Vienna with an encrypted missing ledger.
                 </p>
                 <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
               </div>
 
-              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
+              <div className="p-4 glass-tile rounded-2xl space-y-2 border-amber-500/30">
                 <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">Gothic Manor</span>
                 <h4 className="text-sm font-bold text-white font-serif">Blackwood Poisoning</h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-[11px] text-slate-300 leading-relaxed">
                   Lord Blackwood was found unconscious beside a rare vintage decanter in the dining hall.
                 </p>
                 <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
@@ -667,7 +677,7 @@ export const Home: React.FC<HomeProps> = ({
                   setIsCasesModalOpen(false);
                   onCreateRoom();
                 }}
-                className="px-5 py-2.5 game-btn-red text-white font-bold rounded-xl text-xs uppercase tracking-wider"
+                className="px-6 py-3 game-btn-red text-white font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer"
               >
                 Host a Game Now
               </button>
@@ -680,16 +690,16 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 3: TOP DETECTIVES (HALL OF FAME)                  */}
       {/* ======================================================== */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-card-base bg-[#0b1120]/90 border border-white/20 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative space-y-4">
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsLeaderboardModalOpen(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
@@ -697,14 +707,14 @@ export const Home: React.FC<HomeProps> = ({
                 RANKINGS
               </span>
               <h3 className="text-xl font-bold text-white font-serif tracking-wide">Top Detectives</h3>
-              <p className="text-xs text-slate-400">Best scoring players across all solved cases:</p>
+              <p className="text-xs text-slate-300">Best scoring players across all solved cases:</p>
             </div>
 
             <div className="space-y-2 pt-2">
               {leaderboardList.map((det) => (
                 <div
                   key={det.name}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs"
+                  className="flex items-center justify-between p-3.5 rounded-xl glass-tile text-xs"
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-mono font-bold text-amber-400 text-sm">#{det.rank}</span>
@@ -712,7 +722,7 @@ export const Home: React.FC<HomeProps> = ({
                     <span className="font-bold text-white">{det.name}</span>
                   </div>
                   <div className="flex items-center gap-3 font-mono">
-                    <span className="text-slate-400 text-[11px]">{det.rate}</span>
+                    <span className="text-slate-300 text-[11px]">{det.rate}</span>
                     <span className="font-bold text-amber-300">{det.score} PTS</span>
                   </div>
                 </div>
@@ -726,21 +736,21 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 4: FULL AVATAR PICKER GALLERY                      */}
       {/* ======================================================== */}
       {isAvatarPickerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-card-base bg-[#0b1120]/90 border border-white/20 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative space-y-4">
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsAvatarPickerOpen(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
               <h3 className="text-lg font-bold text-white font-serif">Pick Your Icon</h3>
-              <p className="text-xs text-slate-400">Choose any detective avatar for your badge:</p>
+              <p className="text-xs text-slate-300">Choose any detective avatar for your badge:</p>
             </div>
 
             <div className="py-2">
