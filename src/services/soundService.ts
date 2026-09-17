@@ -12,8 +12,8 @@ class SoundEngine {
   private isMuted: boolean = false;
   private isMusicEnabled: boolean = true;
   private sfxVolume: number = 0.8;
-  private homeMusicVolume: number = 0.30; // 30% volume as requested
-  private gameMusicVolume: number = 0.35;
+  private homeMusicVolume: number = 0.10; // 30% volume as requested
+  private gameMusicVolume: number = 0.45;
 
   private currentMode: MusicMode = 'HOME';
 
@@ -70,7 +70,7 @@ class SoundEngine {
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      this.ctx.resume().catch(() => { });
     }
     return this.ctx;
   }
@@ -89,7 +89,7 @@ class SoundEngine {
           if (this.homeAudio) {
             this.homeAudio.src = '/assets/bgm_noir.mp3';
             if (this.currentMode === 'HOME' && !this.isMuted && this.isMusicEnabled) {
-              this.homeAudio.play().catch(() => {});
+              this.homeAudio.play().catch(() => { });
             }
           }
         };
@@ -138,7 +138,7 @@ class SoundEngine {
     this.isMuted = !this.isMuted;
     try {
       localStorage.setItem('inkbound_audio_muted', String(this.isMuted));
-    } catch {}
+    } catch { }
 
     if (this.homeAudio) {
       this.homeAudio.muted = this.isMuted;
@@ -157,7 +157,7 @@ class SoundEngine {
     this.isMusicEnabled = !this.isMusicEnabled;
     try {
       localStorage.setItem('inkbound_music_enabled', String(this.isMusicEnabled));
-    } catch {}
+    } catch { }
 
     if (!this.isMusicEnabled) {
       this.stopAllMusic();
@@ -207,7 +207,7 @@ class SoundEngine {
     if (this.homeAudio) {
       try {
         this.homeAudio.pause();
-      } catch {}
+      } catch { }
     }
   }
 
@@ -472,7 +472,7 @@ class SoundEngine {
 
       osc.start(now);
       osc.stop(now + 0.05);
-    } catch {}
+    } catch { }
   }
 
   // SUCCESS: Clue Solved Bright Revelation Arpeggio
@@ -501,7 +501,7 @@ class SoundEngine {
         osc.start(now);
         osc.stop(now + 0.5);
       });
-    } catch {}
+    } catch { }
   }
 
   // THUD: Wrong Guess Low Wooden Tap
@@ -527,7 +527,7 @@ class SoundEngine {
 
       osc.start(now);
       osc.stop(now + 0.15);
-    } catch {}
+    } catch { }
   }
 
   // TURN START: Brass Bell Chime
@@ -561,7 +561,7 @@ class SoundEngine {
       osc2.start(now);
       osc.stop(now + 0.85);
       osc2.stop(now + 0.85);
-    } catch {}
+    } catch { }
   }
 
   // TIMER TICK: Countdown Tick (Last 10 Seconds)
@@ -586,7 +586,7 @@ class SoundEngine {
 
       osc.start(now);
       osc.stop(now + 0.04);
-    } catch {}
+    } catch { }
   }
 
   // DRAMATIC STING: Accusation & Truth Reveal
@@ -622,7 +622,7 @@ class SoundEngine {
         osc.start(now);
         osc.stop(now + 2.6);
       });
-    } catch {}
+    } catch { }
   }
 }
 
