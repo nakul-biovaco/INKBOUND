@@ -10,6 +10,10 @@ import {
   Trash2,
   Send,
   Lightbulb,
+  Crosshair,
+  Eye,
+  Radio,
+  Users,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -462,7 +466,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     gameState.players.length > 0 ? gameState.players : [currentUser];
 
   return (
-    <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
+    <div className="relative min-h-screen w-full bg-[#07080d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
         className="fixed inset-0 bg-cover bg-center opacity-35 mix-blend-screen pointer-events-none"
@@ -482,23 +486,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         onLeaveRoom={onLeaveRoom}
       />
 
-      {/* BLOOD SPLATTER TIMER IN TOP CENTER */}
-      <div className="relative z-20 w-full flex flex-col items-center justify-center pt-2 pb-1">
-        <div className="relative flex items-center justify-center">
-          {/* Blood splatter glow backdrop */}
-          <div className="absolute -inset-4 bg-red-600/30 rounded-full filter blur-xl animate-pulse pointer-events-none" />
-          <div className="flex flex-col items-center">
-            <span className="text-3xl sm:text-4xl font-mono font-black tracking-wider text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">
-              {formattedTimer}
-            </span>
-            <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-white">
-              {isCurrentDrawer ? 'YOUR TURN' : 'OBSERVING'}
-            </span>
+      {/* GAME HUD */}
+      <div className="relative z-20 w-full max-w-[1440px] mx-auto px-3 sm:px-6 pt-3 pb-1">
+        <div className="rounded-2xl border border-slate-700/70 bg-[#10131c]/95 shadow-[0_10px_35px_rgba(0,0,0,0.35)] px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={`w-9 h-9 rounded-xl grid place-items-center border ${isCurrentDrawer ? 'bg-red-500/15 border-red-500/60 text-red-400' : 'bg-sky-500/10 border-sky-500/40 text-sky-300'}`}>
+              {isCurrentDrawer ? <Crosshair className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] font-mono text-slate-500">Live round · Turn {gameState.turnIndex + 1}</div>
+              <div className="text-xs sm:text-sm font-bold text-white truncate">{isCurrentDrawer ? 'Your easel is active' : `${currentDrawer?.nickname || 'A detective'} is drawing`}</div>
+            </div>
           </div>
-
-          {/* Sticky note right of timer */}
-          <div className="hidden sm:block absolute left-full ml-6 top-0 w-36 bg-[#f7eed4] text-[#2e1d0f] p-2.5 rounded shadow-lg -rotate-3 border border-[#d6be96] font-handwriting text-xs text-center leading-tight">
-            Draw your clue before time runs out!
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-emerald-300"><Radio className="w-3.5 h-3.5" /> LIVE</div>
+            <div className="text-right">
+              <div className="text-[9px] uppercase tracking-widest font-mono text-slate-500">Time left</div>
+              <div className="text-xl sm:text-2xl font-mono font-black text-red-400 tabular-nums">{formattedTimer}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -510,30 +515,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* ======================================================== */}
         <div className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4">
           {/* TAPED PARCHMENT CLUE CARD OR SECRET OBJECTIVE */}
-          <div className="relative bg-[#fcf5e5] border border-[#d8c3a5] rounded-xl p-5 shadow-2xl text-[#2b1f14] rotate-[-1deg] select-text">
-            {/* Top scotch tape stickers on corners */}
-            <div className="w-10 h-3.5 bg-white/60 absolute -top-1.5 left-4 -rotate-6 shadow-sm border border-black/10 backdrop-blur-xs" />
-            <div className="w-10 h-3.5 bg-white/60 absolute -top-1.5 right-4 rotate-6 shadow-sm border border-black/10 backdrop-blur-xs" />
-
-            <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#684a2f] mb-3">
-              <span>{isCurrentDrawer ? 'SECRET OBJECTIVE' : 'CASE INTEL'}</span>
-              <span>🔒</span>
-              <span className="text-[#8c6b4e] font-normal">
-                {isCurrentDrawer ? '(Only you can see this)' : '(Guess what is being sketched)'}
-              </span>
+          <div className={`relative rounded-2xl p-4 sm:p-5 shadow-xl border select-text overflow-hidden ${isCurrentDrawer ? 'bg-gradient-to-br from-red-950/70 to-[#11141e] border-red-500/45' : 'bg-[#11141e]/95 border-slate-700/70'}`}>
+            <div className="absolute right-0 top-0 w-28 h-28 bg-red-500/10 blur-3xl rounded-full" />
+            <div className="relative flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-300 mb-3">
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>{isCurrentDrawer ? 'Private mission' : 'Live case feed'}</span>
             </div>
 
-            <div className="font-handwriting text-lg sm:text-xl font-bold leading-relaxed text-[#1e150d] mb-4">
+            <div className="relative text-base sm:text-lg font-semibold leading-relaxed text-white mb-4">
               {isCurrentDrawer ? (
                 secretDrawObjective || clueText
               ) : (
-                <span className="text-slate-600 text-sm font-sans italic">
+                <span className="text-slate-300 text-sm font-sans leading-relaxed">
                   Watch the live strokes on the canvas carefully and submit your deduction theory below.
                 </span>
               )}
             </div>
 
-            <div className="pt-3 border-t border-[#d8c3a5]/80 text-[11px] font-handwriting text-[#5c442c] italic">
+            <div className="relative pt-3 border-t border-slate-700/70 text-[11px] font-mono text-slate-400">
               {isCurrentDrawer
                 ? 'Think visually. Draw key clues, symbols, or actions to help detectives guess.'
                 : 'Any detective who guesses correctly unlocks the next story discovery.'}
@@ -599,7 +598,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
 
           {/* TIPS CARD */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2.5">
+          <div className="hidden lg:block bg-[#10131c]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2.5">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
               <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
               <span>Tips</span>
@@ -636,7 +635,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* ======================================================== */}
         <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col gap-3">
           {/* WHITE PARCHMENT DRAWING CANVAS */}
-          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-2xl border-2 border-slate-700/60 overflow-hidden flex items-center justify-center">
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center">
+            <div className="absolute inset-x-0 top-0 z-20 h-8 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 pointer-events-none">
+              <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-slate-300">Evidence canvas</span>
+              <span className={`text-[9px] font-mono uppercase ${isCurrentDrawer ? 'text-red-300' : 'text-sky-300'}`}>{isCurrentDrawer ? 'Input enabled' : 'Spectator stream'}</span>
+            </div>
             {/* HTML5 Canvas */}
             <canvas
               ref={canvasRef}
@@ -769,7 +772,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           </div>
 
           {/* BOTTOM TOOLBAR BELOW CANVAS: UNDO, REDO, BRUSH SIZE, ZOOM */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
+          <div className="bg-[#10131c]/95 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
             {/* Undo & Redo */}
             <div className="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
               <button
@@ -831,8 +834,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* THIS ROUND'S DRAWINGS CAROUSEL STRIP */}
           <div className="space-y-2">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
-              | This Round's Drawings
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-sky-400" /> Round roster
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
