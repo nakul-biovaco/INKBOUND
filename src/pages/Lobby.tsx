@@ -376,7 +376,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                   className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm tracking-wide shadow-[0_4px_25px_rgba(220,38,38,0.45)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  <span>Start Game ({displayPlayers.length}/8 Detectives)</span>
+                  <span>Start Game ({displayPlayers.length}/8 Players)</span>
                 </button>
 
                 {displayPlayers.length < 2 && onAddBot && (
@@ -384,7 +384,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                     onClick={onAddBot}
                     className="w-full py-2.5 rounded-xl border border-red-700/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow"
                   >
-                    <span>+ Add AI Detective Bot to Play</span>
+                    <span>+ Add Bot Player</span>
                   </button>
                 )}
               </div>
@@ -392,10 +392,10 @@ export const Lobby: React.FC<LobbyProps> = ({
 
             <div className="text-center text-[11px] font-mono text-slate-400">
               {displayPlayers.length < 2
-                ? 'At least 2 detectives required to begin (invite friends or add AI bot)'
+                ? 'Need at least 2 players to start (invite friends or add a bot)'
                 : isHost
-                ? 'Team assembled. Ready to launch case investigation.'
-                : 'Team assembled. Waiting for host to launch investigation...'}
+                ? 'Everyone is ready! Ready to start the game.'
+                : 'Waiting for host to start the game...'}
             </div>
           </div>
         </div>
@@ -411,7 +411,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2">
                   <Settings className="w-4 h-4 text-slate-300" />
-                  <span className="font-bold text-white text-sm">Case Settings (Host Controls)</span>
+                  <span className="font-bold text-white text-sm">Game Settings (Host)</span>
                 </div>
 
                 <button
@@ -436,7 +436,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
               {/* 1. Case Genre / Mystery Theme */}
               <div>
-                <label className="block text-slate-400 text-xs font-mono mb-1.5">Case Genre & Theme</label>
+                <label className="block text-slate-400 text-xs font-mono mb-1.5">Mystery Theme</label>
                 <div
                   onClick={() => isHost && setIsCasePickerOpen(true)}
                   className={`p-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl flex items-center justify-between transition-all ${
@@ -452,7 +452,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                         {activeGenre.title}
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        {isHost ? 'Click to select story genre' : 'Case genre selected by host'}
+                        {isHost ? 'Click to pick a theme' : 'Theme selected by host'}
                       </div>
                     </div>
                   </div>
@@ -510,17 +510,17 @@ export const Lobby: React.FC<LobbyProps> = ({
             /* NON-HOST VIEW: Case Intel Briefing */
             <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-3">
               <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
-                <span>Case Dossier</span>
+                <span>Story & Rules</span>
                 <span className="text-emerald-400 text-[10px]">Host Controlled</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                The room host manages case parameters. When launched, one detective will randomly receive 3 story titles to choose from.
+                The host is setting up the game. When the game starts, a random player will choose which mystery story to play!
               </p>
               <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 flex items-center gap-3">
                 <span className="text-xl">🕵️‍♂️</span>
                 <div>
                   <div className="text-xs font-bold text-white">Active Theme: {selectedCase || 'All Mysteries'}</div>
-                  <div className="text-[10px] text-slate-400">Round Duration: {drawingTime}s • {rounds} round(s)</div>
+                  <div className="text-[10px] text-slate-400">Draw Time: {drawingTime}s • {rounds} round(s)</div>
                 </div>
               </div>
             </div>

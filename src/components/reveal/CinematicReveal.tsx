@@ -84,7 +84,7 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
         <div className="md:col-span-5 bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-5 backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Chronological Truth Sequence
+              What Really Happened
             </div>
             <span className="text-[10px] font-mono text-emerald-400 font-bold">● RESOLVED</span>
           </div>
@@ -115,7 +115,7 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
         <div className="md:col-span-3 space-y-3.5">
           {/* Culprit Card */}
           <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2">
-            <div className="text-[11px] font-mono uppercase text-slate-400">Culprit Unmasked</div>
+            <div className="text-[11px] font-mono uppercase text-slate-400">The Real Culprit</div>
             <div className="flex items-center gap-3">
               <AvatarBadge avatar={culpritChar?.avatar || 'shield'} size="lg" />
               <div>
@@ -132,20 +132,20 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
               <AvatarBadge avatar="spark" size="lg" />
               <div>
                 <div className="text-sm font-bold text-white font-serif">{motiveText}</div>
-                <div className="text-[10px] text-slate-400">Underground Syndicate</div>
+                <div className="text-[10px] text-slate-400">Secret Motive</div>
               </div>
             </div>
           </div>
 
           {/* Distorter Identity Card */}
           <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-1.5">
-            <div className="text-[11px] font-mono uppercase text-red-400 font-bold">Secret Saboteur</div>
+            <div className="text-[11px] font-mono uppercase text-red-400 font-bold">The Secret Impostor</div>
             <div className="flex items-center gap-2 text-xs text-slate-300 font-medium leading-snug">
               <AvatarBadge avatar={distorter?.avatar || 'shield'} size="sm" />
               <span>
                 {distorter
-                  ? `${distorter.nickname} was the secret Distorter!`
-                  : 'No Distorter was active in this investigation.'}
+                  ? `${distorter.nickname} was the secret Impostor!`
+                  : 'There was no impostor in this game.'}
               </span>
             </div>
           </div>
@@ -163,7 +163,7 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
 
       {/* FOOTER */}
       <footer className="relative z-10 w-full max-w-5xl mx-auto px-6 py-2 text-center text-[11px] text-slate-500 font-mono">
-        INKBOUND • Truth Declassified
+        INKBOUND • The Mystery Solved
       </footer>
     </div>
   );

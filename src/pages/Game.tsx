@@ -178,14 +178,14 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
       setStoryRevealData(null);
-      setNextTurnNotice(`Turn Complete! Next investigator takes the easel...`);
+      setNextTurnNotice(`Round over! Next player's turn to draw...`);
       setTimeout(() => setNextTurnNotice(null), 3000);
     });
 
     const unsubPlayerLeft = backend.on('PLAYER_LEFT', (payload: any) => {
       if (!payload?.playerId) return;
       const player = gameState.players.find((p) => p.id === payload.playerId);
-      setPlayerStatusNotice(`${player?.nickname || 'A detective'} left the investigation.`);
+      setPlayerStatusNotice(`${player?.nickname || 'A player'} left the game.`);
       setGameState((prev) => ({
         ...prev,
         players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: false } : p),
@@ -193,7 +193,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
-      setPlayerStatusNotice(`${payload?.displayName || 'A detective'} rejoined the investigation.`);
+      setPlayerStatusNotice(`${payload?.displayName || 'A player'} came back!`);
       setGameState((prev) => ({
         ...prev,
         ...(payload?.gameState
@@ -481,7 +481,7 @@ export const Game: React.FC<GameProps> = ({
             maxPlayers={8}
             currentPhase="STORY_SELECTION"
             caseTitle={selectedStoryBanner ? selectedStoryBanner.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
-            roundText="Case Dossier"
+            roundText="Story Selection"
             onLeaveRoom={onExitGame}
           />
 
@@ -490,7 +490,7 @@ export const Game: React.FC<GameProps> = ({
               /* GRAND CASE BRIEFING (After Story is Picked) */
               <div className="w-full bg-[#0e131f]/95 border border-amber-500/60 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs uppercase tracking-widest font-bold">
-                  <Sparkles className="w-4 h-4" /> Official Mystery Selected
+                  <Sparkles className="w-4 h-4" /> Mystery Chosen!
                 </div>
 
                 <h1 className="text-3xl sm:text-5xl font-black text-white font-serif tracking-wide">
@@ -502,7 +502,7 @@ export const Game: React.FC<GameProps> = ({
                     {selectedStoryBanner.genre}
                   </span>
                   <span>•</span>
-                  <span className="text-slate-300">Classified Crime File</span>
+                  <span className="text-slate-300">Mystery Case</span>
                 </div>
 
                 <div className="max-w-3xl mx-auto p-6 bg-slate-950/80 border border-slate-800 rounded-2xl font-serif text-base sm:text-lg text-slate-200 leading-relaxed italic text-left">
@@ -511,7 +511,7 @@ export const Game: React.FC<GameProps> = ({
 
                 <div className="pt-4 flex items-center justify-center gap-3 text-xs font-mono text-slate-400">
                   <Clock className="w-4 h-4 text-red-500 animate-spin" />
-                  <span>Preparing investigator easels & secret prompts...</span>
+                  <span>Getting clues ready for the drawing round...</span>
                 </div>
               </div>
             ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
@@ -519,13 +519,13 @@ export const Game: React.FC<GameProps> = ({
               <div className="w-full bg-[#0e131f]/95 border border-slate-700/80 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn space-y-6">
                 <div className="text-center space-y-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest font-bold">
-                    <BookOpen className="w-4 h-4" /> Lead Investigator Selection
+                    <BookOpen className="w-4 h-4" /> Your Turn to Pick the Story
                   </div>
                   <h1 className="text-2xl sm:text-4xl font-black text-white font-serif tracking-wide">
-                    Choose The Mystery Case
+                    Pick a Mystery Story
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-                    You have been selected to establish the incident file. Choose which randomized mystery scenario your team will uncover.
+                    You get to pick the mystery! Choose any story below for your group to solve.
                   </p>
                 </div>
 
@@ -557,7 +557,7 @@ export const Game: React.FC<GameProps> = ({
                         </div>
 
                         <button className="mt-6 w-full py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all">
-                          Investigate This Case
+                          Play This Story →
                         </button>
                       </div>
                     ))}
@@ -566,7 +566,7 @@ export const Game: React.FC<GameProps> = ({
                   <div className="py-16 text-center space-y-4">
                     <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
                     <div className="text-sm font-mono text-slate-400">
-                      Decrypting classified case files from archive...
+                      Loading stories...
                     </div>
                   </div>
                 )}
@@ -583,26 +583,26 @@ export const Game: React.FC<GameProps> = ({
 
                 <div className="space-y-2">
                   <span className="text-xs font-mono uppercase tracking-widest text-red-400 font-bold">
-                    CASE ASSIGNMENT IN PROGRESS
+                    PICKING A STORY
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black font-serif text-white">
-                    {storyChooserName ? `${storyChooserName} is choosing the story...` : 'Selecting lead investigator...'}
+                    {storyChooserName ? `${storyChooserName} is choosing the story...` : 'Picking who chooses...'}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Three classified mystery scenarios have been presented to the lead investigator. Stand by while the incident dossier is selected.
+                    Your teammate is choosing a story to play. Get ready to draw and guess!
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400 font-mono flex items-center justify-center gap-2">
                   <Clock className="w-4 h-4 text-amber-400" />
-                  <span>Drawing turns and clue distribution will begin immediately after.</span>
+                  <span>The drawing round starts right after!</span>
                 </div>
               </div>
             )}
           </main>
 
           <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-3 text-center text-xs font-mono text-slate-500">
-            INKBOUND • Real-Time Multiplayer Investigation
+            INKBOUND • Draw, Guess & Solve
           </footer>
         </div>
       )}
@@ -685,8 +685,8 @@ export const Game: React.FC<GameProps> = ({
         !selectedStoryBanner && (
           <div className="relative z-10 flex flex-col min-h-screen justify-center items-center py-12 px-4 text-center font-mono">
             <div className="w-14 h-14 rounded-full border-4 border-amber-600/40 border-t-amber-400 animate-spin mb-4" />
-            <h2 className="text-xl font-serif font-bold text-amber-300">INVESTIGATION IN PROGRESS</h2>
-            <p className="text-xs text-slate-400 mt-2">Synchronizing case dossier and easel canvas...</p>
+            <h2 className="text-xl font-serif font-bold text-amber-300">GAME IN PROGRESS</h2>
+            <p className="text-xs text-slate-400 mt-2">Connecting and loading game state...</p>
             <button
               onClick={handleReturnToLobby}
               className="mt-6 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"

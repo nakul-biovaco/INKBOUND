@@ -316,9 +316,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               <LogOut className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white font-serif">Leave Investigation Room?</h3>
+              <h3 className="text-base font-bold text-white font-serif">Leave Room?</h3>
               <p className="text-xs text-slate-400 mt-1">
-                You will exit the current room session and return to headquarters.
+                You will leave this game and return to Home.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -355,7 +355,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
             <div className="text-left space-y-1">
               <h3 className="text-xl font-bold text-white font-serif tracking-wide">How to Play INKBOUND</h3>
-              <p className="text-xs text-slate-400">4 phases to crack the visual mystery.</p>
+              <p className="text-xs text-slate-400">4 simple steps to play and solve the mystery.</p>
             </div>
 
             <div className="space-y-3 pt-2 text-xs">
@@ -363,31 +363,31 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 <span className="font-mono text-red-400 font-bold text-sm">01</span>
                 <div>
                   <div className="font-bold text-white">Draw Your Clue</div>
-                  <div className="text-slate-400 text-[11px]">Each detective receives a confidential piece of the crime. Sketch what you witnessed before time expires.</div>
+                  <div className="text-slate-400 text-[11px]">Everyone gets a secret clue from the story. Draw it so your friends can guess!</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">02</span>
                 <div>
-                  <div className="font-bold text-white">Analyze the Evidence Board</div>
-                  <div className="text-slate-400 text-[11px]">Inspect all witness drawings. Place them chronologically on the timeline and connect red thread clues.</div>
+                  <div className="font-bold text-white">Review the Evidence Board</div>
+                  <div className="text-slate-400 text-[11px]">Review all drawings together and put the story events in order.</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">03</span>
                 <div>
-                  <div className="font-bold text-white">Identify the Secret Distorter</div>
-                  <div className="text-slate-400 text-[11px]">One player was given false witness information to mislead the team. Spot the contradiction.</div>
+                  <div className="font-bold text-white">Spot the Impostor</div>
+                  <div className="text-slate-400 text-[11px]">One player gets fake clues! Spot who is bluffing or drawing something unusual.</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">04</span>
                 <div>
-                  <div className="font-bold text-white">Lock Final Accusations</div>
-                  <div className="text-slate-400 text-[11px]">Submit who did it, why, and how. Score points when the official truth is revealed.</div>
+                  <div className="font-bold text-white">Make Your Final Guess</div>
+                  <div className="text-slate-400 text-[11px]">Guess who did it, why, and how to score maximum points!</div>
                 </div>
               </div>
             </div>
@@ -407,26 +407,26 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Core Game Features</h3>
-              <p className="text-xs text-slate-400">Atmospheric noir mechanics engineered for multiplayer deduction.</p>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Game Features</h3>
+              <p className="text-xs text-slate-400">Everything you need for a fun, thrilling mystery night with friends.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
                 <div className="font-bold text-white">🎨 Live Visual Evidence</div>
-                <div className="text-slate-400 text-[11px]">Dynamic HTML5 canvas with undo/redo history and live stroke sync.</div>
+                <div className="text-slate-400 text-[11px]">Smooth drawing canvas with undo, redo, and live stroke updates.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
                 <div className="font-bold text-white">🕰 Timeline Reconstruction</div>
-                <div className="text-slate-400 text-[11px]">Slot evidence along the 11 PM axis to determine exact sequence of events.</div>
+                <div className="text-slate-400 text-[11px]">Piece together what happened from start to finish.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎭 Secret Saboteur (Distorter)</div>
-                <div className="text-slate-400 text-[11px]">One player receives altered evidence to covertly mislead the investigation.</div>
+                <div className="font-bold text-white">🎭 Secret Impostor</div>
+                <div className="text-slate-400 text-[11px]">One player gets fake clues and tries to trick everyone without getting caught!</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">⚡ Real-Time Cross Device Sync</div>
-                <div className="text-slate-400 text-[11px]">Zero-refresh player joins, live room chat, and instantaneous presence tracking.</div>
+                <div className="font-bold text-white">⚡ Cross Device Play</div>
+                <div className="text-slate-400 text-[11px]">Play with friends on phone, tablet, or laptop seamlessly.</div>
               </div>
             </div>
           </div>
@@ -445,8 +445,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Declassified Case Files</h3>
-              <p className="text-xs text-slate-400">Active murder mystery and heist scenarios.</p>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Mystery Stories</h3>
+              <p className="text-xs text-slate-400">Browse stories available in the game.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
@@ -493,8 +493,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Detective Hall of Fame</h3>
-              <p className="text-xs text-slate-400">Top-rated detectives across all resolved crime scenes.</p>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Top Players</h3>
+              <p className="text-xs text-slate-400">Highest scoring players across all games.</p>
             </div>
 
             <div className="space-y-2 pt-2">
@@ -531,18 +531,18 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Detective Badge</h3>
-              <p className="text-xs text-slate-400">Customize your pseudonym and badge avatar.</p>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Edit Profile</h3>
+              <p className="text-xs text-slate-400">Customize your player name and avatar.</p>
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
               <div>
-                <label className="block text-xs font-mono text-slate-400 mb-2">Select Badge Avatar</label>
+                <label className="block text-xs font-mono text-slate-400 mb-2">Choose Your Avatar</label>
                 <AvatarPicker value={selectedAvatar} onChange={setSelectedAvatar} className="sm:grid-cols-4 xl:grid-cols-8" />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-400 mb-1.5">Detective Alias</label>
+                <label className="block text-xs font-mono text-slate-400 mb-1.5">Player Nickname</label>
                 <input
                   type="text"
                   maxLength={18}
@@ -557,7 +557,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 type="submit"
                 className="w-full py-2.5 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer"
               >
-                Save Badge
+                Save Profile
               </button>
             </form>
           </div>

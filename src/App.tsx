@@ -708,10 +708,10 @@ export const App: React.FC = () => {
         <div className="min-h-screen bg-[#07090e] text-amber-100 flex flex-col items-center justify-center p-6 text-center select-none font-mono">
           <div className="w-16 h-16 rounded-full border-4 border-amber-600/30 border-t-amber-500 animate-spin mb-6" />
           <h2 className="text-xl font-bold font-serif tracking-wider text-amber-300">
-            CONNECTING TO INVESTIGATION ROOM...
+            CONNECTING TO ROOM...
           </h2>
           <p className="text-sm text-slate-400 mt-2 max-w-sm">
-            Syncing detective presence, retrieving case dossier, and securing live evidence channel.
+            Joining room and getting things ready...
           </p>
           <button
             onClick={() => {
@@ -720,7 +720,7 @@ export const App: React.FC = () => {
             }}
             className="mt-6 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs tracking-wider transition-colors"
           >
-            ← Return to Headquarters
+            ← Back to Home
           </button>
         </div>
       )}
@@ -744,10 +744,10 @@ export const App: React.FC = () => {
         <div className="min-h-screen bg-[#07090e] text-amber-100 flex flex-col items-center justify-center p-6 text-center select-none font-mono">
           <div className="w-16 h-16 rounded-full border-4 border-red-600/30 border-t-red-500 animate-spin mb-6" />
           <h2 className="text-xl font-bold font-serif tracking-wider text-red-400">
-            RECONNECTING TO CRIME SCENE...
+            RECONNECTING TO GAME...
           </h2>
           <p className="text-sm text-slate-400 mt-2 max-w-sm">
-            Synchronizing turn timer, evidence easel, and real-time multiplayer state.
+            Getting game state back in sync...
           </p>
           <button
             onClick={() => {
@@ -756,7 +756,7 @@ export const App: React.FC = () => {
             }}
             className="mt-6 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs tracking-wider transition-colors"
           >
-            ← Return to Headquarters
+            ← Back to Home
           </button>
         </div>
       )}

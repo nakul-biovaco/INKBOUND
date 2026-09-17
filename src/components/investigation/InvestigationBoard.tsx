@@ -944,12 +944,12 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-bold text-white">
-                  Ready to submit accusations?
+                  Ready to make your final guesses?
                 </div>
                 <div className="text-[11px] text-slate-400">
                   {isHost
-                    ? 'All detectives have reviewed the clues. Proceed to lock final theories.'
-                    : 'Collaborate with your team, then advance to formal accusations.'}
+                    ? 'Everyone has looked at the drawings. Time to guess who did it!'
+                    : 'Discuss with your team and get ready to lock in your guess.'}
                 </div>
               </div>
             </div>
@@ -958,8 +958,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               onClick={onProceedToTheory}
               className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-xs shadow-[0_4px_15px_rgba(220,38,38,0.45)] transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer"
             >
-              <span>Continue to Questioning & Accusations</span>
-              <span>→</span>
+              <span>Pick Who Did It →</span>
             </button>
           </div>
         </div>

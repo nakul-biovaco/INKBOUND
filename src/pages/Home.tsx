@@ -402,8 +402,8 @@ export const Home: React.FC<HomeProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Enter Investigation Room</h3>
-              <p className="text-xs text-slate-400">Enter the 6-letter room code shared by your host.</p>
+              <h3 className="text-lg font-bold text-white font-serif">Enter Room Code</h3>
+              <p className="text-xs text-slate-400">Enter the room code shared by your host or friend.</p>
             </div>
 
             <form onSubmit={handleJoinSubmit} className="space-y-3">
@@ -442,10 +442,10 @@ export const Home: React.FC<HomeProps> = ({
                 {isJoining ? (
                   <>
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    <span>Entering Investigation...</span>
+                    <span>Joining Room...</span>
                   </>
                 ) : (
-                  <span>Join Investigation</span>
+                  <span>Join Room</span>
                 )}
               </button>
             </form>
@@ -608,26 +608,26 @@ export const Home: React.FC<HomeProps> = ({
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Core Game Features</h3>
-              <p className="text-xs text-slate-400">Everything designed for high-stakes visual deduction.</p>
+              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Game Features</h3>
+              <p className="text-xs text-slate-400">A fun mystery party game where drawing and guessing meet.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
                 <div className="font-bold text-white">🎨 Live Visual Evidence</div>
-                <div className="text-slate-400 text-[11px]">Real-time canvas with bezier curve rendering and undo/redo history.</div>
+                <div className="text-slate-400 text-[11px]">Smooth real-time drawing with brush controls, undo, and redo.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
                 <div className="font-bold text-white">🕰 Timeline Reconstruction</div>
-                <div className="text-slate-400 text-[11px]">Drag-and-drop evidence slots along a chronological 11 PM axis.</div>
+                <div className="text-slate-400 text-[11px]">Put the clues in the right order as the story unfolds.</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🎭 The Secret Distorter</div>
-                <div className="text-slate-400 text-[11px]">One player receives altered evidence to covertly mislead the investigation.</div>
+                <div className="font-bold text-white">🎭 The Secret Impostor</div>
+                <div className="text-slate-400 text-[11px]">One player gets fake clues and tries to trick everyone without getting caught!</div>
               </div>
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <div className="font-bold text-white">🔒 Confidential Dossiers</div>
-                <div className="text-slate-400 text-[11px]">Clues are strictly hidden between players until final reveal.</div>
+                <div className="font-bold text-white">🔒 Secret Clues</div>
+                <div className="text-slate-400 text-[11px]">Only you can see your secret clue until everyone shows their cards.</div>
               </div>
             </div>
           </div>
@@ -647,7 +647,7 @@ export const Home: React.FC<HomeProps> = ({
 
             <div className="text-left space-y-1">
               <h3 className="text-xl font-bold text-white font-serif tracking-wide">How to Play INKBOUND</h3>
-              <p className="text-xs text-slate-400">4 steps to solve the mystery or fool the detectives.</p>
+              <p className="text-xs text-slate-400">4 simple steps to play and solve the mystery.</p>
             </div>
 
             <div className="space-y-3 pt-2 text-xs">
@@ -655,31 +655,31 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="font-mono text-red-400 font-bold text-sm">01</span>
                 <div>
                   <div className="font-bold text-white">Draw Your Clue</div>
-                  <div className="text-slate-400 text-[11px]">Every detective receives a private fragment of the truth. Draw what you witnessed before time runs out.</div>
+                  <div className="text-slate-400 text-[11px]">Everyone gets a secret clue from the story. Draw it so other players can guess!</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">02</span>
                 <div>
-                  <div className="font-bold text-white">Analyze the Evidence Board</div>
-                  <div className="text-slate-400 text-[11px]">Inspect all witness sketches. Drag them into chronological order on the timeline axis.</div>
+                  <div className="font-bold text-white">Review the Evidence Board</div>
+                  <div className="text-slate-400 text-[11px]">Check out all drawings and piece together what happened step by step.</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">03</span>
                 <div>
-                  <div className="font-bold text-white">Unmask the Distorter</div>
-                  <div className="text-slate-400 text-[11px]">One player was given false witness instructions. Spot the contradiction in the drawings.</div>
+                  <div className="font-bold text-white">Find the Impostor</div>
+                  <div className="text-slate-400 text-[11px]">One player got a fake clue! Spot who is bluffing or drawing something fishy.</div>
                 </div>
               </div>
 
               <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-start gap-3">
                 <span className="font-mono text-red-400 font-bold text-sm">04</span>
                 <div>
-                  <div className="font-bold text-white">Lock Final Accusations</div>
-                  <div className="text-slate-400 text-[11px]">Submit your theory: Who did it? How? What was their motive? Points are awarded upon truth reveal.</div>
+                  <div className="font-bold text-white">Make Your Final Guess</div>
+                  <div className="text-slate-400 text-[11px]">Guess who did it, why, and how to earn points when the truth is revealed!</div>
                 </div>
               </div>
             </div>

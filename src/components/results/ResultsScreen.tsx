@@ -85,7 +85,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         maxPlayers={8}
         currentPhase="RESULTS"
         caseTitle={gameState.currentCase?.title || 'The Midnight Museum Heist'}
-        roundText="Phase 6 • Investigation Results & Accolades"
+        roundText="Final Scores & Winner"
         onLeaveRoom={onLeaveRoom}
       />
 
@@ -162,7 +162,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           {/* FULL SCOREBOARD TABLE */}
           <div className="border-t border-slate-800 pt-4 space-y-2">
             <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">
-              Full Scoreboard Breakdown
+              Final Rankings
             </div>
             {playerScores.map((sc, i) => (
               <div
@@ -191,19 +191,19 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase text-slate-400">Secret Identity</span>
               <span className="text-[10px] font-mono font-bold text-red-500 uppercase">
-                Saboteur Dossier
+                The Impostor
               </span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-red-950/30 border border-red-900/50 rounded-xl">
               <Shield className="w-8 h-8 text-red-500 flex-shrink-0" />
               <div>
                 <div className="text-sm font-bold text-white">
-                  {distorterPlayer ? `Distorter: ${distorterPlayer.nickname}` : 'No Distorter Detected'}
+                  {distorterPlayer ? `Impostor: ${distorterPlayer.nickname}` : 'No Impostor in this game'}
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5 leading-snug">
                   {distorterPlayer
-                    ? `Attempted to mislead the detectives and skew the case timeline (+200 deception bonus).`
-                    : 'All detectives operated with honest investigative testimony.'}
+                    ? `Tried to trick the team with fake clues (+200 bonus).`
+                    : 'Everyone played honestly on the same team.'}
                 </p>
               </div>
             </div>
@@ -212,15 +212,15 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           {/* ACCOLADES */}
           <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-3">
             <div className="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Investigation Accolades
+              Game Highlights
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                 <Award className="w-5 h-5 text-amber-400 flex-shrink-0" />
                 <div className="text-xs">
-                  <span className="font-bold text-white">Master Detective: </span>
-                  <span className="text-slate-300">{first.nickname} scored highest in theory accuracy</span>
+                  <span className="font-bold text-white">Top Detective: </span>
+                  <span className="text-slate-300">{first.nickname} had the highest guessing accuracy!</span>
                 </div>
               </div>
 
@@ -228,8 +228,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                   <Eye className="w-5 h-5 text-sky-400 flex-shrink-0" />
                   <div className="text-xs">
-                    <span className="font-bold text-white">Keen Witness: </span>
-                    <span className="text-slate-300">{second.nickname} accurately contributed key evidence</span>
+                    <span className="font-bold text-white">Eagle Eye: </span>
+                    <span className="text-slate-300">{second.nickname} drew great clues and cracked theories!</span>
                   </div>
                 </div>
               )}
@@ -238,8 +238,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                   <Zap className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   <div className="text-xs">
-                    <span className="font-bold text-white">Timeline Architect: </span>
-                    <span className="text-slate-300">{third.nickname} helped reconstruct the sequence</span>
+                    <span className="font-bold text-white">Sharp Sleuth: </span>
+                    <span className="text-slate-300">{third.nickname} helped piece the mystery together!</span>
                   </div>
                 </div>
               )}
@@ -249,9 +249,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           {/* RETURN TO LOBBY BUTTON */}
           <button
             onClick={onReturnToLobby}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm tracking-wide shadow-[0_4px_20px_rgba(220,38,38,0.45)] transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm tracking-wide shadow-[0_4px_20px_rgba(220,38,38,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Play Next Case in Lobby</span>
+            <span>Play Another Round in Lobby</span>
             <span>→</span>
           </button>
         </div>
@@ -259,7 +259,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
       {/* FOOTER */}
       <footer className="relative z-10 w-full max-w-5xl mx-auto px-6 py-2 text-center text-[11px] text-slate-500 font-mono">
-        INKBOUND • Case Closed
+        INKBOUND • Mystery Solved
       </footer>
     </div>
   );

@@ -54,7 +54,7 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
       {/* 1. Header & Type Pills */}
       <div>
         <h3 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-          7. Questioning (Structured)
+          Ask a Teammate
         </h3>
 
         {/* Category Buttons: [Who?] [What?] [Where?] [When?] [How?] [Why?] */}
@@ -107,7 +107,7 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
             type="text"
             value={questionInput}
             onChange={(e) => setQuestionInput(e.target.value)}
-            placeholder="Type your structured question..."
+            placeholder="Type your question for them..."
             className="w-full py-3 px-4 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm outline-none focus:border-sky-500"
           />
         </div>

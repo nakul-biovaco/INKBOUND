@@ -521,7 +521,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         maxPlayers={8}
         currentPhase={gameState.status}
         caseTitle={gameState.currentCase?.title || 'The Midnight Museum Heist'}
-        roundText={`Turn ${gameState.turnIndex + 1} of ${rosterPlayers.length} • Drawing Phase`}
+        roundText={`Turn ${gameState.turnIndex + 1} of ${rosterPlayers.length} • Drawing Round`}
         onLeaveRoom={onLeaveRoom}
       />
 
@@ -534,7 +534,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
             <div className="min-w-0">
               <div className="text-[9px] uppercase tracking-[0.18em] font-mono text-slate-500">Live round · Turn {gameState.turnIndex + 1}</div>
-              <div className="text-xs sm:text-sm font-bold text-white truncate">{isCurrentDrawer ? 'Your easel is active' : `${currentDrawer?.nickname || 'A detective'} is drawing`}</div>
+              <div className="text-xs sm:text-sm font-bold text-white truncate">{isCurrentDrawer ? "It's your turn to draw!" : `${currentDrawer?.nickname || 'A player'} is drawing`}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -558,7 +558,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             <div className="absolute right-0 top-0 w-28 h-28 bg-red-500/10 blur-3xl rounded-full" />
             <div className="relative flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-300 mb-2">
               <Crosshair className="w-3.5 h-3.5" />
-              <span>{isCurrentDrawer ? 'Private mission' : 'Live case feed'}</span>
+              <span>{isCurrentDrawer ? 'Your Secret Clue' : 'Mystery Clue'}</span>
             </div>
 
             <div className="relative text-base font-semibold leading-relaxed text-white mb-2">
@@ -566,15 +566,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 secretDrawObjective || clueText
               ) : (
                 <span className="text-slate-300 text-sm font-sans leading-relaxed">
-                  Watch the live strokes on the canvas carefully and submit your deduction theory.
+                  Watch the drawing and type your guess below!
                 </span>
               )}
             </div>
 
             <div className="relative pt-2.5 border-t border-slate-700/70 text-[11px] font-mono text-slate-400">
               {isCurrentDrawer
-                ? 'Think visually. Draw key clues, symbols, or actions to help detectives guess.'
-                : 'Any detective who matches 2 clue words unlocks the next story discovery.'}
+                ? 'Draw clues or shapes to help everyone guess your secret phrase!'
+                : 'Guess any 2 matching words to solve the clue!'}
             </div>
           </div>
 
@@ -582,7 +582,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           <div className="bg-[#10131c]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
               <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-              <span>Detective Tips</span>
+              <span>Quick Tips</span>
             </div>
 
             <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
@@ -592,11 +592,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-amber-400 font-bold">•</span>
-                <span>Any 2 matching clue words solves the round</span>
+                <span>Matching any 2 words wins points</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-sky-400 font-bold">•</span>
-                <span>Check the clue hint above the canvas</span>
+                <span>Use the hint above the canvas</span>
               </li>
             </ul>
           </div>
@@ -778,10 +778,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-sky-300">
                   <Crosshair className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Enter Your Deduction</span>
+                  <span>Type Your Guess</span>
                 </div>
                 <span className="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full">
-                  2 words match = SOLVED!
+                  Any 2 matching words = Right Answer!
                 </span>
               </div>
 
@@ -813,10 +813,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
               {/* Recent Live Guesses Stream */}
               <div className="pt-1 border-t border-slate-800/80">
-                <div className="text-[10px] font-mono text-slate-400 mb-1.5">Recent Deductions:</div>
+                <div className="text-[10px] font-mono text-slate-400 mb-1.5">Recent Guesses:</div>
                 <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
                   {guessFeed.length === 0 ? (
-                    <span className="text-[11px] text-slate-500 italic">No guesses yet. Submit the first theory!</span>
+                    <span className="text-[11px] text-slate-500 italic">No guesses yet. Be the first to guess!</span>
                   ) : (
                     guessFeed.slice(-6).map((g, idx) => (
                       <span
@@ -850,7 +850,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               className="w-full py-3 rounded-2xl text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] shadow-[0_4px_20px_rgba(220,38,38,0.45)] transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>{isSubmitting ? 'Submitting Clue...' : 'Submit Drawing'}</span>
+              <span>{isSubmitting ? 'Submitting...' : 'Submit Drawing'}</span>
             </button>
           )}
 

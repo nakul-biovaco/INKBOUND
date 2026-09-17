@@ -119,7 +119,7 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
 
         {unplacedCards.length === 0 ? (
           <p className="text-xs text-slate-500 font-mono">
-            All visual evidence has been positioned onto the case timeline!
+            All drawings have been placed on the timeline!
           </p>
         ) : (
           <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
