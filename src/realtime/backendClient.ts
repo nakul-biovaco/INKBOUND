@@ -74,7 +74,9 @@ export class BackendClient {
 
   private constructor() {
     try {
-      const saved = sessionStorage.getItem(BACKEND_SESSION_KEY);
+      const saved =
+        (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(BACKEND_SESSION_KEY) : null) ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem(BACKEND_SESSION_KEY) : null);
       if (!saved) return;
       const session = JSON.parse(saved);
       if (session.token && session.playerId && session.roomId && session.reconnectToken) {
@@ -116,7 +118,9 @@ export class BackendClient {
     if (reconnectToken) this.reconnectToken = reconnectToken;
     this.shouldSendReconnectHandshake = false;
     try {
-      sessionStorage.setItem(BACKEND_SESSION_KEY, JSON.stringify({ token, playerId, roomId, reconnectToken: this.reconnectToken }));
+      const data = JSON.stringify({ token, playerId, roomId, reconnectToken: this.reconnectToken });
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(BACKEND_SESSION_KEY, data);
+      if (typeof localStorage !== 'undefined') localStorage.setItem(BACKEND_SESSION_KEY, data);
     } catch {
       // Session persistence is an enhancement; the active socket still works without it.
     }
@@ -151,7 +155,8 @@ export class BackendClient {
     this.reconnectToken = null;
     this.shouldSendReconnectHandshake = false;
     try {
-      sessionStorage.removeItem(BACKEND_SESSION_KEY);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(BACKEND_SESSION_KEY);
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(BACKEND_SESSION_KEY);
     } catch {
       // ignore unavailable browser storage
     }

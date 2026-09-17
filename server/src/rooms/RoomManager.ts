@@ -109,12 +109,33 @@ export class RoomManager {
       throw err;
     }
 
-    if (room.status !== 'LOBBY') {
-      const err = new Error('Game is already in progress');
-      (err as any).code = ErrorCode.GAME_ALREADY_STARTED;
-      throw err;
+    const cleanDisplayName = displayName.trim();
+
+    // 1. Check if player with this display name is already in the room (re-entering / rejoining)
+    const existingPlayer = room.players.find(
+      (p) => p.displayName.trim().toLowerCase() === cleanDisplayName.toLowerCase()
+    );
+
+    if (existingPlayer) {
+      existingPlayer.isConnected = true;
+      existingPlayer.lastSeen = Date.now();
+      if (avatar) existingPlayer.avatar = avatar;
+      this.playerToRoomId.set(existingPlayer.playerId, roomId);
+
+      const token = AuthService.createSessionToken({
+        playerId: existingPlayer.playerId,
+        displayName: existingPlayer.displayName,
+        roomId,
+        isHost: existingPlayer.isHost,
+        reconnectToken: existingPlayer.reconnectToken,
+        issuedAt: Date.now(),
+      });
+
+      logger.info('Player re-entered room', { roomId, playerId: existingPlayer.playerId, displayName: cleanDisplayName });
+      return { room, player: existingPlayer, token };
     }
 
+    // 2. For completely new players, check room capacity
     if (room.players.length >= room.maxPlayers) {
       const err = new Error('Room is full');
       (err as any).code = ErrorCode.ROOM_FULL;
@@ -126,7 +147,7 @@ export class RoomManager {
 
     const player: Player = {
       playerId,
-      displayName: displayName.trim(),
+      displayName: cleanDisplayName,
       avatar,
       roomId,
       score: 0,

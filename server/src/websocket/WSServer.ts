@@ -152,6 +152,28 @@ export class WSServer {
           },
           ws
         );
+
+        // If game is in progress, immediately restore live game state to this reconnected socket
+        const engine = GameEngine.getEngine(room.roomId);
+        if (engine && player) {
+          engine.handlePlayerReconnect(player);
+          const publicState = Serializer.serializePublicState(engine.getSession(), room);
+          DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex)
+            .then((strokes) => {
+              this.sendToSocket(ws, WSServerEvent.PLAYER_RECONNECTED, {
+                gameState: publicState,
+                strokeHistory: strokes,
+                isDrawer: engine.getSession().currentDrawerId === player.playerId,
+                drawerPrivateState:
+                  engine.getSession().currentDrawerId === player.playerId
+                    ? Serializer.serializePrivateDrawerState(engine.getSession())
+                    : null,
+              });
+            })
+            .catch((err) => {
+              logger.warn('Failed to get turn strokes on socket reconnect', { error: err });
+            });
+        }
       }
     }
   }
@@ -227,6 +249,24 @@ export class WSServer {
           token,
           playerId: player.playerId,
         });
+
+        // If game is in progress, also restore live game state to the player immediately
+        const engine = GameEngine.getEngine(room.roomId);
+        if (engine) {
+          engine.handlePlayerReconnect(player);
+          const publicState = Serializer.serializePublicState(engine.getSession(), room);
+          const strokes = await DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex);
+
+          this.sendToSocket(ws, WSServerEvent.PLAYER_RECONNECTED, {
+            gameState: publicState,
+            strokeHistory: strokes,
+            isDrawer: engine.getSession().currentDrawerId === player.playerId,
+            drawerPrivateState:
+              engine.getSession().currentDrawerId === player.playerId
+                ? Serializer.serializePrivateDrawerState(engine.getSession())
+                : null,
+          });
+        }
         break;
       }
 
