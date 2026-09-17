@@ -10,6 +10,7 @@ import { Home } from './pages/Home';
 import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
 import { decodeInviteCode } from './utils/inviteCrypto';
+import { SoundService } from './services/soundService';
 
 type AppView = 'HOME' | 'LOBBY' | 'GAME';
 
@@ -220,6 +221,11 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+
+  // Sync music mode: Home MP3 at 30% volume on Home, procedural Noir Piano/Violin in Lobby & Game
+  useEffect(() => {
+    SoundService.setMusicMode(view === 'HOME' ? 'HOME' : 'GAME');
+  }, [view]);
 
   // Sync active session and URL with current room & view
   useEffect(() => {
