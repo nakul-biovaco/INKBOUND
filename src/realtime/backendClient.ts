@@ -142,6 +142,21 @@ export class BackendClient {
     this.isConnecting = false;
   }
 
+  /** Clears an invalid server session after a deployment/restart. */
+  public clearSession(): void {
+    this.disconnect();
+    this.token = null;
+    this.playerId = null;
+    this.roomId = null;
+    this.reconnectToken = null;
+    this.shouldSendReconnectHandshake = false;
+    try {
+      sessionStorage.removeItem(BACKEND_SESSION_KEY);
+    } catch {
+      // ignore unavailable browser storage
+    }
+  }
+
   /**
    * Connects to authoritative WebSocket server
    */

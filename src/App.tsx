@@ -236,7 +236,19 @@ export const App: React.FC = () => {
 
     const unsubError = backend.on('ERROR', (payload: any) => {
       if (payload?.message) {
-        setErrorMessage(payload.message);
+        const message = payload.message as string;
+        if (/No active game session|Room not found/i.test(message)) {
+          // The authoritative service was restarted. A stale browser room must not
+          // keep sending actions to a game session that no longer exists.
+          backend.clearSession();
+          setGameState(null);
+          setCurrentRoom(null);
+          setPlayers([]);
+          setView('HOME');
+          setErrorMessage('The game server restarted, so this room is no longer active. Please create a new room and invite the team again.');
+          return;
+        }
+        setErrorMessage(message);
       }
     });
 
@@ -723,4 +735,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

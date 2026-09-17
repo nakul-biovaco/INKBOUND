@@ -508,7 +508,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* ======================================================== */}
         {/* LEFT COLUMN: YOUR CLUE / OBJECTIVE + GUESS FEED (3 cols)  */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        <div className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4">
           {/* TAPED PARCHMENT CLUE CARD OR SECRET OBJECTIVE */}
           <div className="relative bg-[#fcf5e5] border border-[#d8c3a5] rounded-xl p-5 shadow-2xl text-[#2b1f14] rotate-[-1deg] select-text">
             {/* Top scotch tape stickers on corners */}
@@ -634,9 +634,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* ======================================================== */}
         {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6 cols)        */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 flex flex-col gap-3">
+        <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col gap-3">
           {/* WHITE PARCHMENT DRAWING CANVAS */}
-          <div className="relative w-full aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-2xl border-2 border-slate-700/60 overflow-hidden flex items-center justify-center">
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-2xl border-2 border-slate-700/60 overflow-hidden flex items-center justify-center">
             {/* HTML5 Canvas */}
             <canvas
               ref={canvasRef}
@@ -672,7 +672,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
             {/* VERTICAL TOOLBAR DOCKED ON THE LEFT EDGE */}
             {isCurrentDrawer && (
-              <div className="absolute left-2 right-2 top-2 bg-[#0e131f]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-1.5 flex flex-row flex-wrap items-center gap-2 shadow-2xl z-30 lg:left-3 lg:top-1/2 lg:right-auto lg:-translate-y-1/2 lg:flex-col">
+              <div className="absolute left-2 right-12 top-2 bg-[#0e131f]/95 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 flex flex-row items-center gap-1 shadow-2xl z-30 lg:left-3 lg:top-1/2 lg:right-auto lg:-translate-y-1/2 lg:flex-col lg:rounded-2xl lg:p-1.5 lg:gap-2">
                 {/* Pencil */}
                 <button
                   onClick={() => {
@@ -680,7 +680,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setStrokeWidth(4);
                   }}
                   title="Pencil"
-                  className={`p-2.5 rounded-xl transition-all ${
+                  className={`p-2 rounded-lg lg:p-2.5 lg:rounded-xl transition-all ${
                     currentTool === 'pencil'
                       ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]'
                       : 'text-slate-400 hover:text-white'
@@ -702,11 +702,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   <Eraser className="w-4 h-4" />
                 </button>
 
-                {/* Rectangle */}
+                {/* Shape tools stay available on larger touch targets. */}
                 <button
                   onClick={() => setCurrentTool('rectangle')}
                   title="Rectangle"
-                  className={`p-2 rounded-xl transition-all ${
+                  className={`hidden sm:block p-2 rounded-xl transition-all ${
                     currentTool === 'rectangle'
                       ? 'bg-red-600 text-white shadow'
                       : 'text-slate-400 hover:text-white'
@@ -719,7 +719,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   onClick={() => setCurrentTool('circle')}
                   title="Circle"
-                  className={`p-2 rounded-xl transition-all ${
+                  className={`hidden sm:block p-2 rounded-xl transition-all ${
                     currentTool === 'circle'
                       ? 'bg-red-600 text-white shadow'
                       : 'text-slate-400 hover:text-white'
@@ -732,7 +732,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   onClick={() => setCurrentTool('text')}
                   title="Text"
-                  className={`p-2 rounded-xl transition-all ${
+                  className={`hidden sm:block p-2 rounded-xl transition-all ${
                     currentTool === 'text'
                       ? 'bg-red-600 text-white shadow'
                       : 'text-slate-400 hover:text-white'
@@ -744,7 +744,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <div className="w-5 h-[1px] bg-slate-700/80 my-0.5 hidden lg:block" />
 
                 {/* Color Swatches */}
-                <div className="flex flex-row gap-2 lg:flex-col">
+                <div className="flex flex-row gap-1.5 lg:flex-col lg:gap-2">
                   {PALETTE_COLORS.map((color) => {
                     const isSelected = currentColor.toLowerCase() === color.toLowerCase();
                     return (
@@ -755,7 +755,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                           if (currentTool === 'eraser') setCurrentTool('pencil');
                         }}
                         style={{ backgroundColor: color }}
-                        className={`w-6 h-6 rounded-full border transition-all ${
+                          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border transition-all ${
                           isSelected
                             ? 'scale-125 ring-2 ring-red-500 border-white shadow-md'
                             : 'border-slate-500 hover:scale-110'
@@ -925,7 +925,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* ======================================================== */}
         {/* RIGHT COLUMN: PLAYERS ROSTER & ROOM CHAT (3 cols)        */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        <div className="order-3 lg:order-3 lg:col-span-3 flex flex-col gap-4">
           {/* PLAYERS LIST ROSTER */}
           <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2.5">
             <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2">
