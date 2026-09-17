@@ -9,57 +9,238 @@ const logger = createLogger('StoryLoader');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// In-memory fallback in case filesystem read fails in production/containerized environments
+const FALLBACK_MIDNIGHT_MUSEUM: StoryDefinition = {
+  id: 'midnight_museum',
+  title: 'The Midnight Museum Heist',
+  genre: 'Noir Mystery',
+  description: 'At 2:15 AM, the siren blared at the Grand Blackwood Museum. The priceless Eye of Osiris diamond disappeared from a sealed bulletproof vault. Four suspects are detained, but who pulled the strings?',
+  difficulty: 'NORMAL',
+  version: 1,
+  author: 'Inkbound Game Studios',
+  initialVariables: {
+    diamondHidden: false,
+    securitySystemCut: false,
+    curatorAlibiBroken: false,
+    vaultUnlocked: false,
+    insideAccompliceIdentified: false,
+  },
+  events: [
+    {
+      eventId: 'museum_01',
+      act: 1,
+      sequence: 1,
+      eventType: 'DRAW_EVENT',
+      drawingObjective: 'A security guard dropping their keys near the vault',
+      visualElements: ['guard', 'keys', 'vault', 'floor'],
+      acceptedConcepts: ['guard drops keys', 'dropping keys', 'security guard losing keys', 'keys falling on floor'],
+      semanticKeywords: ['guard', 'keys', 'drop', 'vault', 'floor'],
+      hint: 'Someone authorized is being careless with access.',
+      difficulty: 'EASY',
+      narrativeDescription: 'At 01:45 AM, Officer Miller is seen fumbling with heavy brass keys near Vault B.',
+      consequenceReveal: 'Officer Miller was seen dropping the master vault keys near the ventilation shaft. Was it an accident, or deliberate?',
+      setVariables: { securitySystemCut: true },
+      timeLimitSeconds: 80,
+      basePoints: 150,
+    },
+    {
+      eventId: 'museum_02',
+      act: 1,
+      sequence: 2,
+      eventType: 'DRAW_EVENT',
+      drawingObjective: 'A mysterious figure in black cutting the power wires',
+      visualElements: ['shadow', 'wire cutters', 'sparks', 'fuse box'],
+      acceptedConcepts: ['cutting wires', 'cutting power', 'figure cutting wires', 'thief cutting fuse box', 'cutting electricity'],
+      semanticKeywords: ['cut', 'wire', 'power', 'sparks', 'fuse', 'thief'],
+      hint: 'The cameras went black right before the heist.',
+      difficulty: 'EASY',
+      narrativeDescription: 'A hooded figure snips through the backup generator cables in the basement.',
+      consequenceReveal: 'The main security cameras were disabled right before the alarm sounded.',
+      setVariables: { securitySystemCut: true },
+      timeLimitSeconds: 80,
+      basePoints: 150,
+    },
+    {
+      eventId: 'museum_03',
+      act: 2,
+      sequence: 3,
+      eventType: 'DRAW_EVENT',
+      drawingObjective: 'A woman hiding a glowing blue diamond inside an umbrella',
+      visualElements: ['woman', 'diamond', 'umbrella', 'glow'],
+      acceptedConcepts: ['diamond inside umbrella', 'hiding diamond in umbrella', 'woman hides diamond', 'stashing gem in umbrella', 'umbrella diamond'],
+      semanticKeywords: ['diamond', 'umbrella', 'hide', 'woman', 'gem'],
+      hint: 'She has an accessory ready for a rainy night indoors.',
+      difficulty: 'MEDIUM',
+      narrativeDescription: 'Dr. Aris Thorne slips the Eye of Osiris into the hollow ferrule of her silk umbrella.',
+      consequenceReveal: 'The diamond was never taken out through the main doors—it was slipped inside Dr. Thorne\'s umbrella!',
+      requiredVariables: { securitySystemCut: true },
+      setVariables: { diamondHidden: true, curatorAlibiBroken: true },
+      timeLimitSeconds: 80,
+      basePoints: 200,
+    },
+    {
+      eventId: 'museum_04',
+      act: 2,
+      sequence: 4,
+      eventType: 'DRAW_EVENT',
+      drawingObjective: 'A secret handshake passing a briefcase behind a marble statue',
+      visualElements: ['statue', 'briefcase', 'two people', 'handshake'],
+      acceptedConcepts: ['handshake behind statue', 'passing briefcase', 'handshake briefcase', 'two people meeting behind statue', 'secret deal statue'],
+      semanticKeywords: ['handshake', 'briefcase', 'statue', 'deal', 'secret'],
+      hint: 'Two conspirators exchange payment out of sight.',
+      difficulty: 'MEDIUM',
+      narrativeDescription: 'Miller exchanges a locked black briefcase with Dr. Thorne behind the Winged Victory statue.',
+      consequenceReveal: 'Officer Miller was paid off by Dr. Thorne. The guard and the curator were partners all along!',
+      requiredVariables: { diamondHidden: true },
+      setVariables: { insideAccompliceIdentified: true, vaultUnlocked: true },
+      timeLimitSeconds: 80,
+      basePoints: 200,
+    },
+    {
+      eventId: 'museum_05',
+      act: 3,
+      sequence: 5,
+      eventType: 'DRAW_EVENT',
+      drawingObjective: 'A red sports car speeding through a broken museum gate',
+      visualElements: ['red car', 'broken gate', 'headlights', 'tire smoke'],
+      acceptedConcepts: ['red car breaking gate', 'car crashing gate', 'speeding red car', 'car escaping through gate', 'getaway car'],
+      semanticKeywords: ['car', 'gate', 'red', 'crash', 'speed', 'escape'],
+      hint: 'The dramatic getaway vehicle.',
+      difficulty: 'HARD',
+      narrativeDescription: 'A crimson convertible smashes through the wrought iron courtyard gates into the foggy rain.',
+      consequenceReveal: 'The getaway driver panicked and fled, but left tire tracks leading toward the city docks.',
+      requiredVariables: { insideAccompliceIdentified: true },
+      setVariables: {},
+      timeLimitSeconds: 80,
+      basePoints: 250,
+    },
+  ],
+  distractors: [
+    { distractorId: 'dist_01', text: 'A janitor mopping a spilled cup of coffee', category: 'innocent' },
+    { distractorId: 'dist_02', text: 'A tourist taking a flash photo of a mummy', category: 'innocent' },
+    { distractorId: 'dist_03', text: 'A stray black cat slipping through a high skylight', category: 'distraction' },
+    { distractorId: 'dist_04', text: 'An old telephone ringing in an empty gallery', category: 'mood' },
+    { distractorId: 'dist_05', text: 'A painter restoring a damaged oil painting', category: 'innocent' },
+  ],
+  endings: [
+    {
+      endingId: 'ending_true_justice',
+      title: 'Justice in the Midnight Fog',
+      conditionDescription: 'Both the diamond\'s hiding place and the accomplice were exposed.',
+      requiredVariables: { diamondHidden: true, insideAccompliceIdentified: true },
+      narrativeText: 'Armed with the detective team\'s sketches, Scotland Yard intercepted Dr. Thorne at the harbor. The Eye of Osiris was recovered from her umbrella handle, and Officer Miller was arrested at his post. Complete detective triumph!',
+    },
+    {
+      endingId: 'ending_curator_escaped',
+      title: 'The Ghost of Blackwood',
+      conditionDescription: 'The theft was confirmed but the accomplice was never connected.',
+      requiredVariables: { diamondHidden: true, insideAccompliceIdentified: false },
+      narrativeText: 'The diamond was located, but the inside orchestrator melted away into the foggy night without a trace. A partial victory.',
+    },
+    {
+      endingId: 'ending_cold_case',
+      title: 'Unsolved Mystery',
+      conditionDescription: 'Key clues were missed.',
+      requiredVariables: {},
+      narrativeText: 'The trail went cold. The Eye of Osiris vanished onto the international black market, leaving the Grand Blackwood Museum shrouded in suspicion.',
+    },
+  ],
+};
+
 export class StoryLoader {
   private static cache: Map<string, StoryDefinition> = new Map();
 
+  private static getStoriesDirectories(): string[] {
+    return [
+      path.join(__dirname, 'stories'),
+      path.join(__dirname, '..', 'src', 'story', 'stories'),
+      path.join(process.cwd(), 'server', 'dist', 'story', 'stories'),
+      path.join(process.cwd(), 'server', 'src', 'story', 'stories'),
+      path.join(process.cwd(), 'dist', 'story', 'stories'),
+      path.join(process.cwd(), 'src', 'story', 'stories'),
+    ];
+  }
+
+  private static findStoryFile(storyId: string): string | null {
+    const candidateDirs = this.getStoriesDirectories();
+    for (const dir of candidateDirs) {
+      const p = path.join(dir, `${storyId}.json`);
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+    return null;
+  }
+
   /**
-   * Loads a story by ID from the stories directory or cache
+   * Loads a story by ID from the stories directory, cache, or bundled fallback
    */
   public static loadStory(storyId: string = 'midnight_museum'): StoryDefinition {
     if (this.cache.has(storyId)) {
       return this.cache.get(storyId)!;
     }
 
-    const storyPath = path.join(__dirname, 'stories', `${storyId}.json`);
-    if (!fs.existsSync(storyPath)) {
-      logger.warn(`Story file not found at ${storyPath}, attempting midnight_museum default`);
-      const defaultPath = path.join(__dirname, 'stories', 'midnight_museum.json');
-      const raw = fs.readFileSync(defaultPath, 'utf-8');
-      const story = JSON.parse(raw) as StoryDefinition;
-      this.cache.set(story.id, story);
-      return story;
+    try {
+      const storyPath = this.findStoryFile(storyId);
+      if (storyPath) {
+        const raw = fs.readFileSync(storyPath, 'utf-8');
+        const story = JSON.parse(raw) as StoryDefinition;
+        this.cache.set(storyId, story);
+        logger.info(`Loaded story ${storyId} from ${storyPath} (${story.events.length} events)`);
+        return story;
+      }
+    } catch (err: unknown) {
+      logger.warn(`Failed reading story file for ${storyId}, using fallback:`, { error: err instanceof Error ? err.message : String(err) });
     }
 
-    const raw = fs.readFileSync(storyPath, 'utf-8');
-    const story = JSON.parse(raw) as StoryDefinition;
-    this.cache.set(storyId, story);
-    logger.info(`Loaded story ${storyId} (${story.events.length} events)`);
-    return story;
+    // Safe in-memory fallback
+    logger.info(`Using embedded default story for ${storyId}`);
+    this.cache.set(FALLBACK_MIDNIGHT_MUSEUM.id, FALLBACK_MIDNIGHT_MUSEUM);
+    return FALLBACK_MIDNIGHT_MUSEUM;
   }
 
   /**
    * Returns list of all available story summaries
    */
   public static listAvailableStories(): Array<{ id: string; title: string; genre: string; difficulty: string }> {
-    const storiesDir = path.join(__dirname, 'stories');
-    if (!fs.existsSync(storiesDir)) return [];
+    const candidateDirs = this.getStoriesDirectories();
+    const summaries: Array<{ id: string; title: string; genre: string; difficulty: string }> = [];
+    const seenIds = new Set<string>();
 
-    const files = fs.readdirSync(storiesDir).filter((f) => f.endsWith('.json'));
-    const summaries = [];
-
-    for (const file of files) {
-      try {
-        const raw = fs.readFileSync(path.join(storiesDir, file), 'utf-8');
-        const story = JSON.parse(raw) as StoryDefinition;
-        summaries.push({
-          id: story.id,
-          title: story.title,
-          genre: story.genre,
-          difficulty: story.difficulty,
-        });
-      } catch (err) {
-        logger.error(`Failed to parse story file ${file}`, err);
+    for (const dir of candidateDirs) {
+      if (fs.existsSync(dir)) {
+        try {
+          const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+          for (const file of files) {
+            try {
+              const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
+              const story = JSON.parse(raw) as StoryDefinition;
+              if (!seenIds.has(story.id)) {
+                seenIds.add(story.id);
+                summaries.push({
+                  id: story.id,
+                  title: story.title,
+                  genre: story.genre,
+                  difficulty: story.difficulty,
+                });
+              }
+            } catch (err) {
+              // ignore invalid json
+            }
+          }
+        } catch {
+          // ignore dir read error
+        }
       }
+    }
+
+    if (summaries.length === 0) {
+      summaries.push({
+        id: FALLBACK_MIDNIGHT_MUSEUM.id,
+        title: FALLBACK_MIDNIGHT_MUSEUM.title,
+        genre: FALLBACK_MIDNIGHT_MUSEUM.genre,
+        difficulty: FALLBACK_MIDNIGHT_MUSEUM.difficulty,
+      });
     }
 
     return summaries;
