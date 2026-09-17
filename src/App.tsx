@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Player } from './types/player';
 import { Room } from './types/room';
 import { AuthoritativeGameState } from './types/game';
@@ -18,6 +18,14 @@ const ACTIVE_VIEW_KEY = 'inkbound_active_view';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Player>(() => AuthService.getProfile());
+
+  const initialInviteParamRef = useRef<string | null>(
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('invite') ||
+        new URLSearchParams(window.location.search).get('join') ||
+        new URLSearchParams(window.location.search).get('room')
+      : null
+  );
 
   // Restore room synchronously on page refresh or direct URL (?invite=TOKEN, ?join=CODE, or ?room=CODE)
   const [currentRoom, setCurrentRoom] = useState<Room | null>(() => {
@@ -136,6 +144,8 @@ export const App: React.FC = () => {
 
 
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
 
   // Sync active session and URL with current room & view
   useEffect(() => {
@@ -151,7 +161,10 @@ export const App: React.FC = () => {
       } else {
         sessionStorage.removeItem(ACTIVE_ROOM_ID_KEY);
         sessionStorage.removeItem(ACTIVE_VIEW_KEY);
-        if (window.location.search) {
+        // Preserve query parameters if user is currently joining via an invite or room link
+        const params = new URLSearchParams(window.location.search);
+        const hasPendingInvite = params.has('invite') || params.has('join') || params.has('room');
+        if (!hasPendingInvite && window.location.search) {
           window.history.replaceState(null, '', window.location.pathname);
         }
       }
@@ -269,8 +282,13 @@ export const App: React.FC = () => {
 
   // Check URL query parameters for direct invite/reconnect (?invite=TOKEN, ?join=CODE, or ?room=CODE)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get('invite') || params.get('join') || params.get('room');
+    const raw =
+      initialInviteParamRef.current ||
+      (typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('invite') ||
+          new URLSearchParams(window.location.search).get('join') ||
+          new URLSearchParams(window.location.search).get('room')
+        : null);
     if (raw) {
       const code = decodeInviteCode(raw);
       if (code) {
@@ -283,6 +301,22 @@ export const App: React.FC = () => {
       }
     }
   }, []);
+
+  // Safety watchdog: Never get stuck on connecting screen if connection stalls
+  useEffect(() => {
+    if (view === 'LOBBY' && !currentRoom && !isJoiningRoom) {
+      const timer = setTimeout(() => {
+        if (!currentRoom) {
+          setErrorMessage('Could not connect to investigation room. The invite link may have expired or the room was closed.');
+          setView('HOME');
+          if (typeof window !== 'undefined' && window.location.search) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [view, currentRoom, isJoiningRoom]);
 
 
   // Room synchronization & channel listeners
@@ -449,9 +483,6 @@ export const App: React.FC = () => {
       clearInterval(interval);
     };
   }, [currentRoom, currentUser, view]);
-
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
 
   const handleCreateRoom = async () => {
     if (isCreatingRoom) return;
