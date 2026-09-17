@@ -15,21 +15,44 @@ const env =
     ? (process.env as Record<string, string | undefined>)
     : {};
 
+const isLocalHost = (hostname: string): boolean => {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.endsWith('.local')
+  );
+};
+
+const getBaseHttpUrl = (): string => {
+  if (env.VITE_BACKEND_URL) return env.VITE_BACKEND_URL;
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (isLocalHost(hostname)) {
+      return `${window.location.protocol}//${hostname}:3001`;
+    }
+    return window.location.origin;
+  }
+  return 'http://localhost:3001';
+};
+
+const getBaseWsUrl = (): string => {
+  if (env.VITE_WS_URL) return env.VITE_WS_URL;
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (isLocalHost(hostname)) {
+      return `${proto}//${hostname}:3001/ws`;
+    }
+    return `${proto}//${window.location.host}/ws`;
+  }
+  return 'ws://localhost:3001/ws';
+};
+
 const DEFAULT_CONFIG: BackendConfig = {
-  httpUrl:
-    env.VITE_BACKEND_URL ||
-    (typeof window !== 'undefined'
-      ? window.location.protocol === 'https:'
-        ? `https://${window.location.hostname}:3001`
-        : `http://${window.location.hostname}:3001`
-      : 'http://localhost:3001'),
-  wsUrl:
-    env.VITE_WS_URL ||
-    (typeof window !== 'undefined'
-      ? window.location.protocol === 'https:'
-        ? `wss://${window.location.hostname}:3001/ws`
-        : `ws://${window.location.hostname}:3001/ws`
-      : 'ws://localhost:3001/ws'),
+  httpUrl: getBaseHttpUrl(),
+  wsUrl: getBaseWsUrl(),
 };
 
 export type BackendEventHandler = (payload: any) => void;
@@ -110,11 +133,17 @@ export class BackendClient {
       ? `${DEFAULT_CONFIG.wsUrl}?token=${encodeURIComponent(this.token)}`
       : DEFAULT_CONFIG.wsUrl;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.isConnecting = false;
+        resolve();
+      }, 2500);
+
       try {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
+          clearTimeout(timer);
           this.isConnecting = false;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -144,6 +173,7 @@ export class BackendClient {
         };
 
         this.ws.onclose = () => {
+          clearTimeout(timer);
           this.isConnecting = false;
           this.stopHeartbeat();
           this.emitLocal('DISCONNECTED', {});
@@ -151,13 +181,15 @@ export class BackendClient {
         };
 
         this.ws.onerror = (err) => {
+          clearTimeout(timer);
           this.isConnecting = false;
           console.warn('[BackendClient] WebSocket error', err);
-          reject(err);
+          resolve();
         };
       } catch (err) {
+        clearTimeout(timer);
         this.isConnecting = false;
-        reject(err);
+        resolve();
       }
     });
   }
@@ -220,11 +252,24 @@ export class BackendClient {
     }
   }
 
+  private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 2500): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
   // ==========================================
   // AUTHORITATIVE ACTIONS
   // ==========================================
   public async createRoom(displayName: string, avatar: string = 'detective-1', settings?: any): Promise<{ room: any; hostPlayer: any; token: string }> {
-    const res = await fetch(`${DEFAULT_CONFIG.httpUrl}/api/rooms`, {
+    const res = await this.fetchWithTimeout(`${DEFAULT_CONFIG.httpUrl}/api/rooms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName, avatar, settings }),
@@ -240,7 +285,7 @@ export class BackendClient {
   }
 
   public async joinRoom(joinCode: string, displayName: string, avatar: string = 'detective-1'): Promise<{ room: any; player: any; token: string }> {
-    const res = await fetch(`${DEFAULT_CONFIG.httpUrl}/api/rooms/${encodeURIComponent(joinCode)}/join`, {
+    const res = await this.fetchWithTimeout(`${DEFAULT_CONFIG.httpUrl}/api/rooms/${encodeURIComponent(joinCode)}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName, avatar }),

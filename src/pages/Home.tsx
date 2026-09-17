@@ -7,6 +7,7 @@ import {
   X,
   User,
   Menu,
+  Loader2,
 } from 'lucide-react';
 import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
@@ -18,6 +19,7 @@ interface HomeProps {
   onCreateRoom: () => void;
   onJoinRoom: (code: string) => void;
   isCreating?: boolean;
+  isJoining?: boolean;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -25,6 +27,8 @@ export const Home: React.FC<HomeProps> = ({
   onUpdateProfile,
   onCreateRoom,
   onJoinRoom,
+  isCreating = false,
+  isJoining = false,
 }) => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -221,10 +225,20 @@ export const Home: React.FC<HomeProps> = ({
           {/* Create a Room Button */}
           <button
             onClick={onCreateRoom}
-            className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-gradient-to-r from-[#991b1b] via-[#b91c1c] to-[#991b1b] hover:from-[#b91c1c] hover:to-[#dc2626] text-white font-medium text-xs sm:text-sm shadow-[0_4px_25px_rgba(185,28,28,0.6)] border border-red-500/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            disabled={isCreating}
+            className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-gradient-to-r from-[#991b1b] via-[#b91c1c] to-[#991b1b] hover:from-[#b91c1c] hover:to-[#dc2626] text-white font-medium text-xs sm:text-sm shadow-[0_4px_25px_rgba(185,28,28,0.6)] border border-red-500/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
           >
-            <UserPlus className="w-4 h-4 text-white" />
-            <span>Create a Room</span>
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
+                <span>Creating Room...</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4 text-white" />
+                <span>Create a Room</span>
+              </>
+            )}
           </button>
 
           {/* Join a Room Button */}
@@ -427,9 +441,17 @@ export const Home: React.FC<HomeProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 text-white font-bold text-xs uppercase tracking-wider hover:from-red-600 hover:to-rose-600 transition-all shadow-md"
+                disabled={isJoining}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 text-white font-bold text-xs uppercase tracking-wider hover:from-red-600 hover:to-rose-600 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
               >
-                Join Investigation
+                {isJoining ? (
+                  <>
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    <span>Entering Investigation...</span>
+                  </>
+                ) : (
+                  <span>Join Investigation</span>
+                )}
               </button>
             </form>
           </div>

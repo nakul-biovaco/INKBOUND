@@ -430,7 +430,13 @@ export const App: React.FC = () => {
     };
   }, [currentRoom, currentUser, view]);
 
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+
   const handleCreateRoom = async () => {
+    if (isCreatingRoom) return;
+    setIsCreatingRoom(true);
+    setErrorMessage('');
     try {
       const backend = BackendClient.getInstance();
       const res = await backend.createRoom(currentUser.nickname, currentUser.avatar);
@@ -474,10 +480,15 @@ export const App: React.FC = () => {
       } catch {
         setErrorMessage('Failed to create investigation room.');
       }
+    } finally {
+      setIsCreatingRoom(false);
     }
   };
 
   const handleJoinRoom = async (code: string) => {
+    if (isJoiningRoom) return;
+    setIsJoiningRoom(true);
+    setErrorMessage('');
     try {
       const backend = BackendClient.getInstance();
       const res = await backend.joinRoom(code, currentUser.nickname, currentUser.avatar);
@@ -539,6 +550,8 @@ export const App: React.FC = () => {
         setView('HOME');
         window.history.replaceState(null, '', window.location.pathname);
       }
+    } finally {
+      setIsJoiningRoom(false);
     }
   };
 
@@ -629,6 +642,8 @@ export const App: React.FC = () => {
           onUpdateProfile={setCurrentUser}
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
+          isCreating={isCreatingRoom}
+          isJoining={isJoiningRoom}
         />
       )}
 
