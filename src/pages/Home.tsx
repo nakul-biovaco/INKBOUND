@@ -146,15 +146,15 @@ export const Home: React.FC<HomeProps> = ({
       </div>
 
       {/* 3. HEADER NAV BAR */}
-      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        {/* Left: INKBOUND Official Logo */}
-        <div className="flex items-center gap-3">
+      <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-end sm:justify-between">
+        {/* Left: INKBOUND Official Logo (Hidden on mobile) */}
+        <div className="hidden sm:flex items-center gap-3">
           <img
             src="/assets/logo.png"
             alt="INKBOUND"
             className="h-8 sm:h-9 object-contain filter drop-shadow-[0_4px_16px_rgba(220,38,38,0.7)]"
           />
-          <div className="hidden sm:flex flex-col">
+          <div className="flex flex-col">
             <span className="text-[10px] font-mono tracking-widest text-red-400 font-bold uppercase">
               VISUAL DEDUCTION GAME
             </span>
