@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { AuthoritativeGameState } from '../../types/game';
 import { Player } from '../../types/player';
 import { GameHeader } from '../common/GameHeader';
 import { AvatarBadge } from '../common/AvatarBadge';
+import { SoundService } from '../../services/soundService';
 
 interface CinematicRevealProps {
   gameState: AuthoritativeGameState;
@@ -28,6 +29,10 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
   onProceedToResults,
   onLeaveRoom,
 }) => {
+  useEffect(() => {
+    SoundService.playDramaticSting();
+  }, []);
+
   const currentCase = gameState.currentCase;
   const culpritName = currentCase?.culprit || 'Arthur Vance';
   const culpritChar = currentCase?.characters?.find((c) => c.name === culpritName);

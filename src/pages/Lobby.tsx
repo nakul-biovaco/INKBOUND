@@ -18,6 +18,7 @@ import { RoomChat } from '../components/common/RoomChat';
 import { AvatarBadge } from '../components/common/AvatarBadge';
 import { GameService } from '../services/gameService';
 import { buildInviteUrl } from '../utils/inviteCrypto';
+import { SoundService } from '../services/soundService';
 
 interface LobbyProps {
   room: Room;
@@ -77,12 +78,14 @@ export const Lobby: React.FC<LobbyProps> = ({
 
 
   const handleCopy = () => {
+    SoundService.playClick();
     navigator.clipboard.writeText(room.code);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
   };
 
   const handleCopyLink = () => {
+    SoundService.playClick();
     const url = buildInviteUrl(room.code);
     navigator.clipboard.writeText(url);
     setHasCopied(true);
@@ -356,7 +359,10 @@ export const Lobby: React.FC<LobbyProps> = ({
             {/* Non-host Ready Toggle */}
             {!isHost && (
               <button
-                onClick={onToggleReady}
+                onClick={() => {
+                  SoundService.playClick();
+                  onToggleReady();
+                }}
                 className={`w-full py-3 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-md ${
                   currentUser.isReady
                     ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
@@ -371,7 +377,10 @@ export const Lobby: React.FC<LobbyProps> = ({
             {isHost && (
               <div className="space-y-2">
                 <button
-                  onClick={onStartGame}
+                  onClick={() => {
+                    SoundService.playClick();
+                    onStartGame();
+                  }}
                   disabled={displayPlayers.length < 2}
                   className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm tracking-wide shadow-[0_4px_25px_rgba(220,38,38,0.45)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
@@ -381,7 +390,10 @@ export const Lobby: React.FC<LobbyProps> = ({
 
                 {displayPlayers.length < 2 && onAddBot && (
                   <button
-                    onClick={onAddBot}
+                    onClick={() => {
+                      SoundService.playClick();
+                      onAddBot();
+                    }}
                     className="w-full py-2.5 rounded-xl border border-red-700/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow"
                   >
                     <span>+ Add Bot Player</span>

@@ -28,6 +28,7 @@ import { GameHeader } from '../common/GameHeader';
 import { RoomChat } from '../common/RoomChat';
 import { AvatarBadge } from '../common/AvatarBadge';
 import { BackendClient } from '../../realtime/backendClient';
+import { SoundService } from '../../services/soundService';
 
 interface DrawingCanvasProps {
   gameState: AuthoritativeGameState;
@@ -88,6 +89,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const updateTimer = () => {
       const remaining = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
       setRemainingSeconds(remaining);
+      if (remaining > 0 && remaining <= 10) {
+        SoundService.playTick(remaining <= 5);
+      }
     };
 
     updateTimer();
@@ -150,18 +154,21 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     const unsubGuessFeedback = backend.on('GUESS_FEEDBACK', (payload: any) => {
       if (payload.status === 'CLOSE') {
+        SoundService.playClick();
         setGuessFeedback(payload.feedbackMessage || 'Almost... You found 1 word! Add 1 more word!');
         setTimeout(() => setGuessFeedback(null), 4500);
       } else if (payload.status === 'RATE_LIMITED') {
         setGuessFeedback('Wait 1-2s between guesses.');
         setTimeout(() => setGuessFeedback(null), 2500);
       } else {
+        SoundService.playThud();
         setGuessFeedback('Not quite. Keep investigating!');
         setTimeout(() => setGuessFeedback(null), 2500);
       }
     });
 
     const unsubClueSolved = backend.on('CLUE_SOLVED', (payload: any) => {
+      SoundService.playSuccess();
       setGuessFeed((prev) => [
         ...prev.slice(-15),
         {
@@ -431,18 +438,21 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       drawingId: `draw-${gameState.id}`,
       playerId: currentUser.id,
     });
+    SoundService.playClick();
     backend.drawClear();
   };
 
   const handleGuessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isCurrentDrawer || !guessInput.trim()) return;
+    SoundService.playClick();
     backend.submitGuess(guessInput.trim());
     setGuessInput('');
   };
 
   const handleUndo = () => {
     if (!isCurrentDrawer || strokes.length === 0) return;
+    SoundService.playClick();
     const last = strokes[strokes.length - 1];
     const previous = strokes.slice(0, -1);
     setRedoStack((prev) => [...prev, last]);

@@ -5,6 +5,7 @@ import { AuthoritativeGameState } from '../../types/game';
 import { Player } from '../../types/player';
 import { GameHeader } from '../common/GameHeader';
 import { AvatarBadge } from '../common/AvatarBadge';
+import { SoundService } from '../../services/soundService';
 
 interface ResultsScreenProps {
   gameState: AuthoritativeGameState;
@@ -26,6 +27,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   const [activeTab, setActiveTab] = useState<ResultTab>('Scoreboard');
 
   useEffect(() => {
+    SoundService.playSuccess();
     try {
       confetti({
         particleCount: 120,

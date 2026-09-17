@@ -13,6 +13,8 @@ import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
 import { AvatarBadge, AvatarPicker } from '../components/common/AvatarBadge';
 import { decodeInviteCode } from '../utils/inviteCrypto';
+import { AudioControl } from '../components/common/AudioControl';
+import { SoundService } from '../services/soundService';
 
 interface HomeProps {
   currentUser: Player;
@@ -146,11 +148,16 @@ export const Home: React.FC<HomeProps> = ({
           })}
         </div>
 
-        {/* Right: User Badge & Sign In Button */}
-        <div className="flex items-center gap-3">
+        {/* Right: Audio Control, User Badge & Mobile Menu Button */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <AudioControl />
+
           {/* Profile Badge Avatar */}
           <button
-            onClick={() => setIsProfileModalOpen(true)}
+            onClick={() => {
+              SoundService.playClick();
+              setIsProfileModalOpen(true);
+            }}
             title="Edit Detective Alias"
             className="p-1.5 rounded-full bg-black/60 hover:bg-slate-850 border border-slate-700/80 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs shadow-md backdrop-blur-xs"
           >
@@ -161,10 +168,12 @@ export const Home: React.FC<HomeProps> = ({
             <User className="w-3.5 h-3.5 text-slate-400 sm:hidden" />
           </button>
 
-
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={() => {
+              SoundService.playClick();
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
             className="md:hidden p-1.5 rounded-lg bg-black/60 border border-slate-700 text-slate-300"
           >
             <Menu className="w-5 h-5" />
@@ -179,14 +188,15 @@ export const Home: React.FC<HomeProps> = ({
             <button
               key={item}
               onClick={() => {
+                SoundService.playClick();
                 setActiveNav(item);
                 setIsMobileMenuOpen(false);
-                if (item === 'How to Play') {
-                  const el = document.getElementById('how-it-works');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }
+                if (item === 'How to Play') setIsRulesModalOpen(true);
+                else if (item === 'Cases') setIsCasesModalOpen(true);
+                else if (item === 'Leaderboard') setIsLeaderboardModalOpen(true);
+                else if (item === 'Features') setIsFeaturesModalOpen(true);
               }}
-              className="text-left text-slate-300 py-1.5 hover:text-red-400"
+              className="text-left py-1 text-slate-300 hover:text-white"
             >
               {item}
             </button>
@@ -219,7 +229,10 @@ export const Home: React.FC<HomeProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-sm sm:max-w-md">
           {/* Create a Room Button */}
           <button
-            onClick={onCreateRoom}
+            onClick={() => {
+              SoundService.playClick();
+              onCreateRoom();
+            }}
             disabled={isCreating}
             className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-gradient-to-r from-[#991b1b] via-[#b91c1c] to-[#991b1b] hover:from-[#b91c1c] hover:to-[#dc2626] text-white font-medium text-xs sm:text-sm shadow-[0_4px_25px_rgba(185,28,28,0.6)] border border-red-500/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
           >
@@ -238,7 +251,10 @@ export const Home: React.FC<HomeProps> = ({
 
           {/* Join a Room Button */}
           <button
-            onClick={() => setIsJoinModalOpen(true)}
+            onClick={() => {
+              SoundService.playClick();
+              setIsJoinModalOpen(true);
+            }}
             className="w-full sm:w-1/2 py-2.5 sm:py-3 px-6 rounded-xl bg-black/65 hover:bg-slate-900 border border-slate-700/80 hover:border-slate-500 text-slate-200 hover:text-white font-medium text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-xs"
           >
             <LogIn className="w-4 h-4 text-slate-300" />

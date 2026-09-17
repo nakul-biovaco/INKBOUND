@@ -12,6 +12,7 @@ import { FinalTheoryModal } from '../components/accusation/FinalTheoryModal';
 import { CinematicReveal } from '../components/reveal/CinematicReveal';
 import { ResultsScreen } from '../components/results/ResultsScreen';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
+import { SoundService } from '../services/soundService';
 
 interface GameProps {
   room: Room;
@@ -80,6 +81,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
+      SoundService.playDramaticSting();
       setIsStorySelection(false);
       setSelectedStoryBanner(payload);
       setGameState((prev) => ({
@@ -105,6 +107,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubTurnStarted = backend.on('TURN_STARTED', (payload: any) => {
+      SoundService.playTurnStart();
       setClueSolvedBanner(null);
       setStoryRevealData(null);
       setNextTurnNotice(null);
@@ -122,6 +125,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
+      SoundService.playTurnStart();
       if (payload?.hint) {
         setPublicHint(payload.hint);
       }
@@ -150,6 +154,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubClueSolved = backend.on('CLUE_SOLVED', (payload: any) => {
+      SoundService.playSuccess();
       setClueSolvedBanner({
         solverName: payload.solverName,
         drawerName: payload.drawerName,
@@ -169,6 +174,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubStoryReveal = backend.on('STORY_REVEAL', (payload: any) => {
+      SoundService.playDramaticSting();
       setClueSolvedBanner(null);
       setStoryRevealData({
         revealedText: payload.revealedText,
@@ -177,6 +183,7 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
+      SoundService.playTurnStart();
       setStoryRevealData(null);
       setNextTurnNotice(`Round over! Next player's turn to draw...`);
       setTimeout(() => setNextTurnNotice(null), 3000);
@@ -239,10 +246,12 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubFinalInvestigation = backend.on('FINAL_INVESTIGATION', () => {
+      SoundService.playDramaticSting();
       setGameState((prev) => ({ ...prev, status: 'FINAL_THEORY' }));
     });
 
     const unsubGameEnd = backend.on('GAME_END', (_payload: any) => {
+      SoundService.playSuccess();
       setGameState((prev) => ({ ...prev, status: 'RESULTS' }));
     });
 

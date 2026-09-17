@@ -4,8 +4,8 @@ import { AuthoritativeGameState, TheorySubmission } from '../../types/game';
 import { Player } from '../../types/player';
 import { GameHeader } from '../common/GameHeader';
 import { AvatarBadge } from '../common/AvatarBadge';
-
 import { BackendClient } from '../../realtime/backendClient';
+import { SoundService } from '../../services/soundService';
 
 interface FinalTheoryModalProps {
   gameState: AuthoritativeGameState;
@@ -24,6 +24,10 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
   onLockAccusations,
   onLeaveRoom,
 }) => {
+  React.useEffect(() => {
+    SoundService.playDramaticSting();
+  }, []);
+
   const characters = gameState.currentCase?.characters || [];
   const existing = gameState.theories[currentUser.id];
 
@@ -45,6 +49,7 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    SoundService.playClick();
     const theory: TheorySubmission = {
       id: `theory-${gameState.id}-${currentUser.id}`,
       gameId: gameState.id,

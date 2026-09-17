@@ -18,6 +18,8 @@ import { Player } from '../../types/player';
 import { AuthService } from '../../services/authService';
 import { AvatarBadge, AvatarPicker } from './AvatarBadge';
 import { buildInviteUrl } from '../../utils/inviteCrypto';
+import { AudioControl } from './AudioControl';
+import { SoundService } from '../../services/soundService';
 
 interface GameHeaderProps {
   currentUser: Player;
@@ -83,6 +85,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   const navItems = ['Home', 'How to Play', 'Features', 'Cases', 'Leaderboard'];
 
   const handleNavClick = (item: string) => {
+    SoundService.playClick();
     if (item === 'Home') {
       if (onLeaveRoom) {
         setIsConfirmLeaveOpen(true);
@@ -176,11 +179,14 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               ))}
             </nav>
 
-            {/* Right: Player Profile Badge & Leave Button */}
+            {/* Right: Audio Control, Player Profile Badge & Leave Button */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <AudioControl />
+
               {/* User Badge with Dropdown */}
               <button
                 onClick={() => {
+                  SoundService.playClick();
                   if (onOpenProfile) {
                     onOpenProfile();
                   } else {
@@ -202,7 +208,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               {/* Red Outline Leave Button */}
               {onLeaveRoom && (
                 <button
-                  onClick={() => setIsConfirmLeaveOpen(true)}
+                  onClick={() => {
+                    SoundService.playClick();
+                    setIsConfirmLeaveOpen(true);
+                  }}
                   className="px-3 py-1 rounded-lg border border-red-700/60 bg-red-950/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <LogOut className="w-3 h-3" />
@@ -213,9 +222,13 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </>
         ) : (
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+            <AudioControl />
             {onLeaveRoom && (
               <button
-                onClick={() => setIsConfirmLeaveOpen(true)}
+                onClick={() => {
+                  SoundService.playClick();
+                  setIsConfirmLeaveOpen(true);
+                }}
                 className="px-3 py-1 rounded-lg border border-red-700/60 bg-red-950/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
               >
                 <LogOut className="w-3 h-3" />
