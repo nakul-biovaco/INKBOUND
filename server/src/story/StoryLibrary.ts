@@ -14,7 +14,16 @@ export class StoryLibrary {
   private static storiesMap: Map<string, StoryDefinition> = new Map();
   private static isInitialized = false;
 
-  private static readonly STORY_DIR = path.resolve('/Users/nakulamundhada23/Desktop/INKBOUND/STORY');
+  private static getStoryDirectory(): string | null {
+    // Support local development, Render (where the service root is /server), and compiled output.
+    const candidates = [
+      path.resolve(process.cwd(), '..', 'STORY'),
+      path.resolve(process.cwd(), 'STORY'),
+      path.resolve(__dirname, '..', '..', '..', '..', 'STORY'),
+    ];
+
+    return candidates.find((dir) => fs.existsSync(dir)) || null;
+  }
 
   /**
    * Scans the STORY directory, parses all .md files, and loads them into memory.
@@ -22,17 +31,18 @@ export class StoryLibrary {
   public static init(): void {
     this.storiesMap.clear();
 
-    if (!fs.existsSync(this.STORY_DIR)) {
-      logger.warn(`Story directory not found at ${this.STORY_DIR}`);
+    const storyDir = this.getStoryDirectory();
+    if (!storyDir) {
+      logger.warn(`Story directory not found. Checked deployment-relative STORY paths.`);
       return;
     }
 
-    const files = fs.readdirSync(this.STORY_DIR).filter((f) => f.endsWith('.md') && !f.startsWith('00_'));
-    logger.info(`Found ${files.length} story markdown files in ${this.STORY_DIR}`);
+    const files = fs.readdirSync(storyDir).filter((f) => f.endsWith('.md') && !f.startsWith('00_'));
+    logger.info(`Found ${files.length} story markdown files in ${storyDir}`);
 
     for (const file of files) {
       try {
-        const filePath = path.join(this.STORY_DIR, file);
+        const filePath = path.join(storyDir, file);
         const content = fs.readFileSync(filePath, 'utf-8');
         const parsedStories = MarkdownStoryParser.parseFile(content, file);
 
