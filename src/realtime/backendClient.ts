@@ -312,6 +312,10 @@ export class BackendClient {
     this.send('DRAW_CLEAR', {});
   }
 
+  public endDrawing(): void {
+    this.send('END_DRAWING', {});
+  }
+
   public submitGuess(guess: string): void {
     this.send('SUBMIT_GUESS', { guess });
   }
@@ -336,4 +340,3 @@ export class BackendClient {
     this.send('UPDATE_SETTINGS', { settings });
   }
 }
-

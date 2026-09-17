@@ -314,6 +314,14 @@ export class WSServer {
         break;
       }
 
+      case WSClientEvent.END_DRAWING: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        engine.endDrawing(ws.playerId!);
+        break;
+      }
+
       case WSClientEvent.SUBMIT_GUESS: {
         this.assertSocketAuthenticated(ws);
         const valid = SubmitGuessSchema.parse(payload);

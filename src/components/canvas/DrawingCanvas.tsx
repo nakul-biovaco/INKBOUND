@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Pencil,
   Square,
@@ -86,9 +86,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       const remaining = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
       setRemainingSeconds(remaining);
 
-      if (remaining <= 0 && isCurrentDrawer && !isSubmitting) {
-        handleAutoSubmit();
-      }
+      // The server owns timeout and turn rotation. Clients only display its deadline.
     };
 
     updateTimer();
@@ -452,14 +450,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const previewDataUrl = canvas ? canvas.toDataURL('image/png') : '';
     onSubmitDrawing(previewDataUrl, strokes);
   };
-
-  const handleAutoSubmit = useCallback(() => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    const canvas = canvasRef.current;
-    const previewDataUrl = canvas ? canvas.toDataURL('image/png') : '';
-    onSubmitDrawing(previewDataUrl, strokes);
-  }, [isSubmitting, onSubmitDrawing, strokes]);
 
   const formattedTimer = `00:${remainingSeconds.toString().padStart(2, '0')}`;
 

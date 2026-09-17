@@ -51,6 +51,7 @@ export const Game: React.FC<GameProps> = ({
   const [clueSolvedBanner, setClueSolvedBanner] = useState<{ solverName: string; drawerName: string; objective: string; solverPoints: number; drawerPoints: number } | null>(null);
   const [storyRevealData, setStoryRevealData] = useState<{ revealedText: string; solvedCount: number } | null>(null);
   const [nextTurnNotice, setNextTurnNotice] = useState<string | null>(null);
+  const [playerStatusNotice, setPlayerStatusNotice] = useState<string | null>(null);
 
 
   const updateState = (next: AuthoritativeGameState) => {
@@ -112,6 +113,19 @@ export const Game: React.FC<GameProps> = ({
         status: 'PLAYER_DRAWING',
         currentTurnPlayerId: payload.drawerPlayerId,
         turnIndex: payload.turnIndex || 0,
+        turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
+        turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
+      }));
+    });
+
+    const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
+      setGameState((prev) => ({
+        ...prev,
+        status: 'PLAYER_DRAWING',
+        currentTurnPlayerId: payload.drawerPlayerId,
+        turnIndex: payload.turnIndex || 0,
+        turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
+        turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
       }));
     });
 
@@ -161,6 +175,24 @@ export const Game: React.FC<GameProps> = ({
       setTimeout(() => setNextTurnNotice(null), 3000);
     });
 
+    const unsubPlayerLeft = backend.on('PLAYER_LEFT', (payload: any) => {
+      if (!payload?.playerId) return;
+      const player = gameState.players.find((p) => p.id === payload.playerId);
+      setPlayerStatusNotice(`${player?.nickname || 'A detective'} left the investigation.`);
+      setGameState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: false } : p),
+      }));
+    });
+
+    const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
+      setPlayerStatusNotice(`${payload?.displayName || 'A detective'} rejoined the investigation.`);
+      setGameState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) => p.id === payload?.playerId ? { ...p, isOnline: true } : p),
+      }));
+    });
+
     const unsubFinalInvestigation = backend.on('FINAL_INVESTIGATION', () => {
       setGameState((prev) => ({ ...prev, status: 'FINAL_THEORY' }));
     });
@@ -175,15 +207,18 @@ export const Game: React.FC<GameProps> = ({
       unsubStoryOptions();
       unsubStorySelected();
       unsubTurnStarted();
+      unsubDrawingStarted();
       unsubPromptOptions();
       unsubSecretDrawObjective();
       unsubClueSolved();
       unsubStoryReveal();
       unsubNextTurn();
+      unsubPlayerLeft();
+      unsubPlayerReconnected();
       unsubFinalInvestigation();
       unsubGameEnd();
     };
-  }, [backend]);
+  }, [backend, gameState.players]);
 
 
   // Automated Bot Turn execution: if a bot's turn is active, host executes their turn
@@ -227,9 +262,9 @@ export const Game: React.FC<GameProps> = ({
 
   // --- Actions ---
 
-  const handleSubmitDrawing = (previewDataUrl: string) => {
-    const updated = GameService.submitDrawing(gameState, currentUser.id, previewDataUrl);
-    updateState(updated);
+  const handleSubmitDrawing = (_previewDataUrl: string) => {
+    // The backend owns turn progression. Never advance a local-only game state here.
+    backend.endDrawing();
   };
 
   const handleSlotTimelineEvidence = (slotTime: string, evidenceId: string | null) => {
@@ -343,6 +378,12 @@ export const Game: React.FC<GameProps> = ({
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-sky-500 text-sky-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md">
           <Clock className="w-5 h-5 text-sky-400 animate-spin" />
           <span className="text-xs font-mono font-bold uppercase">{nextTurnNotice}</span>
+        </div>
+      )}
+
+      {playerStatusNotice && (
+        <div className="fixed top-36 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-amber-500 text-amber-100 px-5 py-3 rounded-xl shadow-2xl text-xs font-mono">
+          {playerStatusNotice}
         </div>
       )}
 

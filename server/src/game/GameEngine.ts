@@ -571,6 +571,20 @@ export class GameEngine {
     this.advanceToNextTurn();
   }
 
+  /** Allows only the active drawer to finish early and advances the shared turn. */
+  public endDrawing(playerId: string): void {
+    AuthService.assertDrawer(playerId, this.session.currentDrawerId);
+    if (!this.stateMachine.isDrawingActive()) {
+      const err = new Error('Drawing is not currently active');
+      (err as any).code = ErrorCode.DRAWING_NOT_ACTIVE;
+      throw err;
+    }
+
+    this.timerManager.cancelTimer();
+    this.emit('DRAWING_ENDED', { turnIndex: this.session.turnIndex, reason: 'DRAWER_FINISHED' });
+    this.advanceToNextTurn();
+  }
+
   private advanceToNextTurn(): void {
     this.emit('TURN_ENDED', {
       completedTurnIndex: this.session.turnIndex,
