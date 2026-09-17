@@ -743,6 +743,33 @@ class SoundEngine {
       });
     } catch { }
   }
+
+  // SKELETON BONE RATTLE
+  public playBoneRattle(): void {
+    if (this.isMuted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      [900, 1200, 1050, 1350].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.045);
+
+        gain.gain.setValueAtTime(this.sfxVolume * 0.22, now + i * 0.045);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.045 + 0.06);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + i * 0.045);
+        osc.stop(now + i * 0.045 + 0.07);
+      });
+    } catch { }
+  }
 }
 
 export const SoundService = new SoundEngine();

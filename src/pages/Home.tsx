@@ -150,6 +150,23 @@ export const Home: React.FC<HomeProps> = ({
         <AlertTriangle className="w-3.5 h-3.5 text-black shrink-0" />
       </div>
 
+      {/* 2.1 HANGING SKELETON SUSPENDED FROM TOP CAUTION TAPE */}
+      <div className="absolute top-[18px] sm:top-[20px] right-3 sm:right-6 md:right-10 lg:right-16 z-20 pointer-events-none select-none">
+        <div className="hanging-skeleton-wrap">
+          <div
+            className="hanging-skeleton-body pointer-events-auto cursor-pointer"
+            onClick={() => SoundService.playBoneRattle()}
+            title="Evidence #8492: Hanging Remains (Click to rattle)"
+          >
+            <img
+              src="/assets/skeleton.png"
+              alt="Hanging Crime Scene Skeleton"
+              className="w-14 sm:w-18 md:w-22 lg:w-26 h-auto object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)] transform hover:scale-105 transition-transform"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* 3. HEADER NAV BAR */}
       <header className="relative z-30 w-full max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-end sm:justify-between">
         {/* Left: INKBOUND Official Logo (Hidden on mobile) */}

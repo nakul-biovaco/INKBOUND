@@ -416,6 +416,83 @@
     -webkit-backdrop-filter: blur(20px);
   }
 
+  /* Hanging Skeleton from Crime Scene Tape */
+  .hanging-skeleton-wrap {
+    transform-origin: top center;
+    animation: skeletonDrop 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .hanging-skeleton-body {
+    transform-origin: top center;
+    animation: skeletonSway 3.8s ease-in-out 1.5s infinite;
+    transition: filter 0.2s ease;
+  }
+
+  .hanging-skeleton-body:hover {
+    animation: skeletonSwayFast 1.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.5)) drop-shadow(0 20px 30px rgba(0, 0, 0, 0.95));
+  }
+
+  @keyframes skeletonDrop {
+    0% {
+      transform: translateY(-130%) rotate(0deg);
+      opacity: 0;
+    }
+    45% {
+      transform: translateY(14%) rotate(-14deg);
+      opacity: 1;
+    }
+    68% {
+      transform: translateY(-7%) rotate(10deg);
+    }
+    82% {
+      transform: translateY(3%) rotate(-5deg);
+    }
+    92% {
+      transform: translateY(-1%) rotate(2deg);
+    }
+    100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes skeletonSway {
+    0% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(7deg);
+    }
+    50% {
+      transform: rotate(0deg);
+    }
+    75% {
+      transform: rotate(-7deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes skeletonSwayFast {
+    0% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(12deg);
+    }
+    50% {
+      transform: rotate(0deg);
+    }
+    75% {
+      transform: rotate(-12deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+
   * {
     -webkit-tap-highlight-color: transparent;
   }
