@@ -1,9 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   Pencil,
-  Square,
-  Circle as CircleIcon,
-  Type,
   Eraser,
   RotateCcw,
   RotateCw,
@@ -30,7 +27,6 @@ import { StrokeBroadcastPayload } from '../../types/events';
 import { GameHeader } from '../common/GameHeader';
 import { RoomChat } from '../common/RoomChat';
 import { AvatarBadge } from '../common/AvatarBadge';
-
 import { BackendClient } from '../../realtime/backendClient';
 
 interface DrawingCanvasProps {
@@ -39,6 +35,7 @@ interface DrawingCanvasProps {
   secretClue: PlayerSecretClue | null;
   secretDrawObjective?: string | null;
   secretDrawHint?: string | null;
+  publicHint?: string | null;
   roomCode?: string;
   channel: RoomChannelManager;
   onSubmitDrawing: (previewDataUrl: string, strokes: Stroke[]) => void;
@@ -59,6 +56,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   secretClue,
   secretDrawObjective,
   secretDrawHint,
+  publicHint,
   roomCode,
   channel,
   onSubmitDrawing,
@@ -73,10 +71,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(30);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isHintVisible, setIsHintVisible] = useState<boolean>(false);
 
   // Live Guesses state
   const [guessInput, setGuessInput] = useState<string>('');
@@ -92,57 +88,43 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const updateTimer = () => {
       const remaining = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
       setRemainingSeconds(remaining);
-
-      // The server owns timeout and turn rotation. Clients only display its deadline.
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [gameState.turnEndsAt, isCurrentDrawer, isSubmitting]);
+  }, [gameState.turnEndsAt]);
 
-  // Reset canvas and submission lock on turn transition
-  useEffect(() => {
-    setIsSubmitting(false);
-    setStrokes([]);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#fbf8f1';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-  }, [gameState.currentTurnPlayerId, gameState.turnIndex]);
-
-  // WebSocket Live Sync: Listen for remote strokes and guess events from BackendClient
+  // Subscribe to backend authoritative drawing and guess events
   useEffect(() => {
     const unsubStroke = backend.on('DRAW_STROKE', (chunk: any) => {
-      if (chunk && !isCurrentDrawer) {
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx && chunk.points && chunk.points.length > 0) {
-            ctx.save();
-            ctx.strokeStyle = chunk.color || '#111827';
-            ctx.lineWidth = chunk.width || 4;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.beginPath();
-            chunk.points.forEach((pt: Point, idx: number) => {
-              const x = pt.x * canvas.width;
-              const y = pt.y * canvas.height;
-              if (idx === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
+      if (isCurrentDrawer) return;
+      const canvas = canvasRef.current;
+      if (!canvas || !chunk?.points || chunk.points.length === 0) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const denormalizedPoints = chunk.points.map((p: any) => ({
+        x: p.x * canvas.width,
+        y: p.y * canvas.height,
+      }));
+
+      ctx.beginPath();
+      ctx.strokeStyle = chunk.tool === 'eraser' ? '#fbf8f1' : (chunk.color || '#111827');
+      ctx.lineWidth = chunk.width || 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.moveTo(denormalizedPoints[0].x, denormalizedPoints[0].y);
+      for (let i = 1; i < denormalizedPoints.length; i++) {
+        ctx.lineTo(denormalizedPoints[i].x, denormalizedPoints[i].y);
       }
+      ctx.stroke();
     });
 
     const unsubClear = backend.on('DRAW_CLEAR', () => {
+      if (isCurrentDrawer) return;
       setStrokes([]);
       const canvas = canvasRef.current;
       if (canvas) {
@@ -168,8 +150,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     const unsubGuessFeedback = backend.on('GUESS_FEEDBACK', (payload: any) => {
       if (payload.status === 'CLOSE') {
-        setGuessFeedback('Almost... You are very close!');
-        setTimeout(() => setGuessFeedback(null), 3500);
+        setGuessFeedback(payload.feedbackMessage || 'Almost... You found 1 word! Add 1 more word!');
+        setTimeout(() => setGuessFeedback(null), 4500);
+      } else if (payload.status === 'RATE_LIMITED') {
+        setGuessFeedback('Wait 1-2s between guesses.');
+        setTimeout(() => setGuessFeedback(null), 2500);
+      } else {
+        setGuessFeedback('Not quite. Keep investigating!');
+        setTimeout(() => setGuessFeedback(null), 2500);
       }
     });
 
@@ -183,6 +171,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           isCorrect: true,
         },
       ]);
+      setGuessFeedback(`🎉 Solved by ${payload.solverName}!`);
+      setTimeout(() => setGuessFeedback(null), 5000);
     });
 
     return () => {
@@ -224,15 +214,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
       } else if (msg.type === 'DRAWING_UNDO') {
         const payload = msg.payload as { strokes?: Stroke[] };
-        const updated = payload?.strokes || [];
-        setStrokes(updated);
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#fbf8f1';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            DrawingService.replayStrokes(ctx, canvas.width, canvas.height, updated);
+        if (payload?.strokes) {
+          setStrokes(payload.strokes);
+          const canvas = canvasRef.current;
+          if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.fillStyle = '#fbf8f1';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              DrawingService.replayStrokes(ctx, canvas.width, canvas.height, payload.strokes);
+            }
           }
         }
       } else if (msg.type === 'DRAWING_CLEARED') {
@@ -250,7 +241,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     return () => unsubscribe();
   }, [channel, isCurrentDrawer]);
-
 
   // Canvas Initialization (Parchment Paper Canvas)
   useEffect(() => {
@@ -270,13 +260,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const lastBroadcastRef = useRef<number>(0);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent): Point | null => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): Point | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    let clientX = 0;
+    let clientY = 0;
+
+    if ('touches' in e && e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('changedTouches' in e && e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = (e as MouseEvent).clientX;
+      clientY = (e as MouseEvent).clientY;
+    }
 
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
@@ -287,7 +288,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     };
   };
 
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
     if (!isCurrentDrawer || isSubmitting) return;
 
     const pt = getCoordinates(e);
@@ -313,7 +314,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   };
 
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
     if (!isDrawingRef.current || !currentStrokeRef.current || !isCurrentDrawer) return;
 
     const pt = getCoordinates(e);
@@ -377,6 +378,42 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   };
 
+  // Attach non-passive touch listeners on canvas to completely eliminate mobile screen dragging / wobble
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!isCurrentDrawer || isSubmitting) return;
+      if (e.cancelable) e.preventDefault();
+      handlePointerDown(e);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDrawingRef.current || !isCurrentDrawer) return;
+      if (e.cancelable) e.preventDefault();
+      handlePointerMove(e);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!isCurrentDrawer) return;
+      if (e.cancelable) e.preventDefault();
+      handlePointerUp();
+    };
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [isCurrentDrawer, isSubmitting, currentTool, currentColor, strokeWidth, gameState.id, currentUser.id]);
+
   const handleClear = () => {
     if (!isCurrentDrawer) return;
     setStrokes([]);
@@ -403,7 +440,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     backend.submitGuess(guessInput.trim());
     setGuessInput('');
   };
-
 
   const handleUndo = () => {
     if (!isCurrentDrawer || strokes.length === 0) return;
@@ -490,14 +526,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       />
 
       {/* GAME HUD */}
-      <div className="relative z-20 w-full max-w-[1440px] mx-auto px-3 sm:px-6 pt-3 pb-1">
-        <div className="rounded-2xl border border-slate-700/70 bg-[#10131c]/95 shadow-[0_10px_35px_rgba(0,0,0,0.35)] px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+      <div className="relative z-20 w-full max-w-[1440px] mx-auto px-3 sm:px-6 pt-2 pb-1">
+        <div className="rounded-2xl border border-slate-700/70 bg-[#10131c]/95 shadow-[0_10px_35px_rgba(0,0,0,0.35)] px-3 sm:px-5 py-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className={`w-9 h-9 rounded-xl grid place-items-center border ${isCurrentDrawer ? 'bg-red-500/15 border-red-500/60 text-red-400' : 'bg-sky-500/10 border-sky-500/40 text-sky-300'}`}>
+            <div className={`w-8 h-8 rounded-xl grid place-items-center border ${isCurrentDrawer ? 'bg-red-500/15 border-red-500/60 text-red-400' : 'bg-sky-500/10 border-sky-500/40 text-sky-300'}`}>
               {isCurrentDrawer ? <Crosshair className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </div>
             <div className="min-w-0">
-              <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] font-mono text-slate-500">Live round · Turn {gameState.turnIndex + 1}</div>
+              <div className="text-[9px] uppercase tracking-[0.18em] font-mono text-slate-500">Live round · Turn {gameState.turnIndex + 1}</div>
               <div className="text-xs sm:text-sm font-bold text-white truncate">{isCurrentDrawer ? 'Your easel is active' : `${currentDrawer?.nickname || 'A detective'} is drawing`}</div>
             </div>
           </div>
@@ -512,427 +548,343 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       </div>
 
       {/* MAIN GAMEPLAY GRID: 3 COLUMNS */}
-      <main className="relative z-10 w-full max-w-[1440px] mx-auto px-3 sm:px-6 py-2 sm:py-4 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+      <main className="relative z-10 w-full max-w-[1440px] mx-auto px-3 sm:px-6 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
         {/* ======================================================== */}
-        {/* LEFT COLUMN: YOUR CLUE / OBJECTIVE + GUESS FEED (3 cols)  */}
+        {/* LEFT COLUMN: DESKTOP BRIEFING & TIPS (3 cols)            */}
         {/* ======================================================== */}
-        <div className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4">
+        <div className="hidden lg:flex lg:col-span-3 flex-col gap-3">
           {/* TAPED PARCHMENT CLUE CARD OR SECRET OBJECTIVE */}
-          <div className={`relative rounded-2xl p-4 sm:p-5 shadow-xl border select-text overflow-hidden ${isCurrentDrawer ? 'bg-gradient-to-br from-red-950/70 to-[#11141e] border-red-500/45' : 'bg-[#11141e]/95 border-slate-700/70'}`}>
+          <div className={`relative rounded-2xl p-4 shadow-xl border select-text overflow-hidden ${isCurrentDrawer ? 'bg-gradient-to-br from-red-950/70 to-[#11141e] border-red-500/45' : 'bg-[#11141e]/95 border-slate-700/70'}`}>
             <div className="absolute right-0 top-0 w-28 h-28 bg-red-500/10 blur-3xl rounded-full" />
-            <div className="relative flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-300 mb-3">
+            <div className="relative flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-300 mb-2">
               <Crosshair className="w-3.5 h-3.5" />
               <span>{isCurrentDrawer ? 'Private mission' : 'Live case feed'}</span>
             </div>
 
-            <div className="relative text-base sm:text-lg font-semibold leading-relaxed text-white mb-4">
+            <div className="relative text-base font-semibold leading-relaxed text-white mb-2">
               {isCurrentDrawer ? (
                 secretDrawObjective || clueText
               ) : (
                 <span className="text-slate-300 text-sm font-sans leading-relaxed">
-                  Watch the live strokes on the canvas carefully and submit your deduction theory below.
+                  Watch the live strokes on the canvas carefully and submit your deduction theory.
                 </span>
               )}
             </div>
 
-            <div className="relative pt-3 border-t border-slate-700/70 text-[11px] font-mono text-slate-400">
+            <div className="relative pt-2.5 border-t border-slate-700/70 text-[11px] font-mono text-slate-400">
               {isCurrentDrawer
                 ? 'Think visually. Draw key clues, symbols, or actions to help detectives guess.'
-                : 'Any detective who guesses correctly unlocks the next story discovery.'}
+                : 'Any detective who matches 2 clue words unlocks the next story discovery.'}
             </div>
           </div>
 
-          {/* REAL-TIME GUESS FEED & INPUT (FOR GUESSERS) */}
-          {!isCurrentDrawer && (
-            <div className="hidden lg:flex bg-[#0e131f]/95 border border-slate-700/80 rounded-2xl p-4 shadow-xl flex-col gap-3 backdrop-blur-md">
-              <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2">
-                <span>Deduction Feed</span>
-                {guessFeedback && (
-                  <span className="text-amber-400 animate-pulse text-[10px]">{guessFeedback}</span>
-                )}
-              </div>
-
-              {/* Live Guesses History */}
-              <div className="h-36 overflow-y-auto space-y-1.5 text-xs font-mono pr-1">
-                {guessFeed.length === 0 ? (
-                  <div className="text-slate-500 italic text-[11px] text-center pt-8">
-                    No guesses yet. Type your guess below!
-                  </div>
-                ) : (
-                  guessFeed.map((g, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-1.5 rounded-lg text-[11px] flex items-center justify-between ${
-                        g.isCorrect
-                          ? 'bg-emerald-950/80 border border-emerald-500 text-emerald-200 font-bold'
-                          : g.isClose
-                          ? 'bg-amber-950/60 border border-amber-600/60 text-amber-200'
-                          : 'bg-slate-900/60 text-slate-300'
-                      }`}
-                    >
-                      <span className="font-bold text-white mr-1.5">{g.playerName}:</span>
-                      <span className="flex-1 truncate">{g.text}</span>
-                      {g.isClose && <span className="text-[9px] text-amber-400 ml-1">Almost!</span>}
-                      {g.isCorrect && <span className="text-[9px] text-emerald-400 ml-1">✓ Correct</span>}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Guess Submission Input */}
-              <form onSubmit={handleGuessSubmit} className="flex gap-2 pt-1 border-t border-slate-800">
-                <input
-                  type="text"
-                  value={guessInput}
-                  onChange={(e) => setGuessInput(e.target.value)}
-                  placeholder="Type your guess..."
-                  className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-sans"
-                />
-                <button
-                  type="submit"
-                  disabled={!guessInput.trim()}
-                  className="px-3 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                >
-                  Guess
-                </button>
-              </form>
-            </div>
-          )}
-
-
           {/* TIPS CARD */}
-          <div className="hidden lg:block bg-[#10131c]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2.5">
+          <div className="bg-[#10131c]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
               <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-              <span>Tips</span>
+              <span>Detective Tips</span>
             </div>
 
             <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
               <li className="flex items-start gap-2">
                 <span className="text-red-500 font-bold">•</span>
-                <span>Draw objects, actions or scenes</span>
+                <span>Draw objects, actions or locations</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-red-500 font-bold">•</span>
-                <span>Be clear but not too obvious</span>
+                <span className="text-amber-400 font-bold">•</span>
+                <span>Any 2 matching clue words solves the round</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-red-500 font-bold">•</span>
-                <span>You can use colors and symbols</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-red-500 font-bold">•</span>
-                <span>Others will try to interpret your drawing</span>
+                <span className="text-sky-400 font-bold">•</span>
+                <span>Check the clue hint above the canvas</span>
               </li>
             </ul>
-          </div>
-
-          {/* PINNED POLAROID AT BOTTOM LEFT */}
-          <div className="relative hidden md:block bg-[#f8f1e0] p-4 rounded-xl shadow-xl -rotate-2 border border-[#d8c3a5] text-[#2c1d10] font-handwriting text-sm text-center">
-            "A clue in every hand. A truth in between."
           </div>
         </div>
 
         {/* ======================================================== */}
         {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6 cols)        */}
         {/* ======================================================== */}
-        <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col gap-3">
-          {/* WHITE PARCHMENT DRAWING CANVAS */}
-          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center">
-            <div className="absolute inset-x-0 top-0 z-20 h-8 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 pointer-events-none">
-              <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-slate-300">Evidence canvas</span>
-              <span className={`text-[9px] font-mono uppercase ${isCurrentDrawer ? 'text-red-300' : 'text-sky-300'}`}>{isCurrentDrawer ? 'Input enabled' : 'Spectator stream'}</span>
+        <div className="lg:col-span-6 flex flex-col gap-2.5">
+          {/* 1. TOP CLUE / HINT BANNER */}
+          {isCurrentDrawer ? (
+            <div className="w-full bg-gradient-to-r from-red-950/80 via-[#161a26] to-red-950/80 border border-red-500/40 rounded-2xl p-2.5 sm:p-3 shadow-xl">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-lg bg-red-600/30 border border-red-500/50 flex items-center justify-center text-red-400">
+                    <Crosshair className="w-3 h-3" />
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-red-300 font-bold">Your Secret Drawing Mission</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">Turn {gameState.turnIndex + 1}</span>
+              </div>
+              <div className="mt-1 text-sm sm:text-base font-bold text-white font-serif">
+                {secretDrawObjective || clueText}
+              </div>
+              {(secretDrawHint || publicHint) && (
+                <div className="mt-1.5 text-xs text-amber-200/90 font-sans flex items-start gap-1.5 bg-amber-950/40 border border-amber-500/30 rounded-xl px-2.5 py-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <span><strong>Clue Hint:</strong> {secretDrawHint || publicHint}</span>
+                </div>
+              )}
             </div>
+          ) : (
+            <div className="w-full bg-gradient-to-r from-sky-950/80 via-[#111726] to-sky-950/80 border border-sky-500/40 rounded-2xl p-2.5 sm:p-3 shadow-xl">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-lg bg-sky-600/30 border border-sky-500/50 flex items-center justify-center text-sky-400">
+                    <Lightbulb className="w-3 h-3" />
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-sky-300 font-bold">Case Clue Hint</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
+                  ✨ 2 Words Solves It!
+                </span>
+              </div>
+              <div className="mt-1 text-sm sm:text-base font-semibold text-white font-sans">
+                {publicHint || 'Observe the live strokes carefully — any 2 matching clue words unlock the answer!'}
+              </div>
+            </div>
+          )}
+
+          {/* 2. DEDICATED DRAWER TOOLBAR (Cleanly outside canvas, no overlap with canvas pixels or clear button) */}
+          {isCurrentDrawer && (
+            <div className="w-full bg-[#0d121e]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2">
+              {/* Tool switch: Pencil vs Eraser */}
+              <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentTool('pencil');
+                    if (currentColor === '#fbf8f1') setCurrentColor('#111827');
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
+                    currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span className="text-xs">Draw</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentTool('eraser')}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
+                    currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Eraser className="w-3.5 h-3.5" />
+                  <span className="text-xs">Eraser</span>
+                </button>
+              </div>
+
+              {/* Color palette swatches */}
+              <div className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800">
+                {PALETTE_COLORS.map((color) => {
+                  const isSelected = currentColor.toLowerCase() === color.toLowerCase() && currentTool !== 'eraser';
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        setCurrentColor(color);
+                        if (currentTool === 'eraser') setCurrentTool('pencil');
+                      }}
+                      style={{ backgroundColor: color }}
+                      className={`w-6 h-6 rounded-full border transition-all ${
+                        isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Brush size slider */}
+              <div className="flex items-center gap-1.5 bg-slate-900/90 px-2 py-1.5 rounded-xl border border-slate-800">
+                <span className="text-[10px] font-mono text-slate-400">Size</span>
+                <input
+                  type="range"
+                  min="2"
+                  max="20"
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="w-16 sm:w-20 accent-red-600 cursor-pointer h-1.5 bg-slate-700 rounded-lg"
+                />
+              </div>
+
+              {/* Undo, Redo & Clear */}
+              <div className="flex items-center gap-1.5 ml-auto">
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={strokes.length === 0}
+                  title="Undo"
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRedo}
+                  disabled={redoStack.length === 0}
+                  title="Redo"
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  disabled={strokes.length === 0}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-red-950/60 border border-slate-700 hover:border-red-600/60 text-slate-300 hover:text-red-300 text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-30"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. PARCHMENT DRAWING CANVAS (100% unobstructed, gesture lock) */}
+          <div
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center"
+            style={{ touchAction: 'none' }}
+          >
+            <div className="absolute inset-x-0 top-0 z-20 h-7 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 pointer-events-none">
+              <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-slate-300">Evidence Canvas</span>
+              <span className={`text-[9px] font-mono font-bold uppercase ${isCurrentDrawer ? 'text-red-400' : 'text-sky-300'}`}>
+                {isCurrentDrawer ? '● Input Enabled' : '◉ Live Spectator Stream'}
+              </span>
+            </div>
+
             {/* HTML5 Canvas */}
             <canvas
               ref={canvasRef}
               style={{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.15s ease',
                 touchAction: 'none',
               }}
               onMouseDown={handlePointerDown}
               onMouseMove={handlePointerMove}
               onMouseUp={handlePointerUp}
               onMouseLeave={handlePointerUp}
-              onTouchStart={handlePointerDown}
-              onTouchMove={handlePointerMove}
-              onTouchEnd={handlePointerUp}
               className={`w-full h-full object-contain ${
                 isCurrentDrawer ? 'cursor-crosshair' : 'cursor-default pointer-events-none'
               }`}
             />
-
-
-            {/* TOP RIGHT "CLEAR" BUTTON */}
-            {isCurrentDrawer && (
-              <button
-                onClick={handleClear}
-                className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-slate-900/85 hover:bg-slate-900 text-slate-200 border border-slate-700/80 text-xs font-medium flex items-center gap-1.5 shadow-md z-30 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-slate-400" />
-                <span>Clear</span>
-              </button>
-            )}
-
-            {/* VERTICAL TOOLBAR DOCKED ON THE LEFT EDGE */}
-            {isCurrentDrawer && (
-              <div className="absolute left-2 right-12 top-2 bg-[#0e131f]/95 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 flex flex-row items-center gap-1 shadow-2xl z-30 lg:left-3 lg:top-1/2 lg:right-auto lg:-translate-y-1/2 lg:flex-col lg:rounded-2xl lg:p-1.5 lg:gap-2">
-                {/* Pencil */}
-                <button
-                  onClick={() => {
-                    setCurrentTool('pencil');
-                    setStrokeWidth(4);
-                  }}
-                  title="Pencil"
-                  className={`p-2 rounded-lg lg:p-2.5 lg:rounded-xl transition-all ${
-                    currentTool === 'pencil'
-                      ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-
-                {/* Eraser */}
-                <button
-                  onClick={() => setCurrentTool('eraser')}
-                  title="Eraser"
-                  className={`p-2 rounded-xl transition-all ${
-                    currentTool === 'eraser'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Eraser className="w-4 h-4" />
-                </button>
-
-                {/* Shape tools stay available on larger touch targets. */}
-                <button
-                  onClick={() => setCurrentTool('rectangle')}
-                  title="Rectangle"
-                  className={`hidden sm:block p-2 rounded-xl transition-all ${
-                    currentTool === 'rectangle'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Square className="w-4 h-4" />
-                </button>
-
-                {/* Circle */}
-                <button
-                  onClick={() => setCurrentTool('circle')}
-                  title="Circle"
-                  className={`hidden sm:block p-2 rounded-xl transition-all ${
-                    currentTool === 'circle'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <CircleIcon className="w-4 h-4" />
-                </button>
-
-                {/* Text tool */}
-                <button
-                  onClick={() => setCurrentTool('text')}
-                  title="Text"
-                  className={`hidden sm:block p-2 rounded-xl transition-all ${
-                    currentTool === 'text'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Type className="w-4 h-4" />
-                </button>
-
-                <div className="w-5 h-[1px] bg-slate-700/80 my-0.5 hidden lg:block" />
-
-                {/* Color Swatches */}
-                <div className="flex flex-row gap-1.5 lg:flex-col lg:gap-2">
-                  {PALETTE_COLORS.map((color) => {
-                    const isSelected = currentColor.toLowerCase() === color.toLowerCase();
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          setCurrentColor(color);
-                          if (currentTool === 'eraser') setCurrentTool('pencil');
-                        }}
-                        style={{ backgroundColor: color }}
-                          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border transition-all ${
-                          isSelected
-                            ? 'scale-125 ring-2 ring-red-500 border-white shadow-md'
-                            : 'border-slate-500 hover:scale-110'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
-          {isCurrentDrawer && secretDrawHint && (
-            <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2.5 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[9px] font-mono uppercase tracking-[0.16em] text-amber-300">Private drawing hint</div>
-                {isHintVisible && <div className="mt-1 text-xs text-amber-50 leading-relaxed">{secretDrawHint}</div>}
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsHintVisible((visible) => !visible)}
-                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-400/15 border border-amber-400/35 text-[10px] font-bold uppercase tracking-wider text-amber-200"
-              >
-                {isHintVisible ? 'Hide' : 'Show hint'}
-              </button>
-            </div>
-          )}
-
+          {/* 4. GUESSER CONSOLE DIRECTLY UNDER CANVAS (NO SCROLLING ON MOBILE!) */}
           {!isCurrentDrawer && (
-            <div className="lg:hidden rounded-2xl border border-sky-500/35 bg-[#101722]/95 p-3.5 shadow-xl">
-              <div className="flex items-center justify-between gap-3 mb-2.5">
-                <div>
-                  <div className="text-[9px] font-mono uppercase tracking-[0.16em] text-sky-300">Guess now</div>
-                  <div className="text-xs font-semibold text-white">Two key words can solve the clue.</div>
+            <div className="w-full rounded-2xl border border-sky-500/50 bg-[#0d1322]/95 backdrop-blur-md p-3 shadow-2xl space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-sky-300">
+                  <Crosshair className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Enter Your Deduction</span>
                 </div>
-                {guessFeedback && <span className="text-[10px] text-amber-300 text-right">{guessFeedback}</span>}
+                <span className="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                  2 words match = SOLVED!
+                </span>
               </div>
+
               <form onSubmit={handleGuessSubmit} className="flex gap-2">
                 <input
                   type="text"
                   value={guessInput}
                   onChange={(e) => setGuessInput(e.target.value)}
-                  placeholder="e.g. train ticket"
-                  className="min-w-0 flex-1 px-3 py-2.5 bg-slate-950 border border-slate-600 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                  placeholder="Type 2-3 words (e.g. guard sleeping, ticket desk)..."
+                  className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-600 focus:border-sky-400 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans shadow-inner"
                 />
                 <button
                   type="submit"
                   disabled={!guessInput.trim()}
-                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
                 >
                   Guess
                 </button>
               </form>
+
+              {guessFeedback && (
+                <div className="p-2 rounded-xl text-xs font-bold text-amber-200 bg-amber-950/80 border border-amber-500/80 flex items-center justify-between animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{guessFeedback}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Live Guesses Stream */}
+              <div className="pt-1 border-t border-slate-800/80">
+                <div className="text-[10px] font-mono text-slate-400 mb-1.5">Recent Deductions:</div>
+                <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
+                  {guessFeed.length === 0 ? (
+                    <span className="text-[11px] text-slate-500 italic">No guesses yet. Submit the first theory!</span>
+                  ) : (
+                    guessFeed.slice(-6).map((g, idx) => (
+                      <span
+                        key={idx}
+                        className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
+                          g.isCorrect
+                            ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold'
+                            : g.isClose
+                            ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
+                            : 'bg-slate-900 border border-slate-700 text-slate-300'
+                        }`}
+                      >
+                        <span className="font-bold text-white">{g.playerName}:</span>
+                        <span>{g.text}</span>
+                        {g.isClose && <span className="text-amber-400 text-[9px] font-bold">★ CLOSE</span>}
+                        {g.isCorrect && <span className="text-emerald-400 text-[9px] font-bold">✓ SOLVED</span>}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* BOTTOM TOOLBAR BELOW CANVAS: UNDO, REDO, BRUSH SIZE, ZOOM */}
-          <div className="bg-[#10131c]/95 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
-            {/* Undo & Redo */}
-            <div className="flex items-center gap-2 justify-between sm:justify-start w-full sm:w-auto">
-              <button
-                onClick={handleUndo}
-                disabled={strokes.length === 0}
-                title="Undo"
-                className="p-1 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleRedo}
-                disabled={redoStack.length === 0}
-                title="Redo"
-                className="p-1 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-              >
-                <RotateCw className="w-4 h-4" />
-              </button>
+          {/* 5. SUBMIT DRAWING BUTTON (ONLY FOR CURRENT DRAWER) */}
+          {isCurrentDrawer && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full py-3 rounded-2xl text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] shadow-[0_4px_20px_rgba(220,38,38,0.45)] transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>{isSubmitting ? 'Submitting Clue...' : 'Submit Drawing'}</span>
+            </button>
+          )}
+
+          {/* 6. COMPACT ROUND ROSTER (NO EMPTY BOXES PUSHING PAGE DOWN!) */}
+          <div className="space-y-1.5 pt-1">
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-sky-400" /> Active Detectives ({rosterPlayers.length}/8)
+              </span>
+              {8 - rosterPlayers.length > 0 && (
+                <span className="text-[10px] text-slate-500 font-normal">
+                  +{8 - rosterPlayers.length} open slots
+                </span>
+              )}
             </div>
 
-            {/* Brush Size Slider with Red Fill */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-              <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Brush Size</span>
-              <input
-                type="range"
-                min="2"
-                max="20"
-                value={strokeWidth}
-                onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                className="w-28 sm:w-32 accent-red-600 cursor-pointer h-1.5 bg-slate-700 rounded-lg"
-              />
-            </div>
+            <div className="flex flex-wrap gap-2">
+              {rosterPlayers.map((p) => {
+                const isDrawing = p.id === gameState.currentTurnPlayerId;
+                const hasSubmitted = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
 
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 justify-end sm:justify-start w-full sm:w-auto">
-              <button
-                onClick={() => setZoomLevel((z) => Math.max(50, z - 10))}
-                className="hover:text-white px-1.5 py-0.5 rounded hover:bg-slate-800"
-                title="Zoom Out"
-              >
-                -
-              </button>
-              <button
-                onClick={() => setZoomLevel(100)}
-                className="hover:text-white px-1 font-bold"
-                title="Reset to 100%"
-              >
-                {zoomLevel}%
-              </button>
-              <button
-                onClick={() => setZoomLevel((z) => Math.min(200, z + 10))}
-                className="hover:text-white px-1.5 py-0.5 rounded hover:bg-slate-800"
-                title="Zoom In"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* THIS ROUND'S DRAWINGS CAROUSEL STRIP */}
-          <div className="space-y-2">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-sky-400" /> Round roster
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-              {Array.from({ length: 6 }).map((_, slotIdx) => {
-                const p = rosterPlayers[slotIdx];
-                const card = p ? gameState.evidenceCards.find((e) => e.sourcePlayerId === p.id) : null;
-                const isCurrentTurn = p && p.id === gameState.currentTurnPlayerId;
-
-                if (!p) {
-                  return (
-                    <div
-                      key={`slot-${slotIdx}`}
-                      className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-2 text-center flex flex-col items-center justify-center gap-1 text-slate-600"
-                    >
-                      <span className="text-xs font-mono">--</span>
-                      <div className="text-[10px] text-slate-500">Empty</div>
-                    </div>
-                  );
-                }
-
-                if (card) {
+                if (isDrawing) {
                   return (
                     <div
                       key={p.id}
-                      className="bg-slate-900/80 border border-emerald-500/50 rounded-xl p-1.5 text-center flex flex-col items-center justify-between gap-1 shadow-sm overflow-hidden"
-                    >
-                      <div className="w-full h-8 rounded bg-[#fbf8f1] overflow-hidden flex items-center justify-center">
-                        {card.drawingPreview ? (
-                          <img src={card.drawingPreview} alt="Clue" className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="text-xs text-slate-600">🎨</span>
-                        )}
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-200 truncate w-full">{p.nickname}</div>
-                      <div className="text-[9px] font-mono text-emerald-400">✓ Submitted</div>
-                    </div>
-                  );
-                }
-
-                if (isCurrentTurn) {
-                  return (
-                    <div
-                      key={p.id}
-                      className="bg-red-950/40 border-2 border-red-600 rounded-xl p-2 text-center flex flex-col items-center justify-center gap-1 shadow-[0_0_12px_rgba(220,38,38,0.4)]"
+                      className="flex-1 min-w-[130px] bg-red-950/40 border-2 border-red-600 rounded-xl px-3 py-2 flex items-center gap-2 shadow-[0_0_12px_rgba(220,38,38,0.4)]"
                     >
                       <Pencil className="w-3.5 h-3.5 text-red-400 animate-bounce" />
-                      <div className="text-[11px] font-bold text-white leading-tight truncate w-full">
-                        {p.id === currentUser.id ? 'Your Turn' : p.nickname}
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white truncate">
+                          {p.id === currentUser.id ? 'Your Turn' : p.nickname}
+                        </div>
+                        <div className="text-[9px] font-mono text-red-400">Drawing Clue...</div>
                       </div>
-                      <div className="text-[9px] font-mono text-red-400">Drawing...</div>
                     </div>
                   );
                 }
@@ -940,49 +892,36 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 return (
                   <div
                     key={p.id}
-                    className="bg-slate-900/60 border border-slate-800 rounded-xl p-2 text-center flex flex-col items-center justify-center gap-1 text-slate-400"
+                    className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 flex items-center gap-2 border ${
+                      hasSubmitted ? 'bg-emerald-950/30 border-emerald-600/60 text-emerald-200' : 'bg-slate-900/60 border-slate-800 text-slate-300'
+                    }`}
                   >
                     <AvatarBadge avatar={p.avatar} size="sm" />
-                    <div className="text-[10px] text-slate-300 leading-tight truncate w-full">{p.nickname}</div>
-                    <div className="text-[9px] font-mono text-slate-500">Pending</div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-white truncate">{p.nickname}</div>
+                      <div className="text-[9px] font-mono text-slate-400">
+                        {hasSubmitted ? '✓ Submitted' : 'Investigating'}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
-
-          {/* BIG PRIMARY "SUBMIT DRAWING" BUTTON */}
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !isCurrentDrawer}
-            className={`w-full py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 ${
-              isCurrentDrawer
-                ? 'bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] shadow-[0_4px_20px_rgba(220,38,38,0.45)] transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 opacity-60 cursor-not-allowed'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            <span>
-              {isSubmitting
-                ? 'Submitting Clue...'
-                : isCurrentDrawer
-                ? 'Submit Drawing'
-                : `Waiting for ${currentDrawer?.nickname || 'detective'} to sketch...`}
-            </span>
-          </button>
         </div>
 
         {/* ======================================================== */}
         {/* RIGHT COLUMN: PLAYERS ROSTER & ROOM CHAT (3 cols)        */}
         {/* ======================================================== */}
-        <div className="order-3 lg:order-3 lg:col-span-3 flex flex-col gap-4">
+        <div className="lg:col-span-3 flex flex-col gap-3">
           {/* PLAYERS LIST ROSTER */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2.5">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2">
-              | Players ({rosterPlayers.length}/8)
+          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md space-y-2">
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
+              <span>| Players ({rosterPlayers.length}/8)</span>
+              <span className="text-[10px] text-slate-500 font-normal">Room: {roomCode || gameState.roomId.substring(0, 6)}</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {rosterPlayers.map((p) => {
                 const isDrawing = p.id === gameState.currentTurnPlayerId;
                 const hasSubmitted = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
@@ -995,18 +934,18 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         : 'bg-slate-900/40 border-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
                         <AvatarBadge avatar={p.avatar} size="sm" />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-white">{p.nickname}</span>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="text-xs font-semibold text-white truncate">{p.nickname}</span>
                         {p.isHost && <span className="text-amber-400 text-xs">👑</span>}
                       </div>
                     </div>
 
                     <div
-                      className={`text-[10px] font-mono ${
+                      className={`text-[10px] font-mono shrink-0 ${
                         isDrawing
                           ? 'text-red-400 font-bold'
                           : hasSubmitted
@@ -1029,7 +968,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               channel={channel}
               showTabs={true}
               defaultTab="Room Chat"
-              className="min-h-[290px]"
+              className="min-h-[260px]"
             />
           </div>
         </div>

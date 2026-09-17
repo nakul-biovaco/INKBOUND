@@ -47,6 +47,7 @@ export const Game: React.FC<GameProps> = ({
   const [drawerPromptOptions, setDrawerPromptOptions] = useState<Array<{ optionIndex: number; previewText: string; difficulty: string }>>([]);
   const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(null);
   const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
+  const [publicHint, setPublicHint] = useState<string | null>(null);
 
   // Authoritative round feedback and transitions
   const [clueSolvedBanner, setClueSolvedBanner] = useState<{ solverName: string; drawerName: string; objective: string; solverPoints: number; drawerPoints: number } | null>(null);
@@ -109,6 +110,7 @@ export const Game: React.FC<GameProps> = ({
       setNextTurnNotice(null);
       setIsStorySelection(false);
       setSelectedStoryBanner(null);
+      setPublicHint(null);
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
@@ -120,6 +122,9 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
+      if (payload?.hint) {
+        setPublicHint(payload.hint);
+      }
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
@@ -224,6 +229,9 @@ export const Game: React.FC<GameProps> = ({
       }
       if (payload?.drawerPrivateState?.hint) {
         setSecretDrawHint(payload.drawerPrivateState.hint);
+      }
+      if (payload?.gameState?.hint) {
+        setPublicHint(payload.gameState.hint);
       }
       if (payload?.drawerPrivateState?.options) {
         setDrawerPromptOptions(payload.drawerPrivateState.options);
@@ -607,6 +615,7 @@ export const Game: React.FC<GameProps> = ({
           secretClue={secretClue}
           secretDrawObjective={secretDrawObjective}
           secretDrawHint={secretDrawHint}
+          publicHint={publicHint || secretDrawHint}
           roomCode={room.code}
           channel={channel}
           onSubmitDrawing={handleSubmitDrawing}

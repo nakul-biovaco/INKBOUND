@@ -74,49 +74,58 @@ export class GuessEngine {
     }
 
     // ==========================================
-    // LAYER 3: SEMANTIC KEYWORD & ENTITY OVERLAP
+    // LAYER 3: 2-WORD CLUE MATCH & SEMANTIC KEYWORDS
+    // If ANY 2 clue/keyword/visual words match the guess, mark as CORRECT!
     // ==========================================
-    if (event.semanticKeywords && event.semanticKeywords.length > 0) {
-      const normalizedKeywords = event.semanticKeywords.map((k) => Normalizer.normalize(k));
-      let matchedKeywordCount = 0;
+    const allClueSources: string[] = [
+      event.drawingObjective,
+      ...(event.semanticKeywords || []),
+      ...(event.visualElements || []),
+      ...(event.acceptedConcepts || []),
+      ...(event.hint ? [event.hint] : []),
+    ];
 
-      for (const kw of normalizedKeywords) {
-        const kwStem = kw.length > 4 ? kw.substring(0, 4) : kw;
-        let matched = false;
+    const clueWordSet = new Set<string>();
+    for (const source of allClueSources) {
+      const tokens = Normalizer.tokenize(source);
+      for (const t of tokens) {
+        if (t.length >= 3) {
+          clueWordSet.add(t);
+        }
+      }
+    }
 
-        if (guessTokens.has(kw) || normalizedGuess.includes(kw)) {
-          matched = true;
-        } else {
-          // Check token stems (e.g. 'hiding' matches 'hide')
-          for (const token of guessTokens) {
-            if (token.startsWith(kwStem) || kw.startsWith(token.length > 4 ? token.substring(0, 4) : token)) {
-              matched = true;
+    const matchedClueWords = new Set<string>();
+    for (const clueWord of clueWordSet) {
+      const stem = clueWord.length > 4 ? clueWord.substring(0, 4) : clueWord;
+
+      if (guessTokens.has(clueWord) || normalizedGuess.includes(clueWord)) {
+        matchedClueWords.add(clueWord);
+      } else {
+        for (const token of guessTokens) {
+          if (token.length >= 3) {
+            const tokenStem = token.length > 4 ? token.substring(0, 4) : token;
+            if (token.startsWith(stem) || clueWord.startsWith(tokenStem) || FuzzyMatcher.diceCoefficient(token, clueWord) >= 0.75) {
+              matchedClueWords.add(clueWord);
               break;
             }
           }
         }
-
-        if (matched) {
-          matchedKeywordCount++;
-        }
       }
+    }
 
-      const keywordRatio = matchedKeywordCount / normalizedKeywords.length;
+    if (matchedClueWords.size >= 2) {
+      logger.info('Clue 2-word match solve', { rawGuess, matchedWords: Array.from(matchedClueWords) });
+      return { verdict: 'CORRECT', confidence: 0.90, matchedConcept: event.drawingObjective };
+    }
 
-      // If they hit primary keywords (e.g. guard + diamond + hide)
-      if (matchedKeywordCount >= 3 || (matchedKeywordCount >= 2 && keywordRatio >= 0.5)) {
-        logger.info('Semantic keyword solve', { rawGuess, matchedCount: matchedKeywordCount });
-        return { verdict: 'CORRECT', confidence: 0.85, matchedConcept: event.drawingObjective };
-      }
-
-      // If they hit at least 1 keyword, it's CLOSE ("Almost...")
-      if (matchedKeywordCount >= 1) {
-        return {
-          verdict: 'CLOSE',
-          confidence: 0.60,
-          feedbackMessage: "You're close! Keep guessing!",
-        };
-      }
+    if (matchedClueWords.size === 1) {
+      const word = Array.from(matchedClueWords)[0];
+      return {
+        verdict: 'CLOSE',
+        confidence: 0.65,
+        feedbackMessage: `You found 1 clue word ("${word}")! Add 1 more word!`,
+      };
     }
 
     // ==========================================

@@ -237,6 +237,7 @@ export interface PublicGameState {
   solvedEvents: SolvedEventRecord[];
   storyVariables: Record<string, boolean | number | string>;
   drawingStrokeCount: number;
+  hint?: string | null;
 }
 
 export interface PrivateDrawerState {

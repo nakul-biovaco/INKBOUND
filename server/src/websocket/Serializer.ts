@@ -35,6 +35,7 @@ export class Serializer {
       solvedEvents: session.solvedEvents,
       storyVariables: session.storyVariables,
       drawingStrokeCount: session.drawingStrokes.length,
+      hint: session.selectedEvent ? session.selectedEvent.hint : null,
     };
   }
 

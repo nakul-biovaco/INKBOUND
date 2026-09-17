@@ -399,6 +399,7 @@ export class GameEngine {
       roundStartedAt: startedAt,
       roundEndsAt: endsAt,
       timeLimitSeconds: drawSeconds,
+      hint: this.session.selectedEvent?.hint || null,
     });
   }
 
