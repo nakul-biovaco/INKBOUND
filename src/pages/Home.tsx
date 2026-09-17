@@ -151,17 +151,17 @@ export const Home: React.FC<HomeProps> = ({
       </div>
 
       {/* 2.1 HANGING SKELETON SUSPENDED FROM TOP CAUTION TAPE */}
-      <div className="absolute top-[18px] sm:top-[20px] right-3 sm:right-6 md:right-10 lg:right-16 z-20 pointer-events-none select-none">
+      <div className="absolute top-[14px] sm:top-[16px] right-3 sm:right-6 md:right-10 lg:right-16 z-20 pointer-events-none select-none">
         <div className="hanging-skeleton-wrap">
           <div
-            className="hanging-skeleton-body pointer-events-auto cursor-pointer"
+            className="hanging-skeleton-body pointer-events-auto cursor-pointer group"
             onClick={() => SoundService.playBoneRattle()}
             title="Evidence #8492: Hanging Remains (Click to rattle)"
           >
             <img
               src="/assets/skeleton.png"
               alt="Hanging Crime Scene Skeleton"
-              className="w-14 sm:w-18 md:w-22 lg:w-26 h-auto object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)] transform hover:scale-105 transition-transform"
+              className="w-24 sm:w-32 md:w-44 lg:w-52 h-auto object-contain filter drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)] transform group-hover:scale-105 transition-transform"
             />
           </div>
         </div>

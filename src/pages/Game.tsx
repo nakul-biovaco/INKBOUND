@@ -84,6 +84,7 @@ export const Game: React.FC<GameProps> = ({
       SoundService.playDramaticSting();
       setIsStorySelection(false);
       setSelectedStoryBanner(payload);
+      setTimeout(() => setSelectedStoryBanner(null), 5000);
       setGameState((prev) => ({
         ...prev,
         status: 'STORY_SELECTION',
@@ -113,6 +114,7 @@ export const Game: React.FC<GameProps> = ({
       setNextTurnNotice(null);
       setIsStorySelection(false);
       setSelectedStoryBanner(null);
+      setPlayerStatusNotice(null);
       setPublicHint(null);
       setGameState((prev) => ({
         ...prev,
@@ -126,6 +128,11 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
       SoundService.playTurnStart();
+      setClueSolvedBanner(null);
+      setStoryRevealData(null);
+      setNextTurnNotice(null);
+      setSelectedStoryBanner(null);
+      setPlayerStatusNotice(null);
       if (payload?.hint) {
         setPublicHint(payload.hint);
       }
@@ -162,6 +169,7 @@ export const Game: React.FC<GameProps> = ({
         solverPoints: payload.scoreAward?.solverPoints || 150,
         drawerPoints: payload.scoreAward?.drawerPoints || 100,
       });
+      setTimeout(() => setClueSolvedBanner(null), 5000);
       if (payload.updatedScores) {
         setGameState((prev) => ({
           ...prev,
@@ -180,11 +188,15 @@ export const Game: React.FC<GameProps> = ({
         revealedText: payload.revealedText,
         solvedCount: payload.solvedCount,
       });
+      setTimeout(() => setStoryRevealData(null), 7000);
     });
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
       SoundService.playTurnStart();
       setStoryRevealData(null);
+      setClueSolvedBanner(null);
+      setSelectedStoryBanner(null);
+      setPlayerStatusNotice(null);
       setNextTurnNotice(`Round over! Next player's turn to draw...`);
       setTimeout(() => setNextTurnNotice(null), 3000);
     });
@@ -193,6 +205,7 @@ export const Game: React.FC<GameProps> = ({
       if (!payload?.playerId) return;
       const player = gameState.players.find((p) => p.id === payload.playerId);
       setPlayerStatusNotice(`${player?.nickname || 'A player'} left the game.`);
+      setTimeout(() => setPlayerStatusNotice(null), 3500);
       setGameState((prev) => ({
         ...prev,
         players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: false } : p),
@@ -201,6 +214,7 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
       setPlayerStatusNotice(`${payload?.displayName || 'A player'} came back!`);
+      setTimeout(() => setPlayerStatusNotice(null), 3500);
       setGameState((prev) => ({
         ...prev,
         ...(payload?.gameState
@@ -383,19 +397,35 @@ export const Game: React.FC<GameProps> = ({
 
       {/* SELECTED STORY BROADCAST BANNER */}
       {selectedStoryBanner && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md">
-          <Sparkles className="w-5 h-5 text-amber-400" />
+        <div
+          onClick={() => setSelectedStoryBanner(null)}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-all"
+        >
+          <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
           <div className="text-left">
             <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider">Case Selected</div>
             <div className="text-sm font-bold font-serif">{selectedStoryBanner.title} ({selectedStoryBanner.genre})</div>
           </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedStoryBanner(null);
+            }}
+            className="text-amber-400 hover:text-white font-bold ml-2 text-base shrink-0 leading-none"
+            title="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {/* CLUE SOLVED SUCCESS BANNER */}
       {clueSolvedBanner && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-emerald-950/95 border border-emerald-500 text-emerald-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md">
-          <CheckCircle className="w-6 h-6 text-emerald-400" />
+        <div
+          onClick={() => setClueSolvedBanner(null)}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-emerald-950/95 border border-emerald-500 text-emerald-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-emerald-900/95 transition-all"
+        >
+          <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
           <div className="text-left">
             <div className="text-xs font-bold text-white">
               {clueSolvedBanner.solverName} solved the clue: "{clueSolvedBanner.objective}"!
@@ -404,6 +434,16 @@ export const Game: React.FC<GameProps> = ({
               +{clueSolvedBanner.solverPoints} pts to {clueSolvedBanner.solverName} • +{clueSolvedBanner.drawerPoints} pts to {clueSolvedBanner.drawerName} (Drawer)
             </div>
           </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setClueSolvedBanner(null);
+            }}
+            className="text-emerald-400 hover:text-white font-bold text-base ml-2 shrink-0 leading-none"
+            title="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -411,6 +451,13 @@ export const Game: React.FC<GameProps> = ({
       {storyRevealData && (
         <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="max-w-2xl w-full bg-[#0e131f] border border-amber-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-fadeIn text-center space-y-4">
+            <button
+              onClick={() => setStoryRevealData(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-700 transition-colors"
+              title="Close"
+            >
+              ×
+            </button>
             <div className="text-xs font-mono uppercase text-amber-400 tracking-widest font-bold">
               Investigation Discovery #{storyRevealData.solvedCount}
             </div>
@@ -420,8 +467,16 @@ export const Game: React.FC<GameProps> = ({
             <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-2xl font-serif text-sm sm:text-base text-slate-200 leading-relaxed italic">
               "{storyRevealData.revealedText}"
             </div>
-            <div className="text-xs font-mono text-slate-400">
-              Advancing to next investigator in 8 seconds...
+            <div className="flex items-center justify-center gap-4 pt-2">
+              <span className="text-xs font-mono text-slate-400">
+                Advancing to next investigator...
+              </span>
+              <button
+                onClick={() => setStoryRevealData(null)}
+                className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-mono rounded-lg transition-colors"
+              >
+                Dismiss (×)
+              </button>
             </div>
           </div>
         </div>
@@ -429,23 +484,57 @@ export const Game: React.FC<GameProps> = ({
 
       {/* NEXT TURN TRANSITION NOTICE */}
       {nextTurnNotice && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-sky-500 text-sky-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md">
+        <div
+          onClick={() => setNextTurnNotice(null)}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-sky-500 text-sky-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-all"
+        >
           <Clock className="w-5 h-5 text-sky-400 animate-spin" />
           <span className="text-xs font-mono font-bold uppercase">{nextTurnNotice}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setNextTurnNotice(null);
+            }}
+            className="text-sky-400 hover:text-white font-bold ml-1 text-sm leading-none"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {playerStatusNotice && (
-        <div className="fixed top-36 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-amber-500 text-amber-100 px-5 py-3 rounded-xl shadow-2xl text-xs font-mono">
-          {playerStatusNotice}
+        <div
+          onClick={() => setPlayerStatusNotice(null)}
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-amber-500 text-amber-100 px-5 py-2.5 rounded-full shadow-2xl text-xs font-mono flex items-center gap-3 cursor-pointer hover:bg-slate-800 transition-all backdrop-blur-md"
+        >
+          <span>{playerStatusNotice}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setPlayerStatusNotice(null);
+            }}
+            className="text-amber-400 hover:text-white font-bold text-sm leading-none"
+            title="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {/* DRAWER SECRET PROMPT SELECTION OVERLAY */}
-      {/* DRAWER SECRET PROMPT SELECTION OVERLAY */}
       {drawerPromptOptions.length > 0 && gameState.currentTurnPlayerId === currentUser.id && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-3xl w-full bg-[#0e131f] border border-red-600/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center animate-fadeIn">
+          <div className="max-w-3xl w-full bg-[#0e131f] border border-red-600/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center animate-fadeIn relative">
+            <button
+              onClick={() => {
+                if (drawerPromptOptions.length > 0) handleSelectPrompt(0);
+                setDrawerPromptOptions([]);
+              }}
+              className="absolute top-4 right-4 text-xs font-mono text-slate-400 hover:text-white px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 transition-colors"
+              title="Pick default clue and begin"
+            >
+              Auto-Pick Clue
+            </button>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest font-bold mb-2">
               <Sparkles className="w-3.5 h-3.5" /> SECRET MISSION
             </div>
@@ -493,7 +582,7 @@ export const Game: React.FC<GameProps> = ({
       )}
 
       {/* 1. DYNAMIC STORY SELECTION & CASE DOSSIER PHASE */}
-      {(gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO' || (gameState.status as string) === 'COUNTDOWN' || isStorySelection || selectedStoryBanner) && gameState.status !== 'PLAYER_DRAWING' && (
+      {(gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO' || (gameState.status as string) === 'COUNTDOWN' || isStorySelection || selectedStoryBanner) && gameState.status !== 'PLAYER_DRAWING' && gameState.status !== 'FINAL_THEORY' && gameState.status !== 'RESULTS' && (
         <div className="relative z-10 flex flex-col min-h-screen justify-between">
           <GameHeader
             currentUser={currentUser}
@@ -530,9 +619,17 @@ export const Game: React.FC<GameProps> = ({
                   "{selectedStoryBanner.description}"
                 </div>
 
-                <div className="pt-4 flex items-center justify-center gap-3 text-xs font-mono text-slate-400">
-                  <Clock className="w-4 h-4 text-red-500 animate-spin" />
-                  <span>Getting clues ready for the drawing round...</span>
+                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-red-500 animate-spin" />
+                    <span>Getting clues ready for the drawing round...</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedStoryBanner(null)}
+                    className="px-4 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold font-mono transition-colors"
+                  >
+                    Ready / Dismiss (×)
+                  </button>
                 </div>
               </div>
             ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
