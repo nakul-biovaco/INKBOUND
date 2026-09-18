@@ -658,14 +658,14 @@ export const Home: React.FC<HomeProps> = ({
         </div>
 
         {/* 6. DESK EVIDENCE BOARD & FILING DRAWERS */}
-        <div className="w-full max-w-4xl mx-auto mt-10 pt-6 border-t border-slate-800/80">
+        <div className="w-full max-w-4xl mx-auto mt-10 pt-6 border-t border-[#8c6d48]/40">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 font-bold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              INVESTIGATION DESK FILES
+            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-amber-200 font-bold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              CLASSIFIED INVESTIGATION ARCHIVES
             </span>
-            <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
-              CLICK TO INSPECT ARCHIVES
+            <span className="text-[10px] font-mono text-stone-400 hidden sm:inline">
+              CLICK DOSSIER TO INSPECT RECORDS
             </span>
           </div>
 
@@ -676,16 +676,23 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsCasesModalOpen(true);
               }}
-              className="p-4 rounded-2xl bg-[#111622]/90 hover:bg-[#161d2d] border border-slate-700/80 hover:border-red-500/70 cursor-pointer transition-all flex items-center gap-3.5 group shadow-lg"
+              className="relative p-4 rounded-2xl border-2 border-[#8c6d48] hover:border-red-800 cursor-pointer transition-all flex items-center gap-3.5 group shadow-md hover:shadow-xl hover:-translate-y-1 text-[#221711] select-none overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
-              <div className="w-10 h-10 rounded-xl bg-red-950/60 border border-red-700/50 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+              <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-red-800 group-hover:scale-110 transition-transform shadow-inner shrink-0">
                 <Folder className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white group-hover:text-red-300 transition-colors font-serif">
+                <div className="text-xs font-black text-[#1a110a] group-hover:text-red-900 transition-colors font-serif">
                   Case Stories
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">3 mystery themes</div>
+                <div className="text-[10px] text-[#5c4028] font-mono font-bold">3 mystery themes</div>
               </div>
             </div>
 
@@ -695,16 +702,23 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsRulesModalOpen(true);
               }}
-              className="p-4 rounded-2xl bg-[#111622]/90 hover:bg-[#161d2d] border border-slate-700/80 hover:border-amber-500/70 cursor-pointer transition-all flex items-center gap-3.5 group shadow-lg"
+              className="relative p-4 rounded-2xl border-2 border-[#8c6d48] hover:border-red-800 cursor-pointer transition-all flex items-center gap-3.5 group shadow-md hover:shadow-xl hover:-translate-y-1 text-[#221711] select-none overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
-              <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-700/50 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+              <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-[#7a5839] group-hover:scale-110 transition-transform shadow-inner shrink-0">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors font-serif">
+                <div className="text-xs font-black text-[#1a110a] group-hover:text-red-900 transition-colors font-serif">
                   How to Play
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">Simple 4-step rules</div>
+                <div className="text-[10px] text-[#5c4028] font-mono font-bold">Simple 4-step rules</div>
               </div>
             </div>
 
@@ -714,16 +728,23 @@ export const Home: React.FC<HomeProps> = ({
                 SoundService.playCardFlip();
                 setIsLeaderboardModalOpen(true);
               }}
-              className="p-4 rounded-2xl bg-[#111622]/90 hover:bg-[#161d2d] border border-slate-700/80 hover:border-yellow-500/70 cursor-pointer transition-all flex items-center gap-3.5 group shadow-lg"
+              className="relative p-4 rounded-2xl border-2 border-[#8c6d48] hover:border-red-800 cursor-pointer transition-all flex items-center gap-3.5 group shadow-md hover:shadow-xl hover:-translate-y-1 text-[#221711] select-none overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
-              <div className="w-10 h-10 rounded-xl bg-yellow-950/60 border border-yellow-700/50 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
+              <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform shadow-inner shrink-0">
                 <Trophy className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-white group-hover:text-yellow-300 transition-colors font-serif">
+                <div className="text-xs font-black text-[#1a110a] group-hover:text-red-900 transition-colors font-serif">
                   Top Detectives
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">Best case solvers</div>
+                <div className="text-[10px] text-[#5c4028] font-mono font-bold">Best case solvers</div>
               </div>
             </div>
           </div>
@@ -745,71 +766,83 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 1: HOW TO PLAY FIELD MANUAL                        */}
       {/* ======================================================== */}
       {isRulesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#111622] border-2 border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsRulesModalOpen(false);
               }}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
-              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">
-                FORENSIC MANUAL // RULES
+              <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                FORENSIC MANUAL // DIRECTIVES
               </span>
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">How to Play INKBOUND</h3>
-              <p className="text-xs text-slate-400">4 essential rules for every detective on the case:</p>
+              <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-wide pt-1">How to Play INKBOUND</h3>
+              <p className="text-xs text-[#5c4028] font-mono">4 essential directives for every detective on duty:</p>
             </div>
 
             <div className="space-y-3 pt-2 text-xs">
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-red-950 border border-red-500 text-red-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+              <div className="p-3.5 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl flex items-start gap-3 shadow-sm">
+                <span className="w-6 h-6 rounded-full bg-red-800 text-white font-mono font-black flex items-center justify-center flex-shrink-0 text-xs shadow-sm">
                   1
                 </span>
                 <div>
-                  <div className="font-bold text-white font-serif">Draw Your Confidential Clue</div>
-                  <div className="text-slate-300 text-[11px] mt-0.5">
-                    When it's your turn, you receive a secret piece of the crime story. Sketch it on the canvas before the timer runs out!
+                  <div className="font-bold text-[#1a110a] font-serif">Sketch Your Confidential Clue</div>
+                  <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
+                    When it is your turn, you receive a secret piece of the crime story. Sketch it on the canvas before time runs out!
                   </div>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-amber-950 border border-amber-500 text-amber-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+              <div className="p-3.5 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl flex items-start gap-3 shadow-sm">
+                <span className="w-6 h-6 rounded-full bg-amber-800 text-white font-mono font-black flex items-center justify-center flex-shrink-0 text-xs shadow-sm">
                   2
                 </span>
                 <div>
-                  <div className="font-bold text-white font-serif">Guess What's Being Sketched</div>
-                  <div className="text-slate-300 text-[11px] mt-0.5">
-                    Detectives type answers in the chat. Match the clue's key words to earn investigation points!
+                  <div className="font-bold text-[#1a110a] font-serif">Guess What Is Being Drawn</div>
+                  <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
+                    Detectives type answers in the live telegraph chat. Match 2 key words to score points for both you and the artist!
                   </div>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-sky-950 border border-sky-500 text-sky-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+              <div className="p-3.5 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl flex items-start gap-3 shadow-sm">
+                <span className="w-6 h-6 rounded-full bg-[#7a5839] text-white font-mono font-black flex items-center justify-center flex-shrink-0 text-xs shadow-sm">
                   3
                 </span>
                 <div>
-                  <div className="font-bold text-white font-serif">Identify the Secret Imposter</div>
-                  <div className="text-slate-300 text-[11px] mt-0.5">
-                    One player receives a fake clue and attempts to distort the timeline without getting discovered!
+                  <div className="font-bold text-[#1a110a] font-serif">Unmask the Covert Impostor</div>
+                  <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
+                    One detective was fed a fabricated clue. Spot contradictions in their sketch before they misdirect the investigation!
                   </div>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 font-mono font-bold flex items-center justify-center flex-shrink-0 text-xs">
+              <div className="p-3.5 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl flex items-start gap-3 shadow-sm">
+                <span className="w-6 h-6 rounded-full bg-emerald-800 text-white font-mono font-black flex items-center justify-center flex-shrink-0 text-xs shadow-sm">
                   4
                 </span>
                 <div>
-                  <div className="font-bold text-white font-serif">Deliver the Accusation</div>
-                  <div className="text-slate-300 text-[11px] mt-0.5">
-                    Put the sketches in timeline order, vote for the culprit, and reveal the truth for victory points!
+                  <div className="font-bold text-[#1a110a] font-serif">Reconstruct & Vote Final Theory</div>
+                  <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
+                    Assemble the chronological timeline, accuse the culprit, and reveal the truth for maximum case merits!
                   </div>
                 </div>
               </div>
@@ -822,65 +855,75 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 2: CASE STORIES (DEEPER CLUES)                     */}
       {/* ======================================================== */}
       {isCasesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#111622] border-2 border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 max-h-[85vh] overflow-y-auto text-[#221711] select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsCasesModalOpen(false);
               }}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
-              <span className="text-[10px] font-mono text-red-400 uppercase tracking-widest font-bold">
-                BUREAU FILES // CASES
+              <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                BUREAU FILES // ACTIVE DOSSIERS
               </span>
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Unsolved Crime Cases</h3>
-              <p className="text-xs text-slate-400">Cases available to solve when you host a game room:</p>
+              <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-wide pt-1">Unsolved Crime Cases</h3>
+              <p className="text-xs text-[#5c4028] font-mono">Interactive mysteries ready for your squad:</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-              <div className="p-4 bg-slate-900/90 border border-red-700/60 rounded-2xl space-y-2">
-                <span className="text-[10px] font-mono text-red-400 uppercase font-bold">Vault Heist</span>
-                <h4 className="text-sm font-bold text-white font-serif">The Midnight Museum</h4>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  The Eye of Osiris diamond was stolen at 11:44 PM during a planned blackout in the museum vault.
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2">
+              <div className="p-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl space-y-2 shadow-sm">
+                <span className="text-[10px] font-mono text-red-800 uppercase font-black">Vault Heist</span>
+                <h4 className="text-sm font-black text-[#1a110a] font-serif">The Midnight Museum</h4>
+                <p className="text-[11px] text-[#4a3522] leading-relaxed font-serif italic">
+                  "The Eye of Osiris diamond vanished during a 4-minute blackout in the central vault."
                 </p>
-                <div className="text-[10px] font-mono text-amber-300">4 Suspects • Normal</div>
+                <div className="text-[10px] font-mono text-red-800 font-bold">4 Suspects • Normal</div>
               </div>
 
-              <div className="p-4 bg-slate-900/90 border border-sky-700/60 rounded-2xl space-y-2">
-                <span className="text-[10px] font-mono text-sky-400 uppercase font-bold">Orient Express</span>
-                <h4 className="text-sm font-bold text-white font-serif">The Grand Express</h4>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  A locked luxury coach between Paris and Vienna holding a vanished cryptographic ledger.
+              <div className="p-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl space-y-2 shadow-sm">
+                <span className="text-[10px] font-mono text-[#7a5839] uppercase font-black">Luxury Rail</span>
+                <h4 className="text-sm font-black text-[#1a110a] font-serif">The Grand Express</h4>
+                <p className="text-[11px] text-[#4a3522] leading-relaxed font-serif italic">
+                  "A locked luxury coach between Paris and Vienna holding a vanished cryptographic ledger."
                 </p>
-                <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
+                <div className="text-[10px] font-mono text-[#7a5839] font-bold">4 Suspects • Normal</div>
               </div>
 
-              <div className="p-4 bg-slate-900/90 border border-amber-700/60 rounded-2xl space-y-2">
-                <span className="text-[10px] font-mono text-amber-400 uppercase font-bold">Gothic Manor</span>
-                <h4 className="text-sm font-bold text-white font-serif">Blackwood Poisoning</h4>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Lord Blackwood was found unconscious beside an uncorked vintage decanter in the great dining hall.
+              <div className="p-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl space-y-2 shadow-sm">
+                <span className="text-[10px] font-mono text-amber-800 uppercase font-black">Gothic Manor</span>
+                <h4 className="text-sm font-black text-[#1a110a] font-serif">Blackwood Poisoning</h4>
+                <p className="text-[11px] text-[#4a3522] leading-relaxed font-serif italic">
+                  "Lord Blackwood was found unconscious beside an uncorked vintage decanter in the grand hall."
                 </p>
-                <div className="text-[10px] font-mono text-slate-400">4 Suspects • Normal</div>
+                <div className="text-[10px] font-mono text-amber-800 font-bold">4 Suspects • Normal</div>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 flex justify-end">
               <button
                 onClick={() => {
                   SoundService.playStamp();
                   setIsCasesModalOpen(false);
                   onCreateRoom();
                 }}
-                className="px-6 py-3 game-btn-red text-white font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 bg-red-800 hover:bg-red-700 text-white font-serif font-black rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-md border border-red-950"
               >
-                Host a Game Now
+                Host an Investigation Room →
               </button>
             </div>
           </div>
@@ -891,40 +934,50 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 3: TOP DETECTIVES HONOR ROLL                      */}
       {/* ======================================================== */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#111622] border-2 border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsLeaderboardModalOpen(false);
               }}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
-              <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest font-bold">
-                FORENSIC SQUAD // RANKINGS
+              <span className="px-2 py-0.5 rounded border border-amber-800 bg-amber-800/10 text-amber-900 font-mono text-[10px] font-black uppercase tracking-widest">
+                FORENSIC MERIT REGISTER // RANKINGS
               </span>
-              <h3 className="text-xl font-bold text-white font-serif tracking-wide">Detective Honor Roll</h3>
-              <p className="text-xs text-slate-400">Top-rated investigators across all solved crime scenes:</p>
+              <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-wide pt-1">Detective Honor Roll</h3>
+              <p className="text-xs text-[#5c4028] font-mono">Top-rated investigators across all solved crime scenes:</p>
             </div>
 
             <div className="space-y-2 pt-2">
               {leaderboardList.map((det) => (
                 <div
                   key={det.name}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-[#fdfbf6] border-2 border-[#8c6d48] text-xs shadow-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-amber-400 text-sm">#{det.rank}</span>
+                    <span className="font-mono font-black text-red-800 text-sm">#{det.rank}</span>
                     <AvatarBadge avatar={det.avatar} size="sm" />
-                    <span className="font-bold text-white">{det.name}</span>
+                    <span className="font-bold text-[#1a110a]">{det.name}</span>
                   </div>
                   <div className="flex items-center gap-3 font-mono">
-                    <span className="text-slate-400 text-[11px]">{det.rate}</span>
-                    <span className="font-bold text-amber-300">{det.score} PTS</span>
+                    <span className="text-[#5c4028] text-[11px]">{det.rate}</span>
+                    <span className="font-black text-amber-800">{det.score} PTS</span>
                   </div>
                 </div>
               ))}
@@ -937,21 +990,34 @@ export const Home: React.FC<HomeProps> = ({
       {/* MODAL 4: AVATAR PICKER                                   */}
       {/* ======================================================== */}
       {isAvatarPickerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#111622] border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <button
               onClick={() => {
                 SoundService.playClick();
                 setIsAvatarPickerOpen(false);
               }}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Select Badge Icon</h3>
-              <p className="text-xs text-slate-400">Choose your detective badge insignia:</p>
+              <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                DETECTIVE CREDENTIALS
+              </span>
+              <h3 className="text-lg font-black text-[#1a110a] font-serif pt-1">Select Badge Insignia</h3>
+              <p className="text-xs text-[#5c4028] font-mono">Choose your official bureau seal icon:</p>
             </div>
 
             <div className="py-2">
@@ -973,38 +1039,45 @@ export const Home: React.FC<HomeProps> = ({
       {/* ======================================================== */}
       {isQuickPlaying && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="relative w-full max-w-md bg-[#0e131f] border-2 border-red-600/70 rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] text-center space-y-6 overflow-hidden">
-            {/* Background radar grid */}
-            <div className="absolute inset-0 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
+          <div
+            className="relative w-full max-w-md border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] text-center space-y-6 overflow-hidden text-[#221711] select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
 
             {/* Concentric pulsing circles with sweeping radar hand */}
             <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border border-red-600/30 animate-ping" />
-              <div className="absolute inset-2 rounded-full border border-red-500/40" />
-              <div className="absolute inset-6 rounded-full border border-red-500/60" />
-              <div className="absolute inset-10 rounded-full border border-amber-500/70" />
+              <div className="absolute inset-0 rounded-full border-2 border-red-800/30 animate-ping" />
+              <div className="absolute inset-2 rounded-full border border-red-800/40" />
+              <div className="absolute inset-6 rounded-full border border-[#8c6d48]/60" />
+              <div className="absolute inset-10 rounded-full border border-amber-800/70" />
               {/* Radar sweep arm */}
               <div className="absolute inset-0 rounded-full overflow-hidden animate-spin [animation-duration:3s]">
-                <div className="w-1/2 h-1/2 bg-gradient-to-br from-red-500/40 to-transparent origin-bottom-right" />
+                <div className="w-1/2 h-1/2 bg-gradient-to-br from-red-800/40 to-transparent origin-bottom-right" />
               </div>
-              <Radio className="w-10 h-10 text-red-400 z-10 animate-pulse" />
+              <Radio className="w-10 h-10 text-red-800 z-10 animate-pulse" />
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] font-mono tracking-widest text-red-400 font-bold uppercase">
-                POLICE RADIO FREQUENCY • SCANNING
+              <div className="text-[11px] font-mono tracking-widest text-red-800 font-black uppercase">
+                POLICE TELEGRAPH DISPATCH • ACTIVE
               </div>
-              <h3 className="text-xl font-bold text-white font-serif">
-                Searching Global Bureaus...
+              <h3 className="text-xl font-black text-[#1a110a] font-serif">
+                Scanning Active Bureaus...
               </h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                Scanning public investigations for open detective desks. Merging you into the highest-density room...
+              <p className="text-xs text-[#5c4028] max-w-xs mx-auto leading-relaxed font-mono">
+                Locating open detective desks. Merging you into the highest-density room...
               </p>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-xs font-mono text-amber-300">
-              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span>Optimizing Matchmaking...</span>
+            <div className="flex items-center justify-center gap-2 text-xs font-mono text-red-800 font-bold">
+              <Loader2 className="w-4 h-4 animate-spin text-red-800" />
+              <span>Matching Case Squad...</span>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HelpCircle, Send } from 'lucide-react';
 import { AuthoritativeGameState, QuestionType } from '../../types/game';
 import { Player } from '../../types/player';
 
@@ -15,6 +16,12 @@ interface QuestionItem {
   questionText: string;
   timeAgo: string;
 }
+
+const parchmentStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+  backgroundSize: '16px 16px, 100% 100%',
+};
 
 export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
   gameState,
@@ -50,15 +57,25 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#121622]/90 border border-slate-700/80 rounded-2xl p-6 shadow-2xl space-y-6 select-none max-w-2xl mx-auto">
+    <div
+      className="w-full border-2 border-[#8c6d48] rounded-3xl p-6 sm:p-7 shadow-xl space-y-6 select-none max-w-2xl mx-auto text-[#221711] relative overflow-hidden"
+      style={parchmentStyle}
+    >
+      <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute -top-1.5 left-7 w-3.5 h-7 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
       {/* 1. Header & Type Pills */}
       <div>
-        <h3 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-          Ask a Teammate
+        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase tracking-wider mb-1">
+          <HelpCircle className="w-2.5 h-2.5 text-red-800" /> OFFICIAL INTERROGATION FORM
+        </div>
+        <h3 className="text-base sm:text-lg font-black text-[#1a110a] font-serif tracking-wide">
+          Direct Inquiry Slip
         </h3>
 
         {/* Category Buttons: [Who?] [What?] [Where?] [When?] [How?] [Why?] */}
-        <div className="flex flex-wrap items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-2 my-3">
           {questionTypes.map((qType) => {
             const isSelected = selectedType === qType;
             return (
@@ -66,10 +83,10 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
                 key={qType}
                 type="button"
                 onClick={() => setSelectedType(qType)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-sky-600 text-white shadow-[0_0_10px_rgba(2,132,199,0.5)]'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-red-800 text-white shadow-md border border-red-950 scale-105'
+                    : 'bg-[#ede0ce] text-[#4e3725] hover:text-[#1a110a] border border-[#bfa98e]'
                 }`}
               >
                 {qType.charAt(0) + qType.slice(1).toLowerCase()}?
@@ -78,20 +95,20 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
           })}
         </div>
 
-        <p className="text-xs text-slate-400">
-          Ask a player a question (they'll answer with a drawing)
+        <p className="text-xs text-[#5c4028] font-mono">
+          Dispatch an official inquiry to a teammate (they will sketch their answer).
         </p>
       </div>
 
       {/* 2. Ask Form */}
       <form onSubmit={handleSend} className="space-y-4">
         {/* Target Detective Dropdown */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-300 font-medium">Ask</span>
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <span className="text-[#3e2b1b] font-bold">Interrogate:</span>
           <select
             value={targetPlayerId}
             onChange={(e) => setTargetPlayerId(e.target.value)}
-            className="py-1.5 px-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-sky-500 font-medium"
+            className="py-1.5 px-3 bg-[#ede0ce] border border-[#bfa98e] rounded-xl text-[#1a110a] outline-none font-bold cursor-pointer"
           >
             {otherPlayers.map((p) => (
               <option key={p.id} value={p.id}>
@@ -107,45 +124,50 @@ export const QuestioningPanel: React.FC<QuestioningPanelProps> = ({
             type="text"
             value={questionInput}
             onChange={(e) => setQuestionInput(e.target.value)}
-            placeholder="Type your question for them..."
-            className="w-full py-3 px-4 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm outline-none focus:border-sky-500"
+            placeholder="Type your official case inquiry..."
+            className="w-full py-3 px-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-xl text-[#1a110a] placeholder-[#8c6d48] text-sm outline-none font-serif shadow-inner focus:border-red-800"
           />
         </div>
 
         {/* Send Question Red Button */}
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-red-700 via-red-600 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-[0_3px_15px_rgba(220,38,38,0.4)] transition-all"
+          className="w-full py-3 rounded-xl bg-red-800 hover:bg-red-700 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-red-950"
         >
-          Send Question
+          <Send className="w-3.5 h-3.5" />
+          <span>Dispatch Inquiry</span>
         </button>
       </form>
 
       {/* 3. Recent Questions List */}
-      <div className="pt-4 border-t border-slate-800 space-y-3">
-        <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400">
-          Recent Questions
+      <div className="pt-4 border-t border-[#bfa98e]/80 space-y-3">
+        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#7a5839]">
+          Dispatched Inquiries Log
         </h4>
 
-        <div className="space-y-2.5">
-          {questionsList.map((q) => (
-            <div
-              key={q.id}
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center font-bold text-slate-300">
-                  {q.senderName.charAt(0)}
+        <div className="space-y-2">
+          {questionsList.length === 0 ? (
+            <div className="text-xs font-mono text-[#8c6d48] italic">No active inquiries dispatched yet.</div>
+          ) : (
+            questionsList.map((q) => (
+              <div
+                key={q.id}
+                className="flex items-center justify-between p-3 rounded-xl bg-[#fdfbf6] border border-[#b89e7c] text-xs shadow-xs"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center font-bold text-[#1a110a]">
+                    {q.senderName.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#1a110a] mr-2">{q.senderName} → {q.targetName}:</span>
+                    <span className="text-[#3e2b1b] italic font-serif">"{q.questionText}"</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-semibold text-white mr-2">{q.senderName}</span>
-                  <span className="text-slate-300">{q.questionText}</span>
-                </div>
-              </div>
 
-              <span className="text-[10px] font-mono text-slate-500">{q.timeAgo}</span>
-            </div>
-          ))}
+                <span className="text-[10px] font-mono text-[#8c6d48] font-bold">{q.timeAgo}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

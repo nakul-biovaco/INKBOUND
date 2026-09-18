@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock, Sparkles } from 'lucide-react';
 import { AuthoritativeGameState, EvidenceCard } from '../../types/game';
 import { Player } from '../../types/player';
 
@@ -17,6 +18,12 @@ const TIMELINE_STEPS = [
   { time: '12:30 AM', label: 'Evidence logged' },
 ];
 
+const parchmentStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+  backgroundSize: '16px 16px, 100% 100%',
+};
+
 export const TimelineBoard: React.FC<TimelineBoardProps> = ({
   gameState,
   onSlotEvidence,
@@ -30,12 +37,34 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
   const unplacedCards = gameState.evidenceCards.filter((c) => !placedEvidenceIds.has(c.id));
 
   return (
-    <div className="w-full bg-[#121622]/90 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-8 select-none">
+    <div
+      className="w-full border-2 border-[#8c6d48] rounded-3xl p-5 sm:p-7 shadow-xl space-y-7 select-none text-[#221711] relative overflow-hidden"
+      style={parchmentStyle}
+    >
+      <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute -top-1.5 left-7 w-3.5 h-7 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase tracking-wider mb-1">
+            <Clock className="w-2.5 h-2.5 text-red-800" /> OFFICIAL TIME LOG
+          </div>
+          <h3 className="text-base sm:text-lg font-black text-[#1a110a] font-serif tracking-wide">
+            Chronological Incident Timeline
+          </h3>
+          <p className="text-[11px] text-[#5c4028] font-mono">
+            Slot witness sketches into sequence to reconstruct the heist.
+          </p>
+        </div>
+      </div>
+
       {/* 1. HORIZONTAL TIMELINE BAR */}
       <div>
-        <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8 px-1 sm:px-4">
+        <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 px-1 sm:px-4">
           {/* Horizontal Line connecting time points */}
-          <div className="absolute hidden sm:block top-1/2 left-8 right-8 h-[2px] bg-slate-700 -translate-y-1/2 z-0" />
+          <div className="absolute hidden sm:block top-1/2 left-8 right-8 h-[3px] bg-[#8c6d48] -translate-y-1/2 z-0 rounded-full" />
 
           {TIMELINE_STEPS.map((step) => {
             const slottedId = gameState.timelineSlots[step.time];
@@ -44,13 +73,13 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
             return (
               <div key={step.time} className="relative z-10 flex flex-col items-center">
                 <div
-                  className={`w-3 h-3 rounded-full border-2 transition-all ${
+                  className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
                     isSlotted
-                      ? 'bg-sky-400 border-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.8)]'
-                      : 'bg-slate-900 border-slate-500'
+                      ? 'bg-red-700 border-red-950 shadow-md scale-110'
+                      : 'bg-[#ede0ce] border-[#8c6d48]'
                   }`}
                 />
-                <span className="text-[11px] font-mono text-slate-400 mt-2 font-semibold">
+                <span className="text-[11px] font-mono text-[#4a3322] mt-2 font-bold">
                   {step.time}
                 </span>
               </div>
@@ -58,8 +87,8 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
           })}
         </div>
 
-        {/* Slotted Cards Cards Grid matching the 5 timestamps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Slotted Cards Grid matching the 5 timestamps */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5">
           {TIMELINE_STEPS.map((step) => {
             const slottedId = gameState.timelineSlots[step.time];
             const slottedCard = slottedId ? evidenceMap.get(slottedId) : null;
@@ -74,22 +103,22 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
                     onSlotEvidence(step.time, null);
                   }
                 }}
-                className={`flex flex-col items-center rounded-xl p-3 border transition-all cursor-pointer ${
+                className={`flex flex-col items-center rounded-2xl p-3 border-2 transition-all cursor-pointer shadow-sm ${
                   slottedCard
-                    ? 'bg-slate-900/90 border-slate-600 shadow-md'
+                    ? 'bg-[#fdfbf6] border-[#8c6d48] hover:border-red-800'
                     : selectedEvidenceId
-                    ? 'bg-slate-900/40 border-dashed border-sky-500/80 hover:bg-sky-950/20'
-                    : 'bg-slate-900/30 border-dashed border-slate-800'
+                    ? 'bg-[#ede0ce]/60 border-dashed border-red-800 hover:bg-red-50'
+                    : 'bg-[#f5ecdd]/40 border-dashed border-[#b89e7c]'
                 }`}
               >
                 {/* Event Label Tag */}
-                <div className="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-[11px] font-mono text-slate-300 font-semibold mb-2.5 text-center w-full truncate">
+                <div className="px-2 py-1 rounded-lg bg-[#ede0ce] border border-[#bfa98e] text-[10px] font-mono text-[#3e2b1b] font-black uppercase mb-2.5 text-center w-full truncate">
                   {step.label}
                 </div>
 
                 {/* Evidence Card Display */}
                 {slottedCard ? (
-                  <div className="w-full aspect-[4/3] bg-white rounded-lg p-1.5 shadow overflow-hidden flex flex-col items-center justify-center">
+                  <div className="w-full aspect-[4/3] bg-[#fcf8f1] rounded-xl p-1.5 shadow-inner overflow-hidden flex flex-col items-center justify-center border border-[#b89e7c]">
                     {slottedCard.drawingPreview ? (
                       <img
                         src={slottedCard.drawingPreview}
@@ -97,12 +126,18 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <span className="text-[10px] text-slate-700">Sketch</span>
+                      <span className="text-[10px] text-[#5c4028] font-mono">Sketch</span>
                     )}
                   </div>
                 ) : (
-                  <div className="w-full aspect-[4/3] rounded-lg flex items-center justify-center text-center text-xs text-slate-500 font-mono">
-                    {selectedEvidenceId ? 'Click to assign' : 'Drag evidence here'}
+                  <div className="w-full aspect-[4/3] rounded-xl flex items-center justify-center text-center text-xs text-[#8c6d48] font-mono">
+                    {selectedEvidenceId ? 'Click to assign' : 'Empty slot'}
+                  </div>
+                )}
+
+                {slottedCard && (
+                  <div className="mt-2 text-[10px] font-bold text-[#1a110a] truncate w-full text-center">
+                    By {slottedCard.sourcePlayerName}
                   </div>
                 )}
               </div>
@@ -112,14 +147,15 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
       </div>
 
       {/* 2. UNPLACED EVIDENCE SECTION */}
-      <div className="pt-6 border-t border-slate-800">
-        <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3">
-          Unplaced Evidence ({unplacedCards.length})
+      <div className="pt-5 border-t border-[#bfa98e]/80">
+        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#7a5839] mb-3 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-red-800" />
+          <span>Unplaced Evidence Clues ({unplacedCards.length})</span>
         </h4>
 
         {unplacedCards.length === 0 ? (
-          <p className="text-xs text-slate-500 font-mono">
-            All drawings have been placed on the timeline!
+          <p className="text-xs text-[#5c4028] font-mono">
+            ✓ All discovered drawings have been placed into the timeline!
           </p>
         ) : (
           <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
@@ -130,7 +166,6 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
                 <div
                   key={card.id}
                   onClick={() => {
-                    // Quick-assign to the first empty slot or toggle selection
                     const emptySlot = TIMELINE_STEPS.find(
                       (s) => !gameState.timelineSlots[s.time]
                     );
@@ -138,22 +173,22 @@ export const TimelineBoard: React.FC<TimelineBoardProps> = ({
                       onSlotEvidence(emptySlot.time, card.id);
                     }
                   }}
-                  className={`w-28 sm:w-32 bg-white p-2 rounded-lg shadow-md cursor-pointer transition-all transform hover:scale-105 ${
-                    isSelected ? 'ring-2 ring-red-500' : ''
+                  className={`w-28 sm:w-32 bg-[#fdfbf6] p-2 rounded-xl border-2 shadow-md cursor-pointer transition-all transform hover:scale-105 ${
+                    isSelected ? 'border-red-800 ring-2 ring-red-800' : 'border-[#8c6d48]'
                   }`}
                 >
-                  <div className="w-full aspect-[4/3] bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+                  <div className="w-full aspect-[4/3] bg-[#fcf8f1] rounded-lg overflow-hidden flex items-center justify-center border border-[#b89e7c] shadow-inner">
                     {card.drawingPreview ? (
                       <img
                         src={card.drawingPreview}
                         alt={card.title}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain p-0.5"
                       />
                     ) : (
-                      <span className="text-[9px] text-slate-400">Card</span>
+                      <span className="text-[9px] text-[#8c6d48] font-mono">Clue</span>
                     )}
                   </div>
-                  <div className="text-[10px] text-slate-700 font-serif font-bold text-center mt-1 truncate">
+                  <div className="text-[10px] text-[#1a110a] font-serif font-bold text-center mt-1 truncate">
                     {card.sourcePlayerName}
                   </div>
                 </div>

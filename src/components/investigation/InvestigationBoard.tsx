@@ -16,6 +16,8 @@ import {
   Trash2,
   MessageSquare,
   Link2,
+  Sparkles,
+  Users,
 } from 'lucide-react';
 import { AuthoritativeGameState, EvidenceCard } from '../../types/game';
 import { Player } from '../../types/player';
@@ -37,6 +39,12 @@ interface InvestigationBoardProps {
 }
 
 type NavTab = 'Evidence' | 'Timeline' | 'Connections' | 'Question' | 'Notes';
+
+const parchmentStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+  backgroundSize: '16px 16px, 100% 100%',
+};
 
 export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
   gameState,
@@ -193,7 +201,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
           maxPlayers={8}
           currentPhase="INVESTIGATION"
           caseTitle={gameState.currentCase?.title || 'The Midnight Museum Heist'}
-          roundText="Round 1 Completed • Investigation Phase"
+          roundText="Investigation Board • Physical Docket"
           onLeaveRoom={onLeaveRoom}
         />
       </div>
@@ -214,77 +222,88 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               }
             }}
             title={activeTab === 'Evidence' ? 'Exit to Headquarters' : 'Return to Evidence Board'}
-            className="p-2.5 w-10 h-10 rounded-xl bg-[#0e131f]/90 border border-slate-700/60 text-slate-300 hover:text-white flex items-center justify-center transition-colors shadow-md cursor-pointer hover:border-slate-500"
+            className="p-2.5 w-10 h-10 rounded-xl bg-[#fbf7ee] border-2 border-[#8c6d48] text-[#3e2a1b] hover:text-red-800 flex items-center justify-center transition-colors shadow-md cursor-pointer hover:border-red-800"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          {/* Vertical Tab Navigation */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-2 shadow-2xl backdrop-blur-md space-y-1">
+          {/* Vertical Tab Navigation (Aged Manila File Folder Index Tabs) */}
+          <div
+            className="relative border-2 border-[#8c6d48] rounded-2xl p-2.5 shadow-xl space-y-1.5 text-[#221711] overflow-hidden"
+            style={parchmentStyle}
+          >
+            <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/60 pointer-events-none" />
+            <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/60 pointer-events-none" />
+
+            <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#7a5839] border-b border-[#bfa98e]/70 mb-1">
+              FILE DOCKETS
+            </div>
+
             <button
               onClick={() => setActiveTab('Evidence')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Evidence'
-                  ? 'bg-red-950/40 text-white border-l-2 border-red-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-red-800 text-white shadow-md border border-red-900'
+                  : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
               }`}
             >
-              <FileText className="w-3.5 h-3.5 text-red-500" />
+              <FileText className={`w-3.5 h-3.5 ${activeTab === 'Evidence' ? 'text-amber-200' : 'text-[#7a5839]'}`} />
               <span>Evidence</span>
             </button>
 
             <button
               onClick={() => setActiveTab('Timeline')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Timeline'
-                  ? 'bg-red-950/40 text-white border-l-2 border-red-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-red-800 text-white shadow-md border border-red-900'
+                  : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
               }`}
             >
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className={`w-3.5 h-3.5 ${activeTab === 'Timeline' ? 'text-amber-200' : 'text-[#7a5839]'}`} />
               <span>Timeline</span>
             </button>
 
             <button
               onClick={() => setActiveTab('Connections')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Connections'
-                  ? 'bg-red-950/40 text-white border-l-2 border-red-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-red-800 text-white shadow-md border border-red-900'
+                  : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
               }`}
             >
-              <Share2 className="w-3.5 h-3.5 text-slate-400" />
+              <Share2 className={`w-3.5 h-3.5 ${activeTab === 'Connections' ? 'text-amber-200' : 'text-[#7a5839]'}`} />
               <span>Connections</span>
             </button>
 
             <button
               onClick={() => setActiveTab('Question')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Question'
-                  ? 'bg-red-950/40 text-white border-l-2 border-red-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-red-800 text-white shadow-md border border-red-900'
+                  : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
               }`}
             >
-              <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+              <HelpCircle className={`w-3.5 h-3.5 ${activeTab === 'Question' ? 'text-amber-200' : 'text-[#7a5839]'}`} />
               <span>Question</span>
             </button>
 
             <button
               onClick={() => setActiveTab('Notes')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Notes'
-                  ? 'bg-red-950/40 text-white border-l-2 border-red-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-red-800 text-white shadow-md border border-red-900'
+                  : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
               }`}
             >
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <FileText className={`w-3.5 h-3.5 ${activeTab === 'Notes' ? 'text-amber-200' : 'text-[#7a5839]'}`} />
               <span>Notes</span>
             </button>
           </div>
 
           {/* Pinned parchment note at bottom left */}
-          <div className="relative hidden lg:block bg-[#f8f1e0] p-4 rounded-xl shadow-xl -rotate-2 border border-[#d8c3a5] text-[#2c1d10] font-handwriting text-sm leading-snug">
-            "Same drawings. Different perspectives. What's the truth?"
+          <div className="relative hidden lg:block bg-[#fdfbf6] p-4 rounded-xl shadow-xl -rotate-2 border-2 border-[#8c6d48] text-[#2c1d10] font-serif italic text-xs leading-relaxed">
+            <div className="w-3.5 h-3.5 rounded-full bg-red-700 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow border border-red-950" />
+            "Same drawings. Different perspectives. What is the real truth?"
           </div>
         </div>
 
@@ -296,28 +315,39 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
           {activeTab === 'Evidence' && (
             <>
               {/* TOP HALF: EVIDENCE BOARD POLAROIDS */}
-              <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md space-y-4">
+              <div
+                className="relative border-2 border-[#8c6d48] rounded-3xl p-4 sm:p-5 shadow-xl text-[#221711] overflow-hidden space-y-4 select-none"
+                style={parchmentStyle}
+              >
+                {/* Decorative Paper Elements */}
+                <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute -top-1.5 left-7 w-3.5 h-7 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
                 {/* Evidence Board Header & Filter bar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#bfa98e]/80 pb-3">
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white font-serif tracking-wide">
-                      Evidence Board
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase tracking-wider mb-1">
+                      <Sparkles className="w-2.5 h-2.5 text-red-800" /> FORENSIC EVIDENCE BOARD
+                    </div>
+                    <h3 className="text-base sm:text-lg font-black text-[#1a110a] font-serif tracking-wide">
+                      Witness Sketches & Scene Artifacts
                     </h3>
-                    <p className="text-[11px] text-slate-400 font-sans">
-                      All drawings from this round. Look closer. Connect the clues.
+                    <p className="text-[11px] text-[#5c4028] font-mono">
+                      All drawings from this case round. Look closer. Connect the clues.
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 relative">
                     {/* Search toggle */}
                     {isSearchOpen ? (
-                      <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+                      <div className="flex items-center gap-1 bg-[#fdfbf6] border border-[#8c6d48] rounded-xl px-2.5 py-1 shadow-inner">
                         <input
                           type="text"
                           placeholder="Search clues..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="bg-transparent text-xs text-white outline-none w-28 sm:w-36"
+                          className="bg-transparent text-xs text-[#1a110a] placeholder-[#8c6d48] outline-none w-28 sm:w-36 font-mono"
                           autoFocus
                         />
                         <button
@@ -325,7 +355,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                             setIsSearchOpen(false);
                             setSearchQuery('');
                           }}
-                          className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                          className="text-[#8c6d48] hover:text-[#1a110a] text-xs cursor-pointer"
                         >
                           ✕
                         </button>
@@ -334,7 +364,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                       <button
                         onClick={() => setIsSearchOpen(true)}
                         title="Search Evidence"
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-[#ede0ce] border border-[#bfa98e] text-[#4e3725] hover:text-[#1a110a] transition-colors cursor-pointer shadow-sm"
                       >
                         <Search className="w-3.5 h-3.5" />
                       </button>
@@ -344,14 +374,17 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                     <div className="relative">
                       <button
                         onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono hover:border-slate-700 transition-colors cursor-pointer"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#ede0ce] border border-[#bfa98e] text-xs text-[#3e2b1b] font-mono font-bold hover:border-[#8c6d48] transition-colors cursor-pointer shadow-sm"
                       >
                         <span>{filterCategory === 'All' ? 'All Evidence' : filterCategory}</span>
-                        <ChevronDown className="w-3 h-3 text-slate-500" />
+                        <ChevronDown className="w-3 h-3 text-[#7a5839]" />
                       </button>
 
                       {isFilterDropdownOpen && (
-                        <div className="absolute right-0 top-9 z-50 bg-[#121620] border border-slate-700 rounded-xl p-1.5 shadow-2xl min-w-[120px] space-y-1">
+                        <div
+                          className="absolute right-0 top-10 z-50 border-2 border-[#8c6d48] rounded-xl p-1.5 shadow-2xl min-w-[130px] space-y-1"
+                          style={parchmentStyle}
+                        >
                           {(['All', 'Sketches', 'Timeline'] as const).map((cat) => (
                             <button
                               key={cat}
@@ -359,10 +392,10 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                                 setFilterCategory(cat);
                                 setIsFilterDropdownOpen(false);
                               }}
-                              className={`w-full text-left px-2.5 py-1 text-xs rounded-lg cursor-pointer ${
+                              className={`w-full text-left px-2.5 py-1 text-xs font-mono font-bold rounded-lg cursor-pointer ${
                                 filterCategory === cat
-                                  ? 'bg-red-950/50 text-red-300 font-bold'
-                                  : 'text-slate-300 hover:bg-slate-800'
+                                  ? 'bg-red-800 text-white'
+                                  : 'text-[#3e2b1b] hover:bg-[#ede0ce]'
                               }`}
                             >
                               {cat}
@@ -373,19 +406,19 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                     </div>
 
                     {/* Grid & List View Toggle */}
-                    <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5">
+                    <div className="flex items-center rounded-xl bg-[#ede0ce] border border-[#bfa98e] p-0.5 shadow-inner">
                       <button
                         onClick={() => setViewMode('grid')}
-                        className={`p-1 rounded cursor-pointer ${
-                          viewMode === 'grid' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-white'
+                        className={`p-1.5 rounded-lg cursor-pointer transition-all ${
+                          viewMode === 'grid' ? 'bg-red-800 text-white shadow-sm' : 'text-[#7a5839] hover:text-[#1a110a]'
                         }`}
                       >
                         <LayoutGrid className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setViewMode('list')}
-                        className={`p-1 rounded cursor-pointer ${
-                          viewMode === 'list' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-white'
+                        className={`p-1.5 rounded-lg cursor-pointer transition-all ${
+                          viewMode === 'list' ? 'bg-red-800 text-white shadow-sm' : 'text-[#7a5839] hover:text-[#1a110a]'
                         }`}
                       >
                         <List className="w-3.5 h-3.5" />
@@ -396,7 +429,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
                 {/* POLAROIDS (GRID VIEW) */}
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 pt-1">
                     {filteredEvidence.map((card) => (
                       <div
                         key={card.id}
@@ -416,35 +449,35 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                             createdAt: '',
                           })
                         }
-                        className="relative bg-[#fcf9f2] p-2 pb-3 rounded-lg shadow-xl hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1 border border-[#e2d5bd] flex flex-col justify-between select-none group"
+                        className="relative bg-[#fdfbf6] p-2 pb-3 rounded-xl shadow-md hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1 border-2 border-[#8c6d48] flex flex-col justify-between select-none group"
                       >
                         {/* Red Push Pin on Top */}
-                        <div className="w-3.5 h-3.5 rounded-full bg-red-600 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow-md border border-red-900 z-10" />
+                        <div className="w-3.5 h-3.5 rounded-full bg-red-700 absolute -top-2 left-1/2 -translate-x-1/2 shadow-md border border-red-950 z-10" />
 
                         {/* Card Order Tag */}
-                        <div className="text-[10px] font-mono text-slate-400 font-bold mb-1">
-                          #{card.order}
+                        <div className="text-[10px] font-mono text-[#8c6d48] font-black uppercase tracking-wider mb-1">
+                          CLUE #{card.order}
                         </div>
 
                         {/* Sketch Drawing Box */}
-                        <div className="w-full aspect-[4/3] bg-white rounded border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                        <div className="w-full aspect-[4/3] bg-[#fcf8f1] rounded-lg border border-[#b89e7c] overflow-hidden relative flex items-center justify-center shadow-inner">
                           <img
                             src={card.preview}
                             alt={`Clue #${card.order}`}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain p-1"
                           />
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-black/50 rounded text-white">
+                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-black/60 rounded text-white shadow">
                             <Maximize2 className="w-3 h-3" />
                           </div>
                         </div>
 
                         {/* Card Footer: Author + Time */}
-                        <div className="mt-2 flex items-center justify-between text-[10px]">
+                        <div className="mt-2.5 flex items-center justify-between text-[10px]">
                           <div className="flex items-center gap-1 min-w-0">
                             <AvatarBadge avatar={card.avatar} size="xs" />
-                            <span className="font-bold text-slate-800 truncate">By {card.author}</span>
+                            <span className="font-bold text-[#1a110a] truncate">{card.author}</span>
                           </div>
-                          <span className="text-slate-500 font-mono text-[9px] flex-shrink-0">
+                          <span className="text-[#8c6d48] font-mono text-[9px] font-bold flex-shrink-0">
                             {card.time}
                           </span>
                         </div>
@@ -473,22 +506,22 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                             createdAt: '',
                           })
                         }
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 transition-all cursor-pointer"
+                        className="flex items-center justify-between p-3 rounded-xl bg-[#fdfbf6] border-2 border-[#8c6d48] hover:border-red-800 transition-all cursor-pointer shadow-sm"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-14 h-11 rounded-lg bg-white overflow-hidden flex items-center justify-center border border-slate-300 flex-shrink-0">
-                            <img src={card.preview} alt="Clue" className="w-full h-full object-contain" />
+                          <div className="w-14 h-11 rounded-lg bg-[#fcf8f1] overflow-hidden flex items-center justify-center border border-[#b89e7c] flex-shrink-0 shadow-inner">
+                            <img src={card.preview} alt="Clue" className="w-full h-full object-contain p-0.5" />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-white">Clue #{card.order}</div>
-                            <div className="text-[11px] text-slate-400">
-                              Drawn by {card.author}
+                            <div className="text-xs font-black text-[#1a110a] font-serif">Clue #{card.order}</div>
+                            <div className="text-[11px] text-[#5c4028] font-mono">
+                              Documented by {card.author}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 font-mono text-xs">
-                          <span className="text-red-400 font-bold">{card.time}</span>
-                          <span className="text-slate-500">Inspect →</span>
+                          <span className="text-red-800 font-bold">{card.time}</span>
+                          <span className="text-[#8c6d48] font-bold">Inspect →</span>
                         </div>
                       </div>
                     ))}
@@ -499,20 +532,26 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               {/* BOTTOM HALF: BUILD THE TIMELINE & INVESTIGATION NOTES */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 {/* LEFT SPLIT: BUILD THE TIMELINE (7 cols) */}
-                <div className="md:col-span-7 bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md flex flex-col justify-between">
+                <div
+                  className="md:col-span-7 border-2 border-[#8c6d48] rounded-3xl p-4 sm:p-5 shadow-xl text-[#221711] overflow-hidden flex flex-col justify-between select-none relative"
+                  style={parchmentStyle}
+                >
+                  <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
                   <div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between border-b border-[#bfa98e]/70 pb-2">
                       <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-white font-serif">
-                          Build the Timeline
+                        <h4 className="text-xs sm:text-sm font-black text-[#1a110a] font-serif">
+                          Chronological Sequence Ledger
                         </h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Drag or slot evidence into chronological sequence.
+                        <p className="text-[11px] text-[#5c4028] font-mono mt-0.5">
+                          Order evidence along the heist timeline.
                         </p>
                       </div>
                       <button
                         onClick={() => setActiveTab('Timeline')}
-                        className="text-xs font-mono text-red-400 hover:text-red-300 font-semibold flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-mono text-red-800 hover:text-red-700 font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <span>Full Studio</span>
                         <span>→</span>
@@ -520,18 +559,18 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                     </div>
 
                     {/* Horizontal Timeline Axis */}
-                    <div className="relative mt-6 mb-4 px-2">
-                      <div className="w-full h-[2px] bg-slate-700 relative">
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-slate-600" />
-                        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
-                        <div className="absolute left-2/4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-slate-600" />
-                        <div className="absolute left-3/4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-slate-600" />
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-slate-600" />
+                    <div className="relative mt-5 mb-3 px-2">
+                      <div className="w-full h-[3px] bg-[#8c6d48] relative rounded-full">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#3e2a1b]" />
+                        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-red-700 shadow border border-red-950" />
+                        <div className="absolute left-2/4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#3e2a1b]" />
+                        <div className="absolute left-3/4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#3e2a1b]" />
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#3e2a1b]" />
                       </div>
 
-                      <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-2">
+                      <div className="flex justify-between text-[10px] font-mono text-[#5c4028] font-bold mt-2">
                         <span>11:20 PM</span>
-                        <span className="text-red-400 font-bold">11:30 PM</span>
+                        <span className="text-red-800">11:30 PM</span>
                         <span>11:40 PM</span>
                         <span>11:50 PM</span>
                         <span>12:00 AM</span>
@@ -544,7 +583,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                         <div
                           key={`slot-${ev.id}`}
                           onClick={() => setActiveTab('Timeline')}
-                          className="bg-white p-1 rounded-lg border border-slate-300 shadow-md aspect-[4/3] flex items-center justify-center overflow-hidden hover:scale-105 transition-transform cursor-pointer"
+                          className="bg-[#fdfbf6] p-1 rounded-xl border-2 border-[#8c6d48] shadow-sm aspect-[4/3] flex items-center justify-center overflow-hidden hover:scale-105 transition-transform cursor-pointer"
                         >
                           <img src={ev.preview} alt="Mini" className="w-full h-full object-contain" />
                         </div>
@@ -552,7 +591,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
                       <div
                         onClick={() => setActiveTab('Timeline')}
-                        className="border border-dashed border-slate-700 rounded-lg aspect-[4/3] flex items-center justify-center text-slate-500 hover:text-white hover:border-slate-500 cursor-pointer bg-slate-900/30"
+                        className="border-2 border-dashed border-[#8c6d48] rounded-xl aspect-[4/3] flex items-center justify-center text-[#8c6d48] hover:text-[#1a110a] hover:border-[#1a110a] cursor-pointer bg-[#ede0ce]/50 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </div>
@@ -561,26 +600,29 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                 </div>
 
                 {/* RIGHT SPLIT: INVESTIGATION NOTES PAPER (5 cols) */}
-                <div className="md:col-span-5 relative bg-[#f7f0e1] border-2 border-[#d6be96] rounded-2xl p-4 sm:p-5 shadow-2xl text-[#2d1e11] font-sans rotate-1 overflow-hidden select-none flex flex-col justify-between">
-                  <div className="absolute top-2 right-4 w-4 h-9 border-2 border-slate-400 rounded-full shadow-sm" />
+                <div
+                  className="md:col-span-5 relative border-2 border-[#8c6d48] rounded-3xl p-4 sm:p-5 shadow-xl text-[#2d1e11] font-sans rotate-1 overflow-hidden select-none flex flex-col justify-between"
+                  style={parchmentStyle}
+                >
+                  <div className="absolute top-2 right-4 w-4 h-9 border-2 border-[#a67c52] rounded-full shadow-sm bg-[#d1b89d]/30" />
 
                   <div>
-                    <h4 className="font-serif font-bold text-sm text-[#1f150c]">
-                      Investigation Notes
+                    <h4 className="font-serif font-black text-sm text-[#1f150c]">
+                      Investigation Checklist
                     </h4>
-                    <div className="font-handwriting italic text-sm text-[#6c4e32] mb-3">
-                      "Same drawing. Different truths."
+                    <div className="font-serif italic text-xs text-[#6c4e32] mb-3">
+                      "Cross-examine each inconsistency."
                     </div>
 
                     {/* Interactive Checkboxes */}
                     <div className="space-y-2 text-xs">
                       {[
-                        { id: 'q1', text: 'Who is the person?' },
-                        { id: 'q2', text: 'What is in the red bag?' },
-                        { id: 'q3', text: 'Where is this place?' },
-                        { id: 'q4', text: 'What caused the broken vase?' },
-                        { id: 'q5', text: 'Do the footprints match?' },
-                        { id: 'q6', text: 'Is the car the getaway vehicle?' },
+                        { id: 'q1', text: 'Who is the person in the drawing?' },
+                        { id: 'q2', text: 'What is hidden in the red bag?' },
+                        { id: 'q3', text: 'Where did the suspect flee to?' },
+                        { id: 'q4', text: 'What caused the broken glass shards?' },
+                        { id: 'q5', text: 'Do the footprints match security boots?' },
+                        { id: 'q6', text: 'Is the black sedan the getaway vehicle?' },
                       ].map((item) => (
                         <div
                           key={item.id}
@@ -588,12 +630,12 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                           className="flex items-center gap-2 cursor-pointer hover:text-black transition-colors"
                         >
                           {checkedItems[item.id] ? (
-                            <CheckSquare className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <CheckSquare className="w-4 h-4 text-red-800 flex-shrink-0" />
                           ) : (
-                            <Square className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                            <Square className="w-4 h-4 text-[#8c6d48] flex-shrink-0" />
                           )}
                           <span
-                            className={checkedItems[item.id] ? 'line-through text-slate-500' : 'text-[#2e2014]'}
+                            className={checkedItems[item.id] ? 'line-through text-[#8c6d48]' : 'text-[#2e2014] font-medium'}
                           >
                             {item.text}
                           </span>
@@ -608,34 +650,40 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
           {/* TAB 2: DEDICATED TIMELINE WORKBENCH */}
           {activeTab === 'Timeline' && (
-            <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div
+              className="relative border-2 border-[#8c6d48] rounded-3xl p-6 shadow-xl text-[#221711] space-y-6 select-none overflow-hidden"
+              style={parchmentStyle}
+            >
+              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-red-500" />
+                  <h3 className="text-base font-black text-[#1a110a] font-serif flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-red-800" />
                     <span>Timeline Reconstruction Station</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#5c4028] font-mono">
                     Place each piece of evidence into its chronological occurrence.
                   </p>
                 </div>
-                <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-950/40 px-3 py-1 rounded-lg border border-emerald-500/30">
+                <span className="text-xs font-mono text-emerald-950 font-bold bg-emerald-100 px-3 py-1 rounded-xl border border-emerald-700/60 shadow-sm">
                   Interactive Mode Active
                 </span>
               </div>
 
               {/* 5 Chronological Slots */}
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3.5">
                 {timelineSlots.map((time, idx) => {
                   const assignedCard = evidenceList[idx];
                   return (
                     <div
                       key={time}
-                      className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3 flex flex-col items-center justify-between min-h-[160px] text-center space-y-2 hover:border-slate-500 transition-colors"
+                      className="bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl p-3 flex flex-col items-center justify-between min-h-[170px] text-center space-y-2 shadow-sm hover:border-red-800 transition-colors"
                     >
-                      <div className="text-xs font-mono font-bold text-red-400">{time}</div>
+                      <div className="text-xs font-mono font-black text-red-800">{time}</div>
                       {assignedCard ? (
-                        <div className="w-full aspect-[4/3] bg-white rounded-lg border border-slate-300 overflow-hidden flex items-center justify-center p-1 relative group">
+                        <div className="w-full aspect-[4/3] bg-[#fcf8f1] rounded-xl border border-[#b89e7c] overflow-hidden flex items-center justify-center p-1 relative group shadow-inner">
                           <img
                             src={assignedCard.preview}
                             alt={assignedCard.author}
@@ -646,18 +694,18 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="w-full aspect-[4/3] border border-dashed border-slate-700 rounded-lg flex items-center justify-center text-slate-500 text-xs">
+                        <div className="w-full aspect-[4/3] border-2 border-dashed border-[#b89e7c] rounded-xl flex items-center justify-center text-[#8c6d48] text-xs font-mono">
                           Empty Slot
                         </div>
                       )}
-                      <div className="text-[11px] font-bold text-slate-300">
+                      <div className="text-[11px] font-bold text-[#1a110a]">
                         {assignedCard ? `By ${assignedCard.author}` : 'Unassigned'}
                       </div>
                       <button
                         onClick={() => {
                           onSlotTimelineEvidence(time, assignedCard?.id || null);
                         }}
-                        className="w-full py-1 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors cursor-pointer"
+                        className="w-full py-1.5 text-[10px] font-mono font-bold bg-[#ede0ce] hover:bg-red-800 hover:text-white rounded-lg text-[#3e2b1b] transition-colors cursor-pointer border border-[#bfa98e]"
                       >
                         Lock Slot
                       </button>
@@ -666,11 +714,11 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                 })}
               </div>
 
-              <div className="p-3 bg-red-950/30 border border-red-900/40 rounded-xl text-xs text-red-300 flex items-center justify-between">
-                <span>Timeline sequence establishes when the alarms went offline and the getaway vehicle departed.</span>
+              <div className="p-3.5 bg-red-800/10 border-2 border-red-800/40 rounded-2xl text-xs text-red-950 font-serif flex items-center justify-between">
+                <span>Timeline sequence establishes when the alarms failed and the getaway vehicle departed.</span>
                 <button
                   onClick={() => setActiveTab('Evidence')}
-                  className="px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold text-xs cursor-pointer"
+                  className="px-4 py-1.5 bg-red-800 hover:bg-red-700 text-white rounded-xl font-bold font-mono text-xs cursor-pointer shadow"
                 >
                   Return to Evidence
                 </button>
@@ -680,32 +728,38 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
           {/* TAB 3: CONNECTIONS (RED STRING) BOARD */}
           {activeTab === 'Connections' && (
-            <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div
+              className="relative border-2 border-[#8c6d48] rounded-3xl p-6 shadow-xl text-[#221711] space-y-6 select-none overflow-hidden"
+              style={parchmentStyle}
+            >
+              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
-                    <Share2 className="w-4 h-4 text-red-500" />
-                    <span>Conspiracy & Red-Thread Board</span>
+                  <h3 className="text-base font-black text-[#1a110a] font-serif flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-red-800" />
+                    <span>Conspiracy & Red-String Board</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Pin red strings between contradictory or corroborating witness drawings.
+                  <p className="text-xs text-[#5c4028] font-mono">
+                    Pin red threads between contradictory or corroborating witness drawings.
                   </p>
                 </div>
-                <span className="text-xs font-mono text-red-400 font-bold bg-red-950/40 px-3 py-1 rounded-lg border border-red-500/30">
+                <span className="text-xs font-mono text-red-900 font-bold bg-red-100 px-3 py-1 rounded-xl border border-red-800/50 shadow-sm">
                   {activeConnections.length} Active Strings
                 </span>
               </div>
 
               {/* Pin connection builder */}
-              <div className="p-4 bg-slate-900/80 border border-slate-700/80 rounded-xl space-y-3">
-                <div className="text-xs font-bold text-white">Create New Clue Connection Thread:</div>
+              <div className="p-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl space-y-3 shadow-inner">
+                <div className="text-xs font-bold font-serif text-[#1a110a]">Create New Clue Connection Thread:</div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">Clue Origin</label>
+                    <label className="block text-[10px] font-mono text-[#5c4028] font-bold mb-1">Clue Origin</label>
                     <select
                       value={connCardA}
                       onChange={(e) => setConnCardA(e.target.value)}
-                      className="w-full py-1.5 px-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                      className="w-full py-1.5 px-2 bg-[#ede0ce] border border-[#bfa98e] rounded-xl text-[#1a110a] font-mono font-bold"
                     >
                       <option value="">Select origin clue...</option>
                       {evidenceList.map((e) => (
@@ -717,11 +771,11 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">Target Clue</label>
+                    <label className="block text-[10px] font-mono text-[#5c4028] font-bold mb-1">Target Clue</label>
                     <select
                       value={connCardB}
                       onChange={(e) => setConnCardB(e.target.value)}
-                      className="w-full py-1.5 px-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                      className="w-full py-1.5 px-2 bg-[#ede0ce] border border-[#bfa98e] rounded-xl text-[#1a110a] font-mono font-bold"
                     >
                       <option value="">Select target clue...</option>
                       {evidenceList.map((e) => (
@@ -733,11 +787,11 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">Relation Tag</label>
+                    <label className="block text-[10px] font-mono text-[#5c4028] font-bold mb-1">Relation Tag</label>
                     <select
                       value={connLabel}
                       onChange={(e) => setConnLabel(e.target.value)}
-                      className="w-full py-1.5 px-2 bg-slate-950 border border-slate-700 rounded-lg text-white"
+                      className="w-full py-1.5 px-2 bg-[#ede0ce] border border-[#bfa98e] rounded-xl text-[#1a110a] font-mono font-bold"
                     >
                       <option value="Suspect Linked">Suspect Linked</option>
                       <option value="Alibi Conflict">Alibi Conflict</option>
@@ -751,7 +805,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                     <button
                       onClick={handleCreateConnection}
                       disabled={!connCardA || !connCardB || connCardA === connCardB}
-                      className="w-full py-2 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full py-2 bg-red-800 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-40 flex items-center justify-center gap-1 cursor-pointer shadow"
                     >
                       <Link2 className="w-3.5 h-3.5" />
                       <span>Pin Thread</span>
@@ -762,21 +816,21 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
               {/* Active Connections List */}
               <div className="space-y-2">
-                <div className="text-xs font-mono font-bold uppercase text-slate-400">Pinned Red Threads</div>
+                <div className="text-xs font-mono font-bold uppercase text-[#7a5839]">Pinned Red Threads</div>
                 {activeConnections.map((conn) => (
                   <div
                     key={conn.id}
-                    className="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-xs"
+                    className="flex items-center justify-between p-3 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl text-xs shadow-sm"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.9)]" />
-                      <span className="font-bold text-white">{conn.from}</span>
-                      <span className="text-red-400 font-mono">━━━ {conn.label} ━━━</span>
-                      <span className="font-bold text-white">{conn.to}</span>
+                      <div className="w-3 h-3 rounded-full bg-red-700 shadow border border-red-950" />
+                      <span className="font-bold text-[#1a110a]">{conn.from}</span>
+                      <span className="text-red-800 font-mono font-bold">━━━━ {conn.label} ━━━━</span>
+                      <span className="font-bold text-[#1a110a]">{conn.to}</span>
                     </div>
                     <button
                       onClick={() => handleRemoveConnection(conn.id)}
-                      className="p-1 text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
+                      className="p-1 text-[#8c6d48] hover:text-red-800 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -788,18 +842,24 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
           {/* TAB 4: QUESTION / SUSPECT INTERROGATION */}
           {activeTab === 'Question' && (
-            <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div
+              className="relative border-2 border-[#8c6d48] rounded-3xl p-6 shadow-xl text-[#221711] space-y-6 select-none overflow-hidden"
+              style={parchmentStyle}
+            >
+              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-red-500" />
+                  <h3 className="text-base font-black text-[#1a110a] font-serif flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-red-800" />
                     <span>Suspect Interrogation Docket</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#5c4028] font-mono">
                     Interrogate each individual at the scene to uncover discrepancies in their alibi.
                   </p>
                 </div>
-                <span className="text-xs font-mono text-amber-400 font-bold bg-amber-950/40 px-3 py-1 rounded-lg border border-amber-500/30">
+                <span className="text-xs font-mono text-amber-950 font-bold bg-amber-100 px-3 py-1 rounded-xl border border-amber-700/60 shadow-sm">
                   4 Suspects Held
                 </span>
               </div>
@@ -815,25 +875,27 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                   return (
                     <div
                       key={char.name}
-                      className="p-4 bg-slate-900/80 border border-slate-700/80 rounded-xl space-y-3"
+                      className="p-4 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl space-y-3 shadow-sm"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xl shadow">
+                        <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-xl shadow-inner">
                           {char.avatar}
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-white font-serif">{char.name}</div>
-                          <div className="text-xs text-amber-400 font-mono">{char.role}</div>
+                          <div className="text-sm font-black text-[#1a110a] font-serif">{char.name}</div>
+                          <div className="text-xs text-[#7a5839] font-mono font-bold">{char.role}</div>
                         </div>
                       </div>
 
-                      <div className="text-xs text-slate-300 italic font-serif bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                      <div className="text-xs text-[#3e2a1b] italic font-serif bg-[#f5ecdd] p-2.5 rounded-xl border border-[#b89e7c]">
                         "{char.alibi}"
                       </div>
 
                       {isInterrogated && (
-                        <div className="text-[11px] text-red-300 bg-red-950/40 p-2.5 rounded-lg border border-red-900/50 space-y-1">
-                          <div className="font-bold uppercase tracking-wider text-[9px] text-red-400">Interrogation Finding:</div>
+                        <div className="text-[11px] text-red-950 bg-red-100 p-2.5 rounded-xl border-2 border-red-800/40 space-y-1">
+                          <div className="font-bold uppercase tracking-wider text-[9px] text-red-800 font-mono">
+                            Interrogation Finding:
+                          </div>
                           <div>Witness drawings show footprints leading from {char.name.split(' ')[0]}'s station to the east gate.</div>
                         </div>
                       )}
@@ -845,10 +907,10 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                             [char.name]: !prev[char.name],
                           }));
                         }}
-                        className={`w-full py-2 rounded-lg text-xs font-bold font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`w-full py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow ${
                           isInterrogated
-                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                            : 'bg-gradient-to-r from-red-700 to-rose-700 text-white hover:from-red-600 hover:to-rose-600 shadow'
+                            ? 'bg-[#ede0ce] text-[#3e2a1b] hover:bg-[#ded0bc] border border-[#bfa98e]'
+                            : 'bg-red-800 text-white hover:bg-red-700'
                         }`}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
@@ -863,19 +925,25 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
           {/* TAB 5: NOTES JOURNAL */}
           {activeTab === 'Notes' && (
-            <div className="bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div
+              className="relative border-2 border-[#8c6d48] rounded-3xl p-6 shadow-xl text-[#221711] space-y-6 select-none overflow-hidden"
+              style={parchmentStyle}
+            >
+              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-red-500" />
+                  <h3 className="text-base font-black text-[#1a110a] font-serif flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-red-800" />
                     <span>Detective Field Journal</span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#5c4028] font-mono">
                     Record your clues, contradictions, and hypotheses in real time.
                   </p>
                 </div>
                 {isNoteSaved && (
-                  <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-950/40 px-3 py-1 rounded-lg border border-emerald-500/30 animate-pulse">
+                  <span className="text-xs font-mono text-emerald-950 font-bold bg-emerald-100 px-3 py-1 rounded-xl border border-emerald-700/60 shadow-sm animate-pulse">
                     ✓ Notes Saved to Case File
                   </span>
                 )}
@@ -883,10 +951,10 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                 <div className="md:col-span-6 space-y-3">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  <div className="text-xs font-black text-[#1a110a] uppercase tracking-wider font-mono">
                     Official Case Inquiries
                   </div>
-                  <div className="space-y-2 text-xs bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+                  <div className="space-y-2 text-xs bg-[#fdfbf6] p-4 rounded-2xl border-2 border-[#8c6d48] shadow-inner">
                     {[
                       { id: 'q1', text: 'Who disabled the camera power override?' },
                       { id: 'q2', text: 'What is hidden inside the red bag?' },
@@ -898,14 +966,14 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                       <div
                         key={item.id}
                         onClick={() => toggleCheck(item.id)}
-                        className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors"
+                        className="flex items-center gap-2 cursor-pointer hover:text-black transition-colors"
                       >
                         {checkedItems[item.id] ? (
-                          <CheckSquare className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <CheckSquare className="w-4 h-4 text-red-800 flex-shrink-0" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                          <Square className="w-4 h-4 text-[#8c6d48] flex-shrink-0" />
                         )}
-                        <span className={checkedItems[item.id] ? 'line-through text-slate-500' : 'text-slate-300'}>
+                        <span className={checkedItems[item.id] ? 'line-through text-[#8c6d48]' : 'text-[#2e2014] font-medium'}>
                           {item.text}
                         </span>
                       </div>
@@ -914,19 +982,19 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
                 </div>
 
                 <div className="md:col-span-6 space-y-3">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  <div className="text-xs font-black text-[#1a110a] uppercase tracking-wider font-mono">
                     Detective Observations
                   </div>
                   <textarea
                     rows={8}
                     value={notebookText}
                     onChange={(e) => setNotebookText(e.target.value)}
-                    className="w-full p-3 bg-slate-950/90 border border-slate-700 rounded-xl text-xs text-slate-200 outline-none focus:border-red-500 font-mono leading-relaxed"
+                    className="w-full p-3.5 bg-[#fdfbf6] border-2 border-[#8c6d48] rounded-2xl text-xs text-[#1a110a] outline-none focus:border-red-800 font-mono leading-relaxed shadow-inner"
                   />
                   <div className="flex justify-end">
                     <button
                       onClick={handleSaveNotes}
-                      className="px-5 py-2 bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow transition-all cursor-pointer"
+                      className="px-5 py-2.5 bg-red-800 hover:bg-red-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow transition-all cursor-pointer font-mono"
                     >
                       Save Journal Notes
                     </button>
@@ -936,29 +1004,35 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
             </div>
           )}
 
-          {/* BOTTOM ACTION PROMPT BANNER */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-3.5 sm:p-4 shadow-xl backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+          {/* BOTTOM ACTION PROMPT BANNER (VINTAGE DISPATCH SLIP) */}
+          <div
+            className="relative border-2 border-[#8c6d48] rounded-3xl p-4 sm:p-5 shadow-xl text-[#221711] flex flex-wrap items-center justify-between gap-4 overflow-hidden select-none"
+            style={parchmentStyle}
+          >
+            <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-300 flex-shrink-0 shadow">
-                <Search className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-red-800 flex-shrink-0 shadow-inner">
+                <Search className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs sm:text-sm font-bold text-white">
-                  Ready to make your final guesses?
+                <div className="text-xs sm:text-sm font-black text-[#1a110a] font-serif">
+                  Ready to lock in your final deduction?
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-[#5c4028] font-mono">
                   {isHost
-                    ? 'Everyone has looked at the drawings. Time to guess who did it!'
-                    : 'Discuss with your team and get ready to lock in your guess.'}
+                    ? 'Everyone has inspected the drawings. Time to submit official charges!'
+                    : 'Review the evidence board with your squad and prepare your theory.'}
                 </div>
               </div>
             </div>
 
             <button
               onClick={onProceedToTheory}
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-xs shadow-[0_4px_15px_rgba(220,38,38,0.45)] transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer"
+              className="px-7 py-3 rounded-2xl bg-red-800 hover:bg-red-700 text-white font-serif font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg hover:shadow-xl transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer border border-red-950"
             >
-              <span>Pick Who Did It →</span>
+              <span>SUBMIT CHARGES & GUESSES →</span>
             </button>
           </div>
         </div>
@@ -967,27 +1041,37 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
         {/* ZONE 3: RIGHT COLUMN: PLAYERS + DISCUSSION CHAT (3 cols) */}
         {/* ======================================================== */}
         <div className="w-full lg:w-72 flex flex-col gap-4 flex-shrink-0">
-          {/* PLAYERS LIST */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
-              <span>| Players</span>
-              <span className="text-[10px] text-slate-400">{rosterPlayers.length} Active</span>
+          {/* PLAYERS LIST (VINTAGE DETECTIVE ROSTER) */}
+          <div
+            className="relative border-2 border-[#8c6d48] rounded-3xl p-4 shadow-xl text-[#221711] space-y-2 overflow-hidden select-none"
+            style={parchmentStyle}
+          >
+            <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute -top-1.5 left-5 w-3 h-6 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a] border-b border-[#bfa98e]/80 pb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-[#7a5839]" />
+                <span>Squad Roster</span>
+              </span>
+              <span className="text-[10px] font-mono text-[#7a5839]">{rosterPlayers.length} Active</span>
             </div>
 
             <div className="space-y-1.5">
               {rosterPlayers.map((p, idx) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between p-1.5 rounded-xl text-xs hover:bg-slate-900/50 transition-colors"
+                  className="flex items-center justify-between p-2 rounded-xl text-xs bg-[#fdfbf6] border border-[#b89e7c] shadow-xs"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <AvatarBadge avatar={p.avatar} size="xs" />
-                    <span className="font-semibold text-white truncate">{p.nickname}</span>
-                    {idx === 0 && <span className="text-amber-400 text-xs">👑</span>}
+                    <span className="font-bold text-[#1a110a] truncate">{p.nickname}</span>
+                    {idx === 0 && <span className="text-amber-700 text-xs">👑</span>}
                   </div>
 
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono flex-shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-950 font-mono font-bold flex-shrink-0 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-700/60">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                     Ready
                   </span>
                 </div>
@@ -1008,43 +1092,51 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
           </div>
 
           {/* PINNED NOTE AT BOTTOM RIGHT */}
-          <div className="relative hidden lg:block bg-[#f8f1e0] p-4 rounded-xl shadow-xl rotate-2 border border-[#d8c3a5] text-[#2c1d10] font-handwriting text-sm text-center select-none">
-            Truth is always in the{' '}
-            <span className="relative inline-block font-bold">
+          <div className="relative hidden lg:block bg-[#fdfbf6] p-4 rounded-xl shadow-xl rotate-2 border-2 border-[#8c6d48] text-[#2c1d10] font-serif italic text-xs text-center select-none">
+            <div className="w-3.5 h-3.5 rounded-full bg-red-700 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow border border-red-950" />
+            "The truth is always preserved in the{' '}
+            <span className="relative inline-block font-black text-red-900 not-italic">
               details.
-              <svg
-                className="absolute -bottom-0.5 left-0 w-full h-1.5 text-red-600"
-                viewBox="0 0 100 10"
-                preserveAspectRatio="none"
-              >
-                <path d="M0 6 Q 50 1 100 6" stroke="#dc2626" strokeWidth="2.5" fill="none" />
-              </svg>
-            </span>
+            </span>"
           </div>
         </div>
       </main>
 
-      {/* INSPECT HIGH-RES MODAL */}
+      {/* INSPECT HIGH-RES MODAL (AUTHENTIC CLASSIFIED EVIDENCE SLEEVE) */}
       {selectedCard && (
         <div
           onClick={() => setSelectedCard(null)}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#0e131f] border border-slate-700/80 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 text-slate-100"
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            style={parchmentStyle}
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-base font-bold text-white font-serif">{selectedCard.title}</h3>
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            {/* Red Push Pin */}
+            <div className="w-4 h-4 rounded-full bg-red-700 absolute -top-2 left-1/2 -translate-x-1/2 shadow border border-red-950" />
+
+            <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase">
+                  CLASSIFIED EVIDENCE
+                </span>
+                <h3 className="text-base font-black text-[#1a110a] font-serif">{selectedCard.title}</h3>
+              </div>
               <button
                 onClick={() => setSelectedCard(null)}
-                className="text-xs text-slate-400 hover:text-white cursor-pointer"
+                className="text-xs font-mono font-bold text-[#8c6d48] hover:text-[#1a110a] cursor-pointer"
               >
                 ✕ Close
               </button>
             </div>
 
-            <div className="w-full aspect-[4/3] bg-white rounded-xl overflow-hidden flex items-center justify-center p-2 border border-slate-300">
+            <div className="w-full aspect-[4/3] bg-[#fcf8f1] rounded-2xl overflow-hidden flex items-center justify-center p-3 border-2 border-[#8c6d48] shadow-inner">
               {selectedCard.drawingPreview && (
                 <img
                   src={selectedCard.drawingPreview}
@@ -1054,9 +1146,9 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               )}
             </div>
 
-            <div className="text-xs text-slate-400 flex items-center justify-between font-mono">
+            <div className="text-xs text-[#5c4028] flex items-center justify-between font-mono font-bold">
               <span>Witness Sketch by {selectedCard.sourcePlayerName}</span>
-              <span className="text-red-400 font-bold uppercase">Classified Evidence</span>
+              <span className="text-red-800 font-black uppercase">★ CONFIDENTIAL</span>
             </div>
           </div>
         </div>

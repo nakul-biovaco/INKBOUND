@@ -10,6 +10,12 @@ interface EvidenceCardComponentProps {
   onConnectStart?: () => void;
 }
 
+const parchmentStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+  backgroundSize: '16px 16px, 100% 100%',
+};
+
 export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
   card,
   isSelected = false,
@@ -22,21 +28,21 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
     <>
       <div
         onClick={onSelect}
-        className={`evidence-card relative rounded-xl p-3 w-64 cursor-pointer transition-all ${
+        className={`relative bg-[#fdfbf6] rounded-2xl p-3 w-64 cursor-pointer transition-all border-2 select-none shadow-md hover:shadow-xl hover:-translate-y-1 ${
           isSelected
-            ? 'ring-2 ring-case-amber shadow-amber-glow border-case-amber'
-            : 'hover:border-case-amber/50'
+            ? 'border-red-800 ring-2 ring-red-800 shadow-lg'
+            : 'border-[#8c6d48] hover:border-red-800'
         }`}
       >
         {/* Red Push Pin */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center">
-          <div className="w-5 h-5 rounded-full bg-case-crimson shadow-md flex items-center justify-center border-2 border-noir-900">
+          <div className="w-5 h-5 rounded-full bg-red-700 shadow-md flex items-center justify-center border-2 border-red-950">
             <Pin className="w-3 h-3 text-white fill-white transform rotate-45" />
           </div>
         </div>
 
-        {/* Thumbnail Preview (Polaroid Style) */}
-        <div className="relative w-full h-36 bg-noir-950 rounded-lg overflow-hidden border border-noir-700/80 mb-2.5 flex items-center justify-center group">
+        {/* Thumbnail Preview (Vintage Polaroid Style) */}
+        <div className="relative w-full h-36 bg-[#fcf8f1] rounded-xl overflow-hidden border border-[#b89e7c] mb-2.5 flex items-center justify-center group shadow-inner">
           {card.drawingPreview ? (
             <img
               src={card.drawingPreview}
@@ -44,7 +50,7 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
               className="w-full h-full object-contain p-1"
             />
           ) : (
-            <div className="text-xs text-noir-500 font-mono">No drawing preview</div>
+            <div className="text-xs text-[#8c6d48] font-mono">No sketch preview</div>
           )}
 
           {/* Hover Zoom Button */}
@@ -53,34 +59,34 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
               e.stopPropagation();
               setIsZoomed(true);
             }}
-            className="absolute inset-0 bg-noir-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold backdrop-blur-xs"
+            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-mono font-bold"
           >
-            <ZoomIn className="w-4 h-4 text-case-cyan" />
-            Inspect Evidence
+            <ZoomIn className="w-4 h-4 text-amber-300" />
+            Inspect Clue
           </button>
         </div>
 
         {/* Title & Detective Source */}
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-white tracking-wide font-dossier truncate">
+          <h4 className="text-sm font-black text-[#1a110a] tracking-wide font-serif truncate">
             {card.title}
           </h4>
-          <div className="flex items-center justify-between text-xs text-noir-400">
-            <span className="flex items-center gap-1 font-medium">
+          <div className="flex items-center justify-between text-xs text-[#5c4028]">
+            <span className="flex items-center gap-1 font-bold text-[#1a110a]">
               <AvatarBadge avatar={card.sourcePlayerAvatar} size="xs" />
               <span className="truncate max-w-[110px]">{card.sourcePlayerName}</span>
             </span>
-            <span className="font-mono text-[10px] text-case-amber">
+            <span className="font-mono text-[10px] text-red-800 font-black">
               {card.timelineSlot || 'Unslotted'}
             </span>
           </div>
         </div>
 
         {/* Notes & Tags */}
-        <div className="mt-2 pt-2 border-t border-noir-800 flex items-center justify-between text-[11px] text-noir-400">
-          <div className="flex items-center gap-1 truncate max-w-[130px]">
-            <Tag className="w-3 h-3 text-case-cyan flex-shrink-0" />
-            <span className="truncate">{card.tags.join(', ')}</span>
+        <div className="mt-2 pt-2 border-t border-[#bfa98e]/70 flex items-center justify-between text-[11px] text-[#5c4028]">
+          <div className="flex items-center gap-1 truncate max-w-[130px] font-mono">
+            <Tag className="w-3 h-3 text-[#8c6d48] flex-shrink-0" />
+            <span className="truncate">{card.tags.join(', ') || 'Evidence'}</span>
           </div>
 
           {onConnectStart && (
@@ -89,7 +95,7 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
                 e.stopPropagation();
                 onConnectStart();
               }}
-              className="px-2 py-0.5 rounded bg-case-crimson/20 hover:bg-case-crimson/40 text-case-crimson border border-case-crimson/40 text-[10px] font-bold transition-colors"
+              className="px-2 py-0.5 rounded-lg bg-red-800/10 hover:bg-red-800 text-red-800 hover:text-white border border-red-800 text-[10px] font-mono font-bold transition-colors cursor-pointer"
             >
               + Thread
             </button>
@@ -97,33 +103,41 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
         </div>
       </div>
 
-      {/* High-Res Inspect Modal */}
+      {/* High-Res Inspect Modal (Vintage Classified Evidence Envelope) */}
       {isZoomed && (
         <div
           onClick={() => setIsZoomed(false)}
-          className="fixed inset-0 z-50 bg-noir-950/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-noir-900 border border-case-amber/40 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4"
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            style={parchmentStyle}
           >
-            <div className="flex items-center justify-between border-b border-noir-800 pb-3">
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
               <div>
-                <span className="evidence-stamp-classified text-xs">EXHIBIT ANALYSIS</span>
-                <h3 className="text-lg font-bold text-white font-dossier mt-1">{card.title}</h3>
-                <p className="text-xs text-noir-400">
-                  Witness Sketch by {card.sourcePlayerName}
+                <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase">
+                  CLASSIFIED EVIDENCE ANALYSIS
+                </span>
+                <h3 className="text-lg font-black text-[#1a110a] font-serif mt-1">{card.title}</h3>
+                <p className="text-xs text-[#5c4028] font-mono">
+                  Witness Sketch Documented by {card.sourcePlayerName}
                 </p>
               </div>
               <button
                 onClick={() => setIsZoomed(false)}
-                className="px-3 py-1 bg-noir-800 hover:bg-noir-700 text-white rounded-lg text-sm"
+                className="px-3.5 py-1.5 bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] font-mono font-bold rounded-xl text-xs cursor-pointer shadow-xs"
               >
-                Close (ESC)
+                ✕ Close
               </button>
             </div>
 
-            <div className="w-full h-80 bg-noir-950 rounded-xl border border-noir-800 flex items-center justify-center p-2">
+            <div className="w-full h-80 bg-[#fcf8f1] rounded-2xl border-2 border-[#8c6d48] flex items-center justify-center p-3 shadow-inner">
               {card.drawingPreview && (
                 <img
                   src={card.drawingPreview}
@@ -133,13 +147,13 @@ export const EvidenceCardComponent: React.FC<EvidenceCardComponentProps> = ({
               )}
             </div>
 
-            <div className="bg-noir-850 p-3 rounded-lg border border-noir-800 text-xs text-noir-300">
-              <div className="flex items-center gap-1.5 font-bold text-case-amber mb-1">
+            <div className="bg-[#f5ecdd] p-3.5 rounded-xl border border-[#b89e7c] text-xs text-[#2a1d13]">
+              <div className="flex items-center gap-1.5 font-bold text-red-800 font-mono uppercase mb-1">
                 <MessageSquare className="w-3.5 h-3.5" />
-                Detective Notes
+                Detective Case Findings
               </div>
-              <p className="font-dossier leading-relaxed">
-                "{card.notes || 'No specific field notes recorded for this evidence piece.'}"
+              <p className="font-serif italic leading-relaxed">
+                "{card.notes || 'Forensic analysis matches witness recollection at the scene.'}"
               </p>
             </div>
           </div>
