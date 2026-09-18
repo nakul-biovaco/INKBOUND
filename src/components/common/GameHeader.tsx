@@ -221,11 +221,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
 
           {/* Right: Room Code, Live Player Counter, Audio, Profile, Exit */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Room Code with 1-click copy */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono">
-              <span className="text-slate-400 text-[10px]">ROOM:</span>
-              <span className="font-bold text-white tracking-widest text-xs">{roomCode}</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono">
+              <span className="text-slate-400 text-[10px] hidden sm:inline">ROOM:</span>
+              <span className="font-bold text-white tracking-wider sm:tracking-widest text-xs">{roomCode}</span>
               <button
                 onClick={handleCopy}
                 title="Copy Invite Link"
@@ -236,7 +236,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </div>
 
             {/* Live Reactive Player Count badge with pulsating green dot */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-200">
+            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-200">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -262,13 +262,13 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 }
               }}
               title="Edit Detective Identity"
-              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
+              className="flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
             >
               <AvatarBadge avatar={currentUser.avatar} size="xs" />
-              <span className="font-medium text-white truncate max-w-[70px]">
+              <span className="font-medium text-white truncate max-w-[70px] hidden sm:inline">
                 {currentUser.nickname}
               </span>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
             </button>
 
             {/* Leave Room Button */}

@@ -10,6 +10,7 @@ import {
   Users,
   Sparkles,
   PaintBucket,
+  MessageSquare,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -82,6 +83,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [guessInput, setGuessInput] = useState<string>('');
   const [guessFeed, setGuessFeed] = useState<Array<{ playerId: string; playerName: string; text: string; isClose?: boolean; isCorrect?: boolean }>>([]);
   const [guessFeedback, setGuessFeedback] = useState<string | null>(null);
+
+  // Mobile layout active tab state (< lg)
+  const [mobileTab, setMobileTab] = useState<'chat' | 'detectives'>('chat');
 
   const backend = BackendClient.getInstance();
   const myBackendId = backend.getPlayerId();
@@ -191,9 +195,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             return (
               <span
                 key={cIdx}
-                className={`inline-block border-b-2 ${
-                  showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'
-                } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
+                className={`inline-block border-b-2 sm:border-b-[3px] ${
+                  showChar
+                    ? 'border-emerald-700 text-emerald-800 bg-emerald-100/80 font-black rounded-t-sm'
+                    : 'border-[#4a3424] text-[#1f150d] font-bold'
+                } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base sm:text-lg`}
               >
                 {showChar ? firstChar : '\u00A0'}
               </span>
@@ -203,7 +209,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           return (
             <span key={wIdx} className="inline-flex items-end">
               {dashes}
-              <span className="text-[10px] text-slate-400 font-mono font-normal ml-1">({len})</span>
+              <span className="text-[10px] text-[#7a6047] font-mono font-semibold ml-1">({len})</span>
             </span>
           );
         })}
@@ -749,6 +755,91 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const totalTurns = Math.max(rosterPlayers.length, gameState.evidenceCards?.length || 4, gameState.turnIndex + 1);
   const roundDisplay = `Turn ${gameState.turnIndex + 1} of ${totalTurns}`;
 
+  const renderDetectivesRoster = () => (
+    <div className="bg-[#0e1320]/95 border border-slate-700/80 rounded-2xl p-3 sm:p-3.5 shadow-xl backdrop-blur-md space-y-2.5">
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-sky-400" />
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+            Detectives ({rosterPlayers.length}/8)
+          </span>
+        </div>
+        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+        </span>
+      </div>
+
+      <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5">
+        {rosterPlayers.map((p) => {
+          const isDrawing = p.id === gameState.currentTurnPlayerId;
+          const hasSolved = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
+          const isMe = p.id === currentUser.id;
+
+          return (
+            <div
+              key={p.id}
+              className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
+                isDrawing
+                  ? 'bg-red-950/40 border-red-500/70 shadow-[0_0_12px_rgba(220,38,38,0.25)]'
+                  : hasSolved
+                  ? 'bg-emerald-950/30 border-emerald-500/60'
+                  : 'bg-slate-900/60 border-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
+                  <AvatarBadge avatar={p.avatar} size="xs" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className={`text-xs font-bold truncate ${isMe ? 'text-amber-300' : 'text-white'}`}>
+                      {p.nickname} {isMe && '(You)'}
+                    </span>
+                    {p.isHost && <span className="text-amber-400 text-xs" title="Room Host">👑</span>}
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {p.score || 0} pts
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0">
+                {isDrawing ? (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-600 text-white shadow flex items-center gap-1">
+                    <Pencil className="w-2.5 h-2.5 animate-bounce" /> Drawing
+                  </span>
+                ) : hasSolved ? (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-500/20 border border-emerald-500/60 text-emerald-300">
+                    ✓ Solved
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
+                    Guessing
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderCaseDossier = () => (
+    <div className="bg-[#0e1320]/90 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-lg backdrop-blur-md space-y-2">
+      <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-amber-400">
+        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <span>Case File Dossier</span>
+      </div>
+      <div className="text-sm font-serif font-bold text-white leading-snug">
+        {gameState.currentCase?.title || 'The Midnight Museum Heist'}
+      </div>
+      <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-slate-800/80">
+        🎯 <strong>Golden Rule:</strong> Guessing any 2 matching words in the secret clue scores points for both you and the sketch artist!
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative min-h-screen w-full bg-[#07080d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
@@ -770,171 +861,109 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         onLeaveRoom={onLeaveRoom}
       />
 
-      {/* 2. MAIN 3-COLUMN INVESTIGATION WORKSPACE */}
-      <main className="relative z-10 w-full max-w-[1720px] mx-auto px-3 sm:px-5 py-3 grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+      {/* 2. MAIN 3-COLUMN WORKSPACE (MOBILE FIRST) */}
+      <main className="relative z-10 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-3.5 items-start">
         {/* ======================================================== */}
-        {/* LEFT COLUMN: ACTIVE DETECTIVES ROSTER & CASE DOSSIER     */}
+        {/* DESKTOP LEFT COLUMN: ACTIVE DETECTIVES & DOSSIER (3 cols) */}
+        {/* Hidden on mobile, rendered cleanly on desktop            */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 xl:col-span-3 flex flex-col gap-3">
-          {/* DETECTIVES ROSTER (UPDATES IN REAL TIME) */}
-          <div className="bg-[#0e1320]/95 border border-slate-700/80 rounded-2xl p-3.5 shadow-xl backdrop-blur-md space-y-2.5">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-sky-400" />
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
-                  Detectives ({rosterPlayers.length}/8)
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
-              </span>
-            </div>
-
-            {/* Players list */}
-            <div className="space-y-1.5">
-              {rosterPlayers.map((p) => {
-                const isDrawing = p.id === gameState.currentTurnPlayerId;
-                const hasSolved = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
-                const isMe = p.id === currentUser.id;
-
-                return (
-                  <div
-                    key={p.id}
-                    className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
-                      isDrawing
-                        ? 'bg-red-950/40 border-red-500/70 shadow-[0_0_12px_rgba(220,38,38,0.25)]'
-                        : hasSolved
-                        ? 'bg-emerald-950/30 border-emerald-500/60'
-                        : 'bg-slate-900/60 border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
-                        <AvatarBadge avatar={p.avatar} size="xs" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <span className={`text-xs font-bold truncate ${isMe ? 'text-amber-300' : 'text-white'}`}>
-                            {p.nickname} {isMe && '(You)'}
-                          </span>
-                          {p.isHost && <span className="text-amber-400 text-xs" title="Room Host">👑</span>}
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          {p.score || 0} pts
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0">
-                      {isDrawing ? (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-600 text-white shadow flex items-center gap-1">
-                          <Pencil className="w-2.5 h-2.5 animate-bounce" /> Drawing
-                        </span>
-                      ) : hasSolved ? (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-500/20 border border-emerald-500/60 text-emerald-300">
-                          ✓ Solved
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
-                          Guessing
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CASE DOSSIER & QUICK RULES (COMPACT NOIR CARD) */}
-          <div className="bg-[#0e1320]/90 border border-slate-800 rounded-2xl p-3.5 shadow-lg backdrop-blur-md space-y-2">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-amber-400">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Case File Dossier</span>
-            </div>
-            <div className="text-sm font-serif font-bold text-white leading-snug">
-              {gameState.currentCase?.title || 'The Midnight Museum Heist'}
-            </div>
-            <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-slate-800/80">
-              🎯 <strong>Golden Rule:</strong> Guessing any 2 matching words in the secret clue scores points for both you and the sketch artist!
-            </div>
-          </div>
+        <div className="hidden lg:flex lg:col-span-3 xl:col-span-3 flex-col gap-3">
+          {renderDetectivesRoster()}
+          {renderCaseDossier()}
         </div>
 
         {/* ======================================================== */}
-        {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6 cols)         */}
+        {/* CENTER COLUMN: INVESTIGATION PAPER CLUE, CANVAS, CONTROLS */}
+        {/* Rendered FIRST on mobile, 6 cols on desktop               */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 xl:col-span-6 flex flex-col gap-2.5">
-          {/* 1. UNIFIED CLUE & ACTIVE TIMER RIBBON */}
-          {isCurrentDrawer ? (
-            <div className="w-full bg-gradient-to-r from-red-950/90 via-[#191118] to-red-950/90 border-2 border-red-500/70 rounded-2xl p-3 shadow-[0_0_30px_rgba(220,38,38,0.25)] flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="px-2 py-0.5 rounded-md bg-red-600 text-white text-[10px] font-mono font-black uppercase tracking-wider">
-                    ✏️ YOUR SECRET CLUE
+        <div className="col-span-1 lg:col-span-6 xl:col-span-6 flex flex-col gap-2.5">
+          {/* VINTAGE OLD INVESTIGATION PAPER CLUE CARD */}
+          <div
+            className="relative w-full rounded-2xl border-2 border-[#8c6d48] p-3 sm:p-4 text-[#221711] shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.18)] overflow-hidden transition-all select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Parchment Corner Decorative Accents */}
+            <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            {/* Vintage Brass Paperclip Graphic */}
+            <div className="absolute -top-1.5 left-5 w-3.5 h-7 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/30" />
+
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex flex-col min-w-0 pr-1">
+                {/* Tilted Red Rubber Stamp */}
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border-2 border-red-800 text-red-800 bg-red-800/10 font-mono font-black text-[10px] tracking-widest uppercase -rotate-1 shadow-sm">
+                    {isCurrentDrawer ? '★ TOP SECRET EVIDENCE' : '🔍 UNSOLVED CASE EVIDENCE'}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {roundDisplay}
+                  <span className="text-[10px] font-mono text-[#7a6047] font-semibold">
+                    ACT #{gameState.turnIndex + 1}
                   </span>
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-amber-300 font-serif tracking-wide uppercase truncate">
-                  {cleanTarget || 'Mystery Clue'}
-                </div>
-                <div className="text-[11px] text-slate-300 font-sans">
-                  Draw this clue on the parchment below so other detectives can identify it!
-                </div>
+
+                {isCurrentDrawer ? (
+                  <>
+                    <div className="text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#1a110a] tracking-wide uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] truncate">
+                      {cleanTarget || 'Mystery Evidence'}
+                    </div>
+                    <div className="text-xs text-[#523d2b] font-mono font-medium mt-0.5">
+                      ✏️ Sketch this crime scene clue on the canvas for other detectives!
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xs text-[#5c4632] font-mono font-semibold flex items-center gap-1.5 flex-wrap">
+                      <span>Sketch Artist:</span>
+                      <span className="font-bold text-[#1f150d] bg-[#ded2be] px-1.5 py-0.5 rounded text-[11px]">
+                        {currentDrawer?.nickname || 'Detective'}
+                      </span>
+                      <span className="text-[#8c6d48]">is drawing now</span>
+                    </div>
+
+                    {/* Typewriter Letter Pattern */}
+                    <div className="my-1.5">
+                      {renderLetterPattern()}
+                    </div>
+
+                    {/* Classification & Hint */}
+                    <div className="text-[11px] font-mono text-[#614935] flex items-center gap-1.5 flex-wrap">
+                      <span className="bg-[#e4d7c3] border border-[#bfa98e] px-1.5 py-0.5 rounded text-[10px] font-bold text-[#443020]">
+                        CLASSIFICATION: {dynamicCategory}
+                      </span>
+                      <span className="text-[#785b42]">• {guesserHintMessage}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Glowing Timer Capsule */}
+              {/* Vintage Watch / Stamp Timer Capsule */}
               <div className="text-right shrink-0 flex flex-col items-end">
-                <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Time Left</span>
-                <div className={`px-3 py-1 rounded-xl border font-mono text-xl sm:text-2xl font-black tabular-nums transition-all ${
-                  remainingSeconds <= 10
-                    ? 'bg-red-950/90 border-red-500 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]'
-                    : remainingSeconds <= 25
-                    ? 'bg-amber-950/70 border-amber-500/70 text-amber-300'
-                    : 'bg-slate-900/90 border-slate-700 text-emerald-400'
-                }`}>
+                <span className="text-[9px] uppercase tracking-widest font-mono text-[#7a6047] font-bold">
+                  Investigation Clock
+                </span>
+                <div
+                  className={`px-2.5 sm:px-3 py-1 rounded-xl border-2 font-mono text-xl sm:text-2xl font-black tabular-nums transition-all shadow-md ${
+                    remainingSeconds <= 10
+                      ? 'bg-red-900 border-red-700 text-white animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.7)]'
+                      : remainingSeconds <= 25
+                      ? 'bg-[#3b281c] border-amber-600 text-amber-300'
+                      : 'bg-[#221811] border-[#7d5f42] text-amber-200'
+                  }`}
+                >
                   {formattedTimer}
                 </div>
+                <span className="text-[9px] font-mono text-[#8a6e53] mt-0.5">
+                  {roundDisplay}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="w-full bg-gradient-to-r from-amber-950/50 via-[#111624] to-sky-950/60 border-2 border-amber-500/50 rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/60 text-amber-300 text-[10px] font-mono font-black uppercase tracking-wider">
-                    🔍 GUESS THE CLUE
-                  </span>
-                  <span className="text-xs text-slate-300 font-semibold truncate">
-                    <strong>{currentDrawer?.nickname || 'Detective'}</strong> is drawing
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 my-1">
-                  {renderLetterPattern()}
-                </div>
-
-                <div className="text-[11px] font-mono text-amber-200">
-                  {guesserHintMessage}
-                </div>
-              </div>
-
-              {/* Glowing Timer Capsule */}
-              <div className="text-right shrink-0 flex flex-col items-end">
-                <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Time Left</span>
-                <div className={`px-3 py-1 rounded-xl border font-mono text-xl sm:text-2xl font-black tabular-nums transition-all ${
-                  remainingSeconds <= 10
-                    ? 'bg-red-950/90 border-red-500 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]'
-                    : remainingSeconds <= 25
-                    ? 'bg-amber-950/70 border-amber-500/70 text-amber-300'
-                    : 'bg-slate-900/90 border-slate-700 text-emerald-400'
-                }`}>
-                  {formattedTimer}
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* 2. DEDICATED DRAWER TOOLBAR */}
           {isCurrentDrawer && (
@@ -1048,7 +1077,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* 3. PARCHMENT DRAWING CANVAS */}
           <div
-            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[64vh] min-h-[290px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-[520px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex flex-col"
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[54vh] min-h-[260px] sm:min-h-[380px] md:min-h-[440px] lg:min-h-[500px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex flex-col"
             style={{ touchAction: 'none' }}
           >
             {/* Header Sub-bar */}
@@ -1171,12 +1200,65 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 5. MOBILE TABS SWITCHER (< lg) */}
+          <div className="lg:hidden flex items-center bg-[#0d1322]/95 border border-slate-700/80 rounded-2xl p-1 shadow-lg mt-1 select-none">
+            <button
+              type="button"
+              onClick={() => {
+                SoundService.playClick();
+                setMobileTab('chat');
+              }}
+              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                mobileTab === 'chat'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Interrogation Chat</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                SoundService.playClick();
+                setMobileTab('detectives');
+              }}
+              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                mobileTab === 'detectives'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Detectives ({rosterPlayers.length})</span>
+            </button>
+          </div>
+
+          {/* 6. MOBILE TAB CONTENT (< lg) */}
+          <div className="lg:hidden w-full mt-1">
+            {mobileTab === 'chat' ? (
+              <RoomChat
+                currentUser={currentUser}
+                channel={channel}
+                showTabs={true}
+                defaultTab="Room Chat"
+                className="min-h-[300px] max-h-[380px]"
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {renderDetectivesRoster()}
+                {renderCaseDossier()}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT COLUMN: ROOM CHAT & GAME LOG                       */}
+        {/* DESKTOP RIGHT COLUMN: ROOM CHAT & GAME LOG (3 cols)      */}
+        {/* Hidden on mobile, rendered cleanly on desktop            */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 xl:col-span-3 flex flex-col gap-3">
+        <div className="hidden lg:flex lg:col-span-3 xl:col-span-3 flex-col gap-3">
           <div className="w-full">
             <RoomChat
               currentUser={currentUser}

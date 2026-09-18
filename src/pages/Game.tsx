@@ -140,11 +140,11 @@ export const Game: React.FC<GameProps> = ({
     SoundService.playPop();
     setChatToasts((prev) => {
       if (prev.some((t) => t.id === toast.id)) return prev;
-      return [...prev.slice(-3), toast];
+      return [...prev.slice(-2), toast];
     });
     setTimeout(() => {
       setChatToasts((prev) => prev.filter((t) => t.id !== toast.id));
-    }, 4500);
+    }, 2800);
   };
 
   // Big Parchment Clue Discovered Card modal (15s reading grace period with cross close button)
@@ -163,7 +163,7 @@ export const Game: React.FC<GameProps> = ({
     revealedText: '',
   });
 
-  const showGameBanner = (banner: GameBanner, durationMs = 4500) => {
+  const showGameBanner = (banner: GameBanner, durationMs = 3200) => {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     setGameBanner(banner);
     bannerTimerRef.current = setTimeout(() => {
@@ -782,10 +782,10 @@ export const Game: React.FC<GameProps> = ({
 
       {/* INTEGRATED HUD GAME ALERT BANNER (Non-intrusive top-right toast) */}
       {gameBanner && (
-        <div className="fixed top-4 right-4 z-50 max-w-md w-[92vw] sm:w-[400px] animate-fadeIn select-none pointer-events-auto">
+        <div className="fixed top-14 sm:top-16 right-3 sm:right-6 z-50 max-w-sm w-[calc(100vw-24px)] sm:w-[380px] animate-fadeIn select-none pointer-events-auto">
           <div
             onClick={() => setGameBanner(null)}
-            className={`cursor-pointer rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${
+            className={`cursor-pointer rounded-2xl p-2.5 sm:p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${
               gameBanner.type === 'solved'
                 ? 'bg-emerald-950/95 border-emerald-500 text-emerald-100 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:bg-emerald-900/95'
                 : gameBanner.type === 'story'
@@ -797,9 +797,9 @@ export const Game: React.FC<GameProps> = ({
                 : 'bg-slate-900/95 border-slate-600 text-slate-200 hover:bg-slate-800/95'
             }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                   gameBanner.type === 'solved'
                     ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
                     : gameBanner.type === 'story'
@@ -810,32 +810,32 @@ export const Game: React.FC<GameProps> = ({
                 }`}
               >
                 {gameBanner.type === 'solved' ? (
-                  <CheckCircle className="w-5 h-5 animate-bounce" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
                 ) : gameBanner.type === 'story' ? (
-                  <Sparkles className="w-5 h-5 animate-pulse" />
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
                 ) : gameBanner.type === 'reveal' ? (
-                  <BookOpen className="w-5 h-5" />
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <Clock className="w-5 h-5 animate-spin" />
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 )}
               </div>
 
               <div className="min-w-0 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-90">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider opacity-90">
                     {gameBanner.badge}
                   </span>
                   {gameBanner.pointsText && (
-                    <span className="text-[11px] font-mono font-bold text-emerald-300 hidden sm:inline">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-emerald-300">
                       • {gameBanner.pointsText}
                     </span>
                   )}
                 </div>
-                <div className="text-sm font-bold text-white truncate font-serif">
+                <div className="text-xs sm:text-sm font-bold text-white truncate font-serif">
                   {gameBanner.title}
                 </div>
                 {gameBanner.subtitle && (
-                  <div className="text-xs text-slate-300 truncate font-sans">
+                  <div className="text-[11px] sm:text-xs text-slate-300 truncate font-sans">
                     {gameBanner.subtitle}
                   </div>
                 )}
@@ -848,7 +848,7 @@ export const Game: React.FC<GameProps> = ({
                 e.stopPropagation();
                 setGameBanner(null);
               }}
-              className="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/60 text-white/80 hover:text-white text-xs font-mono font-bold transition-colors shrink-0"
+              className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/60 text-white/80 hover:text-white text-xs font-mono font-bold transition-colors shrink-0"
               title="Dismiss"
             >
               ×
@@ -857,61 +857,85 @@ export const Game: React.FC<GameProps> = ({
         </div>
       )}
 
-      {/* IN-GAME LIVE CHAT FLOATING POPUP TOASTS (User requested: game chat me koi kuch likhta toh uska popup aaye) */}
+      {/* IN-GAME LIVE CHAT FLOATING POPUP TOASTS */}
       {chatToasts.length > 0 && (
-        <div className="fixed bottom-24 left-4 sm:left-6 z-50 pointer-events-none flex flex-col gap-2 max-w-sm w-[88vw] sm:w-[360px]">
-          {chatToasts.map((toast) => (
-            <div
-              key={toast.id}
-              className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${
-                toast.isClose
-                  ? 'bg-amber-950/95 border-amber-500/80 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)]'
-                  : toast.isGuess
-                  ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
-                  : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
-              }`}
-            >
-              <div className="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
-                {toast.senderAvatar || '🕵️‍♂️'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-bold text-xs truncate text-white">
-                      {toast.senderName}
-                    </span>
-                    {toast.isGuess ? (
-                      <span
-                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
-                          toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
-                        }`}
-                      >
-                        {toast.isClose ? 'Almost' : 'Guess'}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-medium">
-                        <MessageSquare className="w-2.5 h-2.5" /> Chat
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[9px] font-mono text-slate-400 shrink-0">
-                    {toast.timestamp}
-                  </span>
-                </div>
-                <p className="text-xs break-words leading-relaxed font-medium">
-                  {toast.text}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setChatToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-                className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0"
+        <>
+          {/* MOBILE SLIM TOP TICKER (Non-intrusive, never covers canvas or bottom guess input) */}
+          <div className="sm:hidden fixed top-14 left-2 right-2 z-50 pointer-events-none flex justify-center">
+            {chatToasts.slice(-1).map((toast) => (
+              <div
+                key={toast.id}
+                className={`pointer-events-none max-w-[94vw] px-3 py-1.5 rounded-full shadow-lg backdrop-blur-md border text-xs flex items-center gap-2 animate-fadeIn transition-all ${
+                  toast.isClose
+                    ? 'bg-amber-950/95 border-amber-500 text-amber-200 shadow-amber-900/40'
+                    : toast.isGuess
+                    ? 'bg-[#0e1626]/95 border-sky-500/80 text-sky-200'
+                    : 'bg-[#0f172a]/95 border-slate-700 text-slate-200'
+                }`}
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+                <span className="text-xs shrink-0">{toast.senderAvatar || '🕵️‍♂️'}</span>
+                <span className="font-bold text-white shrink-0 truncate max-w-[70px]">{toast.senderName}:</span>
+                <span className="truncate text-slate-300 font-medium">{toast.text}</span>
+                {toast.isClose && <span className="text-[9px] font-bold text-amber-300 font-mono shrink-0">★ CLOSE</span>}
+              </div>
+            ))}
+          </div>
+
+          {/* DESKTOP FLOATING TOASTS (Bottom-left) */}
+          <div className="hidden sm:flex fixed bottom-24 left-6 z-50 pointer-events-none flex-col gap-2 max-w-sm w-[340px]">
+            {chatToasts.map((toast) => (
+              <div
+                key={toast.id}
+                className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${
+                  toast.isClose
+                    ? 'bg-amber-950/95 border-amber-500/80 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)]'
+                    : toast.isGuess
+                    ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
+                    : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
+                  {toast.senderAvatar || '🕵️‍♂️'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-bold text-xs truncate text-white">
+                        {toast.senderName}
+                      </span>
+                      {toast.isGuess ? (
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
+                            toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                          }`}
+                        >
+                          {toast.isClose ? 'Almost' : 'Guess'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-medium">
+                          <MessageSquare className="w-2.5 h-2.5" /> Chat
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                      {toast.timestamp}
+                    </span>
+                  </div>
+                  <p className="text-xs break-words leading-relaxed font-medium">
+                    {toast.text}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setChatToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                  className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* SMOOTH PLAYER-TO-PLAYER TURN HANDOVER OVERLAY */}
