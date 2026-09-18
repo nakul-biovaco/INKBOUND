@@ -917,8 +917,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             {/* Vintage Brass Paperclip Graphic */}
             <div className="absolute -top-1.5 left-5 w-3.5 h-7 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/30" />
 
-            <div className="flex items-start justify-between gap-2.5">
-              <div className="flex flex-col min-w-0 pr-1">
+            <div className="flex items-start justify-between gap-2 sm:gap-3">
+              <div className="flex-1 min-w-0 pr-1">
                 {/* Tilted Red Rubber Stamp */}
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border-2 border-red-800 text-red-800 bg-red-800/10 font-mono font-black text-[10px] tracking-widest uppercase -rotate-1 shadow-sm">
@@ -931,10 +931,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
                 {isCurrentDrawer ? (
                   <>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#1a110a] tracking-wide uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] truncate">
+                    <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#1a110a] tracking-wide uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] break-words leading-tight">
                       {cleanTarget || 'Mystery Evidence'}
                     </div>
-                    <div className="text-xs text-[#523d2b] font-mono font-medium mt-0.5">
+                    <div className="text-xs text-[#523d2b] font-mono font-medium mt-0.5 leading-snug">
                       ✏️ Sketch this crime scene clue on the canvas for other detectives!
                     </div>
                   </>
@@ -987,19 +987,26 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           </div>
 
-          {/* 2. DEDICATED DRAWER TOOLBAR */}
+          {/* 2. DEDICATED DRAWER TOOLBAR (VINTAGE INVESTIGATION PARCHMENT) */}
           {isCurrentDrawer && (
-            <div className="w-full bg-[#0d121e]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2">
+            <div
+              className="relative w-full rounded-2xl border-2 border-[#8c6d48] p-2 sm:p-2.5 shadow-md flex flex-wrap items-center justify-between gap-2 select-none"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
+            >
               {/* Tool switch: Pencil vs Fill vs Eraser */}
-              <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-1 bg-[#ede1cf] p-1 rounded-xl border border-[#bfa98e]">
                 <button
                   type="button"
                   onClick={() => {
                     setCurrentTool('pencil');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
-                    currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
+                    currentTool === 'pencil' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
                   }`}
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1011,8 +1018,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('fill');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
-                    currentTool === 'fill' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
+                    currentTool === 'fill' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
                   }`}
                 >
                   <PaintBucket className="w-3.5 h-3.5" />
@@ -1021,8 +1028,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentTool('eraser')}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
-                    currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
+                    currentTool === 'eraser' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
                   }`}
                 >
                   <Eraser className="w-3.5 h-3.5" />
@@ -1031,7 +1038,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
 
               {/* Color palette swatches */}
-              <div className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-1.5 bg-[#ede1cf] px-2.5 py-1.5 rounded-xl border border-[#bfa98e]">
                 {PALETTE_COLORS.map((color) => {
                   const isSelected = currentColor.toLowerCase() === color.toLowerCase() && currentTool !== 'eraser';
                   return (
@@ -1043,8 +1050,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         if (currentTool === 'eraser') setCurrentTool('pencil');
                       }}
                       style={{ backgroundColor: color }}
-                      className={`w-6 h-6 rounded-full border transition-all ${
-                        isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
+                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
+                        isSelected ? 'scale-125 ring-2 ring-red-800 border-white shadow-lg' : 'border-[#8c6d48] hover:scale-110 opacity-90'
                       }`}
                     />
                   );
@@ -1052,15 +1059,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
 
               {/* Brush size slider */}
-              <div className="flex items-center gap-1.5 bg-slate-900/90 px-2 py-1.5 rounded-xl border border-slate-800">
-                <span className="text-[10px] font-mono text-slate-400">Size</span>
+              <div className="flex items-center gap-1.5 bg-[#ede1cf] px-2 py-1.5 rounded-xl border border-[#bfa98e]">
+                <span className="text-[10px] font-mono text-[#6e533d] font-bold">Size</span>
                 <input
                   type="range"
                   min="2"
                   max="20"
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                  className="w-16 sm:w-20 accent-red-600 cursor-pointer h-1.5 bg-slate-700 rounded-lg"
+                  className="w-16 sm:w-20 accent-red-800 cursor-pointer h-1.5 bg-[#cbba9e] rounded-lg"
                 />
               </div>
 
@@ -1071,7 +1078,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   onClick={handleUndo}
                   disabled={strokes.length === 0}
                   title="Undo"
-                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                  className="p-2 rounded-xl bg-[#ede1cf] border border-[#bfa98e] text-[#443020] hover:text-[#1a110a] hover:bg-[#e4d6c1] disabled:opacity-30 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1080,7 +1087,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   onClick={handleRedo}
                   disabled={redoStack.length === 0}
                   title="Redo"
-                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                  className="p-2 rounded-xl bg-[#ede1cf] border border-[#bfa98e] text-[#443020] hover:text-[#1a110a] hover:bg-[#e4d6c1] disabled:opacity-30 transition-colors cursor-pointer"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
@@ -1088,7 +1095,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   type="button"
                   onClick={handleClear}
                   disabled={strokes.length === 0}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-red-950/60 border border-slate-700 hover:border-red-600/60 text-slate-300 hover:text-red-300 text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-30"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#ede1cf] hover:bg-red-100 border border-[#bfa98e] hover:border-red-800 text-[#443020] hover:text-red-900 text-xs font-mono font-bold flex items-center gap-1 transition-all disabled:opacity-30 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear</span>
@@ -1099,13 +1106,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* 3. PARCHMENT DRAWING CANVAS */}
           <div
-            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[54vh] min-h-[260px] sm:min-h-[380px] md:min-h-[440px] lg:min-h-[500px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex flex-col"
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[54vh] min-h-[260px] sm:min-h-[380px] md:min-h-[440px] lg:min-h-[500px] bg-[#fbf8f1] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.12)] border-2 border-[#8c6d48] overflow-hidden flex flex-col"
             style={{ touchAction: 'none' }}
           >
             {/* Header Sub-bar */}
-            <div className="flex-shrink-0 h-7 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 select-none">
-              <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-slate-300">Evidence Canvas</span>
-              <span className={`text-[9px] font-mono font-bold uppercase ${isCurrentDrawer ? 'text-red-400' : 'text-sky-300'}`}>
+            <div className="flex-shrink-0 h-7 bg-gradient-to-r from-[#24170e] via-[#3d2a1b] to-[#24170e] border-b border-[#7a5939] flex items-center justify-between px-3 select-none">
+              <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-[#ede1cf]">Evidence Canvas</span>
+              <span className={`text-[9px] font-mono font-bold uppercase ${isCurrentDrawer ? 'text-red-300' : 'text-amber-200'}`}>
                 {isCurrentDrawer ? '● Input Enabled' : '◉ Live Spectator Stream'}
               </span>
             </div>

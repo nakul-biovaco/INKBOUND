@@ -1059,53 +1059,85 @@ export const Game: React.FC<GameProps> = ({
 
           <main className="flex-1 max-w-5xl mx-auto px-4 py-8 flex items-center justify-center w-full">
             {selectedStoryBriefing ? (
-              /* GRAND CASE BRIEFING (After Story is Picked) */
-              <div className="w-full bg-[#0e131f]/95 border border-amber-500/60 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs uppercase tracking-widest font-bold">
-                  <Sparkles className="w-4 h-4" /> Mystery Chosen!
+              /* GRAND CASE BRIEFING (After Story is Picked) - VINTAGE CASE DOSSIER */
+              <div
+                className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden text-center space-y-6 animate-fadeIn select-none"
+                style={{
+                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                  backgroundSize: '16px 16px, 100% 100%',
+                }}
+              >
+                {/* Parchment Corner Decorative Accents */}
+                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                {/* Vintage Brass Paperclip Illustration */}
+                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ OFFICIAL CASE DOSSIER UNSEALED
                 </div>
 
-                <h1 className="text-3xl sm:text-5xl font-black text-white font-serif tracking-wide">
+                <h1 className="text-3xl sm:text-5xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
                   {selectedStoryBriefing.title}
                 </h1>
 
-                <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-400">
-                  <span className="px-3 py-1 bg-slate-800/80 rounded-lg text-amber-300 font-bold uppercase">
+                <div className="flex items-center justify-center gap-4 text-xs font-mono text-[#7a5839]">
+                  <span className="px-3 py-1 bg-[#ede1cf] border border-[#b89e7c] rounded-lg text-[#3e2b1b] font-bold uppercase">
                     {selectedStoryBriefing.genre}
                   </span>
                   <span>•</span>
-                  <span className="text-slate-300">Mystery Case</span>
+                  <span className="text-[#5c422e] font-bold">CLASSIFIED DOSSIER</span>
                 </div>
 
-                <div className="max-w-3xl mx-auto p-6 bg-slate-950/80 border border-slate-800 rounded-2xl font-serif text-base sm:text-lg text-slate-200 leading-relaxed italic text-left">
+                <div className="max-w-3xl mx-auto p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic text-left shadow-inner">
                   "{selectedStoryBriefing.description}"
                 </div>
 
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-slate-400">
+                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-[#5c422e]">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-red-500 animate-spin" />
-                    <span>Getting clues ready for the drawing round...</span>
+                    <Clock className="w-4 h-4 text-red-800 animate-spin" />
+                    <span className="font-bold">Cataloging evidence for Detective drawing round...</span>
                   </div>
                   <button
                     onClick={() => setSelectedStoryBriefing(null)}
-                    className="px-4 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold font-mono transition-colors"
+                    className="px-5 py-2.5 rounded-xl bg-red-800 hover:bg-red-700 text-white border border-red-900 text-xs font-bold font-mono uppercase tracking-wider transition-colors shadow-md cursor-pointer"
                   >
-                    Ready / Dismiss (×)
+                    Acknowledge & Proceed (×)
                   </button>
                 </div>
               </div>
             ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
-              /* STORY CHOOSER VIEW: 3 DYNAMIC OPTIONS */
-              <div className="w-full bg-[#0e131f]/95 border border-slate-700/80 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn space-y-6">
+              /* STORY CHOOSER VIEW: 3 VINTAGE CASE ARCHIVES */
+              <div
+                className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden space-y-6 animate-fadeIn select-none"
+                style={{
+                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                  backgroundSize: '16px 16px, 100% 100%',
+                }}
+              >
+                {/* Parchment Corner Decorative Accents */}
+                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                {/* Vintage Brass Paperclip */}
+                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest font-bold">
-                    <BookOpen className="w-4 h-4" /> Your Turn to Pick the Story
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
+                    <BookOpen className="w-3.5 h-3.5" /> ★ CLASSIFIED ARCHIVES // PICK THE MYSTERY CASE
                   </div>
-                  <h1 className="text-2xl sm:text-4xl font-black text-white font-serif tracking-wide">
-                    Pick a Mystery Story
+                  <h1 className="text-2xl sm:text-4xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                    Select an Active Mystery Dossier
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-                    You get to pick the mystery! Choose any story below for your group to solve.
+                  <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-xl mx-auto">
+                    You are the Lead Investigator! Pick any case file below to distribute clues to your detective squad.
                   </p>
                 </div>
 
@@ -1119,67 +1151,83 @@ export const Game: React.FC<GameProps> = ({
                           SoundService.playStamp();
                           handleChooseStory(st.storyId);
                         }}
-                        className="game-card p-6 border-slate-700/80 hover:border-red-500 cursor-pointer group flex flex-col justify-between"
+                        className="group relative p-5 sm:p-6 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
                       >
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
                               {st.genre}
                             </span>
-                            <span className="text-[10px] font-mono text-slate-400 uppercase">
-                              {st.difficulty}
+                            <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border-2 bg-amber-100 text-amber-900 border-amber-700">
+                              {st.difficulty || 'NORMAL'}
                             </span>
                           </div>
 
-                          <h3 className="text-lg font-bold text-white font-serif group-hover:text-red-400 transition-colors leading-snug">
+                          <h3 className="text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
                             {st.title}
                           </h3>
 
-                          <p className="text-xs text-slate-300 line-clamp-5 leading-relaxed font-serif">
+                          <p className="text-xs text-[#3e2c1e] line-clamp-5 leading-relaxed font-serif italic">
                             "{st.description}"
                           </p>
                         </div>
 
-                        <button className="mt-6 w-full py-3 game-btn-red text-white rounded-xl text-xs font-bold uppercase tracking-wider">
-                          Play This Story →
+                        <button className="mt-6 w-full py-3 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
+                          Open This Case File →
                         </button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="py-16 text-center space-y-4">
-                    <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                    <div className="text-sm font-mono text-slate-400">
-                      Loading stories...
+                    <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div className="text-sm font-mono text-[#5c422e]">
+                      Unsealing case archives...
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              /* WAITING FOR CHOOSER SCREEN */
-              <div className="w-full max-w-2xl bg-[#0e131f]/95 border border-slate-700/80 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6">
+              /* WAITING FOR CHOOSER SCREEN - VINTAGE PAPER CASE DISPATCH */
+              <div
+                className="w-full max-w-2xl text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-8 sm:p-12 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6 select-none"
+                style={{
+                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                  backgroundSize: '16px 16px, 100% 100%',
+                }}
+              >
+                {/* Parchment Corner Decorative Accents */}
+                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                {/* Vintage Brass Paperclip */}
+                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
                 <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
-                  <div className="w-14 h-14 rounded-full bg-slate-900 border border-red-500/50 flex items-center justify-center text-red-400">
+                  <div className="absolute inset-0 rounded-full bg-red-800/20 animate-ping" />
+                  <div className="w-14 h-14 rounded-full bg-[#ede1cf] border-2 border-red-800 flex items-center justify-center text-red-800 shadow-md">
                     <BookOpen className="w-6 h-6 animate-pulse" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-xs font-mono uppercase tracking-widest text-red-400 font-bold">
-                    PICKING A STORY
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
+                    ★ CASE ASSIGNMENT IN PROGRESS
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-black font-serif text-white">
-                    {storyChooserName ? `${storyChooserName} is choosing the story...` : 'Picking who chooses...'}
+                  <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] pt-1">
+                    {storyChooserName ? `${storyChooserName} is choosing the case dossier...` : 'Selecting lead investigator...'}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Your teammate is choosing a story to play. Get ready to draw and guess!
+                  <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-md mx-auto leading-relaxed">
+                    Your fellow detective is reviewing case files in the archives. Prepare your sketchpad!
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400 font-mono flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span>The drawing round starts right after!</span>
+                <div className="p-4 rounded-xl bg-[#ede1cf]/80 border-2 border-[#b89e7c] text-xs text-[#443020] font-mono flex items-center justify-center gap-2 shadow-inner">
+                  <Clock className="w-4 h-4 text-red-800 animate-spin" />
+                  <span className="font-bold">The sketching & deduction phase starts immediately after!</span>
                 </div>
               </div>
             )}
