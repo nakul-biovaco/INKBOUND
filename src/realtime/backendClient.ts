@@ -245,7 +245,8 @@ export class BackendClient {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts > 10) return;
-    const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 10000);
+    const jitter = Math.floor(Math.random() * 500);
+    const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts) + jitter, 10000);
     this.reconnectAttempts++;
     setTimeout(() => {
       if (this.token) {

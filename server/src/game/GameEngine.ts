@@ -125,6 +125,7 @@ export class GameEngine {
 
     // 1-second countdown before story selection
     this.timerManager.startTimer('lobby_countdown', 1, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.beginStorySelection();
     });
   }
@@ -133,6 +134,7 @@ export class GameEngine {
    * Step 1 of Gameplay: Selects 1 random player and gives them 3 random story choices
    */
   public beginStorySelection(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
     const room = RoomManager.getRoomOrThrow(this.roomId);
     StoryLibrary.ensureInitialized();
 
@@ -179,6 +181,7 @@ export class GameEngine {
 
     // 20-second timer for player to pick
     this.timerManager.startTimer('story_selection', 20, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.autoSelectStory();
     });
   }
@@ -240,6 +243,7 @@ export class GameEngine {
 
     // Move to round start after a 2-second narrative banner
     this.timerManager.startTimer('story_selected_delay', 2, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.turnManager.randomizeFirstDrawer();
       this.beginTurn();
     });
@@ -249,6 +253,7 @@ export class GameEngine {
    * Begins a new turn: advances drawer, generates 3 secret prompt options
    */
   public beginTurn(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
     const room = RoomManager.getRoomOrThrow(this.roomId);
     const turnResult = this.turnManager.advanceTurn(room.players);
 
@@ -308,6 +313,7 @@ export class GameEngine {
 
     const selectionSeconds = room.settings.promptSelectionTimeLimit || config.gameplay.defaultPromptSelectionSeconds;
     const { startedAt, endsAt } = this.timerManager.startTimer('prompt_selection', selectionSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       // Auto-pick option 0 if drawer timed out
       this.autoSelectPrompt();
     });
@@ -449,6 +455,7 @@ export class GameEngine {
 
     const drawSeconds = room.settings.drawingTimeLimit || config.gameplay.defaultDrawingTimeSeconds;
     const { startedAt, endsAt } = this.timerManager.startTimer('drawing_round', drawSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.handleRoundTimeout();
     });
 
@@ -661,11 +668,13 @@ export class GameEngine {
 
     // Transition to story reveal after brief 1s pause
     this.timerManager.startTimer('solve_transition', 1, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.showStoryReveal(solvedRecord);
     });
   }
 
   private showStoryReveal(record: SolvedEventRecord): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
     this.stateMachine.transition(GameStatus.STORY_REVEAL);
     this.session.state = GameStatus.STORY_REVEAL;
 
@@ -687,6 +696,7 @@ export class GameEngine {
     });
 
     this.timerManager.startTimer('story_reveal', revealSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       const cleanWord = this.session.selectedEvent?.drawingObjective
         ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
         : 'Mystery Clue';
@@ -814,6 +824,7 @@ export class GameEngine {
     this.emit('NEXT_TURN', recap);
 
     this.timerManager.startTimer('next_turn_delay', transitionSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.beginTurn();
     });
   }
@@ -822,11 +833,13 @@ export class GameEngine {
    * Final Investigation: players submit final deduction theories
    */
   public startFinalInvestigation(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
     this.stateMachine.transition(GameStatus.FINAL_INVESTIGATION);
     this.session.state = GameStatus.FINAL_INVESTIGATION;
 
     const investigationSeconds = 60;
     this.timerManager.startTimer('final_investigation', investigationSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.resolveEnding();
     });
 
@@ -867,11 +880,31 @@ export class GameEngine {
   }
 
   private resolveEnding(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
     this.stateMachine.transition(GameStatus.ENDING);
     this.session.state = GameStatus.ENDING;
 
-    const ending = this.storyEngine!.determineEnding();
+    let ending = this.storyEngine ? this.storyEngine.determineEnding() : null;
+    if (!ending) {
+      ending = {
+        endingId: 'case_closed',
+        title: 'Case Closed',
+        summary: 'The detectives completed the investigation docket.',
+        verdict: 'SOLVED',
+      } as any;
+    }
     this.session.ending = ending;
+
+    const currentRoom = RoomManager.getRoom(this.roomId);
+    const playerLeaderboard = currentRoom
+      ? currentRoom.players.map((p) => ({
+          playerId: p.playerId,
+          displayName: p.displayName,
+          avatar: p.avatar,
+          score: p.score,
+          correctGuesses: p.correctGuesses,
+        }))
+      : [];
 
     this.emit('GAME_END', {
       storyId: this.session.storyId,
@@ -879,13 +912,7 @@ export class GameEngine {
       ending,
       storyVariables: this.session.storyVariables,
       solvedEvents: this.session.solvedEvents,
-      leaderboard: RoomManager.getRoomOrThrow(this.roomId).players.map((p) => ({
-        playerId: p.playerId,
-        displayName: p.displayName,
-        avatar: p.avatar,
-        score: p.score,
-        correctGuesses: p.correctGuesses,
-      })),
+      leaderboard: playerLeaderboard,
     });
 
     this.stateMachine.transition(GameStatus.GAME_COMPLETE);
@@ -935,6 +962,7 @@ export class GameEngine {
 
       this.drawerDisconnectTimeout = setTimeout(() => {
         this.drawerDisconnectTimeout = null;
+        if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
         const room = RoomManager.getRoom(this.roomId);
         const player = room?.players.find((p) => p.playerId === playerId);
         if (

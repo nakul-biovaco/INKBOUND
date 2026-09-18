@@ -705,26 +705,64 @@ export class WSServer {
 
   public broadcastToRoom(roomId: string, event: string, payload: unknown, omitSocket?: ExtendedSocket): void {
     const roomSet = this.roomSockets.get(roomId);
-    if (!roomSet) return;
+    if (!roomSet || roomSet.size === 0) return;
 
-    const message = JSON.stringify({ event, payload, timestamp: Date.now() });
+    let message: string;
+    try {
+      message = JSON.stringify({ event, payload, timestamp: Date.now() });
+    } catch (err: any) {
+      logger.warn('Failed to serialize broadcast payload', { event, error: err?.message });
+      return;
+    }
+
+    const deadSockets: ExtendedSocket[] = [];
     roomSet.forEach((client) => {
-      if (client !== omitSocket && client.readyState === WebSocket.OPEN) {
-        client.send(message);
+      if (client !== omitSocket) {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(message, (err) => {
+              if (err) {
+                logger.warn('Error during socket broadcast write', { event, error: err.message });
+              }
+            });
+          } catch (err: any) {
+            logger.warn('Synchronous broadcast write failure', { event, error: err?.message });
+          }
+        } else if (client.readyState === WebSocket.CLOSING || client.readyState === WebSocket.CLOSED) {
+          deadSockets.push(client);
+        }
       }
     });
+
+    // Clean up closed socket references
+    for (const dead of deadSockets) {
+      roomSet.delete(dead);
+    }
   }
 
   public sendToPlayer(playerId: string, event: string, payload: unknown): void {
     const socket = this.playerSockets.get(playerId);
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      this.sendToSocket(socket, event, payload);
+    if (socket) {
+      if (socket.readyState === WebSocket.OPEN) {
+        this.sendToSocket(socket, event, payload);
+      } else if (socket.readyState === WebSocket.CLOSED) {
+        this.playerSockets.delete(playerId);
+      }
     }
   }
 
   private sendToSocket(ws: WebSocket, event: string, payload: unknown): void {
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ event, payload, timestamp: Date.now() }));
+      try {
+        const message = JSON.stringify({ event, payload, timestamp: Date.now() });
+        ws.send(message, (err) => {
+          if (err) {
+            logger.warn('Error sending message to socket', { event, error: err.message });
+          }
+        });
+      } catch (err: any) {
+        logger.warn('Failed to serialize or send socket message', { event, error: err?.message });
+      }
     }
   }
 }

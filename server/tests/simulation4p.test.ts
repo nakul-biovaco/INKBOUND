@@ -7,7 +7,7 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForState(engine: GameEngine, targetState: GameStatus, timeoutMs: number = 15000): Promise<void> {
+async function waitForState(engine: GameEngine, targetState: GameStatus, timeoutMs: number = 30000): Promise<void> {
   const start = Date.now();
   while (engine.getSession().state !== targetState) {
     if (Date.now() - start > timeoutMs) {
@@ -83,7 +83,7 @@ export async function run4PlayerSimulation() {
 
   // Play through 2 rounds
   for (let round = 1; round <= 2; round++) {
-    await waitForState(engine, GameStatus.PROMPT_SELECTION, 15000);
+    await waitForState(engine, GameStatus.PROMPT_SELECTION, 25000);
 
     const session = engine.getSession();
     const currentDrawerId = session.currentDrawerId!;

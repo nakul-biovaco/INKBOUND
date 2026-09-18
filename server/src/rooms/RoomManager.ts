@@ -471,4 +471,26 @@ export class RoomManager {
     logger.info('Room forcefully deleted and purged', { roomId, code: room.joinCode });
     return true;
   }
+
+  /**
+   * Sweeps and safely removes empty or stale rooms to prevent memory leaks
+   */
+  public static pruneStaleRooms(maxAgeMs: number = 2 * 60 * 60 * 1000): number {
+    const now = Date.now();
+    let prunedCount = 0;
+    for (const [roomId, room] of this.rooms.entries()) {
+      const activePlayers = room.players.filter((p) => p.isConnected);
+      const isAbandoned = activePlayers.length === 0 && now - room.createdAt > 300000; // 5 mins empty
+      const isExpired = now - room.createdAt > maxAgeMs; // default 2 hours
+      const isCompletedOld = room.status === 'COMPLETED' && now - room.createdAt > 600000; // 10 mins completed
+      if (isAbandoned || isExpired || isCompletedOld) {
+        this.deleteRoom(roomId);
+        prunedCount++;
+      }
+    }
+    if (prunedCount > 0) {
+      logger.info(`Pruned ${prunedCount} stale/abandoned room(s) from memory`);
+    }
+    return prunedCount;
+  }
 }
