@@ -379,71 +379,78 @@ export const Home: React.FC<HomeProps> = ({
         </div>
 
         {/* 5. THE THREE INVESTIGATION PROPS ON THE DESK */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-6 items-stretch">
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch select-none">
           {/* ======================================================== */}
-          {/* PROP 1: MANILA CASE DOSSIER (HOST NEW CASE)              */}
+          {/* PROP 1: MANILA CASE DOSSIER (HOST A GAME)                 */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
-            {/* Ambient Bloom Flare */}
-            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-red-600/30 to-rose-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
-
-            {/* Folder Body */}
             <div
               onMouseEnter={() => SoundService.playCardFlip()}
-              className="investigation-dossier p-6 flex-1 flex flex-col justify-between"
+              className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-5 sm:p-6 shadow-[0_15px_45px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(139,94,60,0.15)] flex-1 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
-              {/* Paperclip & Pushpin on folder edge */}
-              <div className="pushpin-dot" />
-              <div className="paperclip-clip" />
+              {/* Corner Accents */}
+              <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
 
-              {/* Stamped Header */}
+              {/* Brass Paperclip */}
+              <div className="absolute -top-1.5 left-8 w-3 h-6 rounded-full border-2 border-[#8c6d48] -rotate-6 shadow-xs opacity-80 pointer-events-none bg-[#d8c3aa]/40" />
+
               <div>
-                <div className="flex items-center justify-between mb-4 border-b border-red-950/80 pb-3">
-                  <div className="evidence-stamp-classified text-[10px]">
-                    CONFIDENTIAL // CASE ROOM
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-950/80 text-red-300 border border-red-600/40">
+                {/* Header Stamped Label */}
+                <div className="flex items-center justify-between mb-3.5 border-b border-[#bfa98e]/70 pb-2.5">
+                  <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase tracking-widest -rotate-1 shadow-xs">
+                    ★ PRIVATE DOSSIER
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#ede0ce] text-[#543b27] border border-[#b89e7c]">
                     HOST
                   </span>
                 </div>
 
                 {/* Content */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-white font-serif tracking-wide flex items-center gap-2">
-                    <Folder className="w-5 h-5 text-red-400 shrink-0" />
+                <div className="space-y-2 text-left">
+                  <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-tight flex items-center gap-2">
+                    <Folder className="w-5 h-5 text-red-800 shrink-0" />
                     <span>Host a Game</span>
                   </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                    Start a private room with friends. Pick a mystery story, set round times, and begin drawing!
+                  <p className="text-xs text-[#5c422e] leading-relaxed font-serif">
+                    Start a private room for your squad. Pick a mystery case, set round timer, and invite friends.
                   </p>
 
-                  <div className="pt-3 flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-300">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/60 border border-red-900/40 text-red-300 font-medium">
-                      <Users className="w-3 h-3 text-red-400" />
+                  <div className="pt-2 flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-[#ede0ce] border border-[#b89e7c] text-[#543b27] font-bold">
+                      <Users className="w-3 h-3 text-red-800" />
                       <span>2–8 Players</span>
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/60 border border-amber-900/40 text-amber-300 font-medium">
-                      <Eye className="w-3 h-3 text-amber-400" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-[#ede0ce] border border-[#b89e7c] text-[#543b27] font-bold">
+                      <Eye className="w-3 h-3 text-amber-700" />
                       <span>Secret Imposter</span>
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 3D Wax Seal Button */}
-              <div className="pt-6">
+              {/* Physical Red Stamp Action Button */}
+              <div className="pt-5">
                 <button
+                  type="button"
                   onClick={() => {
                     SoundService.playStamp();
                     onCreateRoom();
                   }}
                   disabled={isCreating}
-                  className="w-full py-3.5 px-4 rounded-xl game-btn-red text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
+                  className="w-full py-3 px-4 rounded-xl bg-red-800 hover:bg-red-700 active:bg-red-900 text-white font-serif font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md transition-all border border-red-950"
                 >
                   {isCreating ? (
                     <>
                       <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      <span>Creating Room...</span>
+                      <span className="font-mono">Creating Case...</span>
                     </>
                   ) : (
                     <>
@@ -457,42 +464,49 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* ======================================================== */}
-          {/* PROP 2: POLICE DISPATCH TICKET (JOIN CASE)               */}
+          {/* PROP 2: TELEGRAPH DISPATCH (JOIN WITH CODE)               */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
-            {/* Ambient Bloom Flare */}
-            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-amber-500/30 to-yellow-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
-
-            {/* Ticket Body */}
             <div
               onMouseEnter={() => SoundService.playCardFlip()}
-              className="evidence-telegram p-6 flex-1 flex flex-col justify-between"
+              className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-5 sm:p-6 shadow-[0_15px_45px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(139,94,60,0.15)] flex-1 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
-              {/* Paperclip on ticket edge */}
-              <div className="paperclip-clip" />
+              {/* Corner Accents */}
+              <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              {/* Brass Paperclip */}
+              <div className="absolute -top-1.5 left-8 w-3 h-6 rounded-full border-2 border-[#8c6d48] -rotate-6 shadow-xs opacity-80 pointer-events-none bg-[#d8c3aa]/40" />
 
               <div>
-                {/* Stamped Header */}
-                <div className="flex items-center justify-between mb-4 border-b border-amber-950/80 pb-3">
-                  <div className="evidence-stamp-confidential text-[10px]">
-                    ROOM INVITE PASS
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-600/40">
+                {/* Header Stamped Label */}
+                <div className="flex items-center justify-between mb-3.5 border-b border-[#bfa98e]/70 pb-2.5">
+                  <span className="px-2 py-0.5 rounded border border-amber-800 bg-amber-100 text-amber-900 font-mono text-[9px] font-black uppercase tracking-widest -rotate-1 shadow-xs">
+                    ★ TELEGRAPH PASS
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#ede0ce] text-[#543b27] border border-[#b89e7c]">
                     JOIN
                   </span>
                 </div>
 
-                {/* Content & Inline Typewriter Input */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-white font-serif tracking-wide flex items-center gap-2">
-                    <Search className="w-5 h-5 text-amber-400 shrink-0" />
+                {/* Content */}
+                <div className="space-y-2 text-left">
+                  <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-tight flex items-center gap-2">
+                    <Search className="w-5 h-5 text-[#8c6d48] shrink-0" />
                     <span>Join with Code</span>
                   </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                    Got a 6-letter room code or link from a friend? Type or paste it below to enter the lobby.
+                  <p className="text-xs text-[#5c422e] leading-relaxed font-serif">
+                    Got a room code or invite link from a friend? Enter it below to join the case.
                   </p>
 
-                  <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-2 space-y-2">
+                  <form onSubmit={handleJoinSubmit} id="join-card-form" className="pt-1.5 space-y-1.5">
                     <div className="relative flex items-center">
                       <input
                         type="text"
@@ -508,36 +522,36 @@ export const Home: React.FC<HomeProps> = ({
                           setCardErrorMsg('');
                         }}
                         placeholder="ROOM CODE"
-                        className="w-full py-2.5 pl-3 pr-16 bg-black/80 border-2 border-amber-600/60 focus:border-amber-400 rounded-xl text-center text-base font-mono font-bold tracking-widest uppercase text-amber-300 outline-none shadow-inner"
+                        className="w-full py-2.5 pl-3 pr-16 bg-[#fffdf9] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-center text-sm font-mono font-black tracking-widest uppercase text-[#1a110a] outline-none shadow-inner placeholder:text-[#a89078] placeholder:font-normal"
                       />
                       <button
                         type="button"
                         onClick={handlePasteCode}
-                        className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-amber-950/80 hover:bg-amber-900 text-[10px] font-mono font-bold text-amber-200 border border-amber-500/50 cursor-pointer transition-colors"
+                        className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-[#ede0ce] hover:bg-[#ded0bc] text-[10px] font-mono font-bold text-[#443020] border border-[#b89e7c] cursor-pointer transition-colors"
                       >
                         PASTE
                       </button>
                     </div>
 
                     {cardErrorMsg && (
-                      <p className="text-[11px] font-mono text-red-400 leading-tight">{cardErrorMsg}</p>
+                      <p className="text-[11px] font-mono text-red-700 leading-tight font-bold">{cardErrorMsg}</p>
                     )}
                   </form>
                 </div>
               </div>
 
-              {/* 3D Gold Action Button */}
-              <div className="pt-6">
+              {/* Physical Amber Action Button */}
+              <div className="pt-5">
                 <button
                   type="submit"
                   form="join-card-form"
                   disabled={isJoining}
-                  className="w-full py-3.5 px-4 rounded-xl game-btn-gold text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
+                  className="w-full py-3 px-4 rounded-xl bg-[#8c6d48] hover:bg-[#7a5e3d] active:bg-[#684f33] text-white font-serif font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md transition-all border border-[#5c422e]"
                 >
                   {isJoining ? (
                     <>
                       <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      <span>Entering Room...</span>
+                      <span className="font-mono">Entering...</span>
                     </>
                   ) : (
                     <>
@@ -551,37 +565,46 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* ======================================================== */}
-          {/* PROP 3: LEATHER DETECTIVE BADGE WALLET (YOUR ID)         */}
+          {/* PROP 3: DETECTIVE IDENTITY (YOUR BADGE & NAME)            */}
           {/* ======================================================== */}
           <div className="relative group flex flex-col">
-            {/* Ambient Bloom Flare */}
-            <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-sky-500/30 to-cyan-600/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
-
-            {/* Wallet Body */}
             <div
               onMouseEnter={() => SoundService.playCardFlip()}
-              className="detective-wallet p-6 flex-1 flex flex-col justify-between"
+              className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-5 sm:p-6 shadow-[0_15px_45px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(139,94,60,0.15)] flex-1 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
             >
+              {/* Corner Accents */}
+              <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              {/* Brass Paperclip */}
+              <div className="absolute -top-1.5 left-8 w-3 h-6 rounded-full border-2 border-[#8c6d48] -rotate-6 shadow-xs opacity-80 pointer-events-none bg-[#d8c3aa]/40" />
+
               <div>
-                {/* Badge Header with Metallic Shield */}
-                <div className="flex items-center justify-between mb-4 border-b border-sky-950/80 pb-3">
-                  <div className="flex items-center gap-2 text-sky-300 font-mono text-[10px] uppercase font-bold tracking-wider">
-                    <Shield className="w-4 h-4 text-sky-400" />
-                    <span>DETECTIVE BADGE</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-sky-950/80 text-sky-300 border border-sky-600/40">
+                {/* Header Stamped Label */}
+                <div className="flex items-center justify-between mb-3.5 border-b border-[#bfa98e]/70 pb-2.5">
+                  <span className="px-2 py-0.5 rounded border border-[#5c4028] bg-[#ede0ce] text-[#443020] font-mono text-[9px] font-black uppercase tracking-widest -rotate-1 shadow-xs">
+                    ★ IDENTIFICATION
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#ede0ce] text-[#543b27] border border-[#b89e7c]">
                     PROFILE
                   </span>
                 </div>
 
-                {/* Interactive Polaroid ID Badge Frame */}
-                <div className="space-y-3 flex flex-col items-center text-center">
+                {/* Content */}
+                <div className="space-y-2.5 flex flex-col items-center text-center">
                   <div className="flex items-center gap-3 my-0.5">
                     <button
                       type="button"
                       onClick={() => handleCycleAvatar('prev')}
                       title="Previous Icon"
-                      className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-full bg-[#ede0ce] border border-[#b89e7c] text-[#543b27] hover:bg-[#fffdf9] flex items-center justify-center shadow-xs transition-colors cursor-pointer"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -591,7 +614,7 @@ export const Home: React.FC<HomeProps> = ({
                         SoundService.playClick();
                         setIsAvatarPickerOpen(true);
                       }}
-                      className="cursor-pointer transform hover:scale-105 transition-transform"
+                      className="cursor-pointer transform hover:scale-105 transition-transform p-1 rounded-xl bg-[#ede0ce]/60 border border-[#b89e7c] shadow-xs"
                       title="Click to view all icons"
                     >
                       <AvatarBadge avatar={selectedAvatar} size="lg" />
@@ -601,7 +624,7 @@ export const Home: React.FC<HomeProps> = ({
                       type="button"
                       onClick={() => handleCycleAvatar('next')}
                       title="Next Icon"
-                      className="p-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-full bg-[#ede0ce] border border-[#b89e7c] text-[#543b27] hover:bg-[#fffdf9] flex items-center justify-center shadow-xs transition-colors cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -613,14 +636,14 @@ export const Home: React.FC<HomeProps> = ({
                       SoundService.playClick();
                       setIsAvatarPickerOpen(true);
                     }}
-                    className="text-[10px] text-sky-400 hover:text-sky-300 font-mono underline cursor-pointer"
+                    className="text-[10px] text-[#7a5839] hover:text-[#1a110a] font-mono underline cursor-pointer"
                   >
                     Change Badge Icon
                   </button>
 
                   {/* Inline Detective Name Input */}
                   <form onSubmit={handleSaveBadge} id="badge-card-form" className="w-full pt-1 space-y-1 text-left">
-                    <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    <label className="block text-[10px] font-mono text-[#7a5839] uppercase tracking-wider font-bold">
                       Your Nickname
                     </label>
                     <input
@@ -629,28 +652,28 @@ export const Home: React.FC<HomeProps> = ({
                       value={nicknameInput}
                       onChange={(e) => setNicknameInput(e.target.value)}
                       placeholder="e.g. Sherlock"
-                      className="w-full py-2 px-3 bg-black/80 border border-sky-600/50 focus:border-sky-400 rounded-xl text-sm font-semibold text-white outline-none"
+                      className="w-full py-2 px-3 bg-[#fffdf9] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-sm font-bold font-serif text-[#1a110a] outline-none shadow-inner"
                     />
                   </form>
                 </div>
               </div>
 
-              {/* 3D Dark Button */}
-              <div className="pt-6">
+              {/* Physical Dark Leather Action Button */}
+              <div className="pt-5">
                 <button
                   type="submit"
                   form="badge-card-form"
-                  className="w-full py-3.5 px-4 rounded-xl game-btn-dark text-slate-100 hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xl"
+                  className="w-full py-3 px-4 rounded-xl bg-[#3e2b1b] hover:bg-[#2e2014] active:bg-[#1f150d] text-white font-serif font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all border border-[#221711]"
                 >
                   {badgeSavedFeedback ? (
                     <>
                       <Check className="w-4 h-4 text-emerald-400" />
-                      <span className="text-emerald-300">Badge Saved!</span>
+                      <span>Identity Saved!</span>
                     </>
                   ) : (
                     <>
-                      <Shield className="w-4 h-4 text-sky-400" />
-                      <span>Save Badge</span>
+                      <Shield className="w-4 h-4 text-amber-200" />
+                      <span>Save Identity</span>
                     </>
                   )}
                 </button>
