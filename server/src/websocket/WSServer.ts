@@ -36,6 +36,7 @@ export class WSServer {
   private wss: WebSocketServer;
   private roomSockets: Map<string, Set<ExtendedSocket>> = new Map();
   private playerSockets: Map<string, ExtendedSocket> = new Map();
+  private pendingDisconnects: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(server: Server) {
     this.wss = new WebSocketServer({ server, path: '/ws' });
@@ -101,6 +102,14 @@ export class WSServer {
     ws.session = session;
     ws.roomId = session.roomId;
     ws.playerId = session.playerId;
+
+    // Cancel any pending disconnect grace timer for this player!
+    const pendingTimer = this.pendingDisconnects.get(session.playerId);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      this.pendingDisconnects.delete(session.playerId);
+      logger.info('Cancelled pending disconnect timer upon socket reconnection', { playerId: session.playerId });
+    }
 
     this.playerSockets.set(session.playerId, ws);
 
@@ -400,6 +409,14 @@ export class WSServer {
           throw err;
         }
 
+        const pendingTimer = this.pendingDisconnects.get(player.playerId);
+        if (pendingTimer) {
+          clearTimeout(pendingTimer);
+          this.pendingDisconnects.delete(player.playerId);
+          logger.info('Cancelled pending disconnect timer upon RECONNECT event', { playerId: player.playerId });
+        }
+        RoomManager.markPlayerConnection(room.roomId, player.playerId, true);
+
         // A token-authenticated socket is already associated. Re-associating it would
         // broadcast a duplicate join event to the room on every reconnect.
         if (ws.playerId !== player.playerId || ws.roomId !== room.roomId) {
@@ -473,24 +490,55 @@ export class WSServer {
   private handleSocketDisconnect(ws: ExtendedSocket): void {
     if (!ws.roomId || !ws.playerId) return;
 
-    logger.info('Player disconnected', { playerId: ws.playerId, roomId: ws.roomId });
+    const playerId = ws.playerId;
+    const roomId = ws.roomId;
 
-    this.playerSockets.delete(ws.playerId);
-    const roomSet = this.roomSockets.get(ws.roomId);
+    logger.info('Socket connection closed', { playerId, roomId });
+
+    // Clean up room socket set
+    const roomSet = this.roomSockets.get(roomId);
     if (roomSet) {
       roomSet.delete(ws);
       if (roomSet.size === 0) {
-        this.roomSockets.delete(ws.roomId);
+        this.roomSockets.delete(roomId);
       }
     }
 
-    const engine = GameEngine.getEngine(ws.roomId);
-    if (engine) {
-      engine.handlePlayerDisconnect(ws.playerId);
-    } else {
-      RoomManager.markPlayerConnection(ws.roomId, ws.playerId, false);
-      this.broadcastToRoom(ws.roomId, WSServerEvent.PLAYER_LEFT, { playerId: ws.playerId });
+    // Check if player has already reconnected with a newer socket
+    const currentActiveSocket = this.playerSockets.get(playerId);
+    if (currentActiveSocket && currentActiveSocket !== ws && currentActiveSocket.readyState === WebSocket.OPEN) {
+      logger.info('Superseded socket closed, active socket remains for player', { playerId });
+      return;
     }
+
+    // Remove this socket reference if it matches
+    if (currentActiveSocket === ws) {
+      this.playerSockets.delete(playerId);
+    }
+
+    // Clear any existing pending disconnect timer for this player
+    const existing = this.pendingDisconnects.get(playerId);
+    if (existing) {
+      clearTimeout(existing);
+      this.pendingDisconnects.delete(playerId);
+    }
+
+    // Start 15-second grace period before declaring player left
+    const timer = setTimeout(() => {
+      this.pendingDisconnects.delete(playerId);
+      logger.info('Player disconnect grace period expired, finalizing disconnect', { playerId, roomId });
+
+      const engine = GameEngine.getEngine(roomId);
+      if (engine) {
+        engine.handlePlayerDisconnect(playerId);
+      } else {
+        RoomManager.markPlayerConnection(roomId, playerId, false);
+        this.broadcastToRoom(roomId, WSServerEvent.PLAYER_LEFT, { playerId });
+      }
+    }, 15000);
+
+    this.pendingDisconnects.set(playerId, timer);
+    logger.info('Player disconnect grace timer started (15s)', { playerId, roomId });
   }
 
   private assertSocketAuthenticated(ws: ExtendedSocket): void {

@@ -56,24 +56,28 @@ export class TurnManager {
     this.currentTurnIndex++;
     const playerMap = new Map(players.map((p) => [p.playerId, p]));
 
-    // Find next connected drawer (loop up to full turn order length)
-    let attempts = 0;
-    while (attempts < this.turnOrder.length) {
-      this.drawerIndex = (this.drawerIndex + 1) % this.turnOrder.length;
-      const candidateId = this.turnOrder[this.drawerIndex];
-      const player = playerMap.get(candidateId);
+    // Strictly advance drawer index in round-robin order
+    this.drawerIndex = (this.drawerIndex + 1) % this.turnOrder.length;
+    let candidateId = this.turnOrder[this.drawerIndex];
+    let player = playerMap.get(candidateId);
 
-      if (player && player.isConnected) {
-        player.turnCount++;
-        logger.info(`Next drawer chosen: ${player.displayName} (${candidateId}), turn: ${this.currentTurnIndex}`);
-        return { drawerId: candidateId, turnIndex: this.currentTurnIndex };
-      }
+    // If player was completely removed or not in playerMap, search for next valid player
+    let attempts = 0;
+    while (!player && attempts < this.turnOrder.length) {
+      this.drawerIndex = (this.drawerIndex + 1) % this.turnOrder.length;
+      candidateId = this.turnOrder[this.drawerIndex];
+      player = playerMap.get(candidateId);
       attempts++;
     }
 
-    // If everyone is disconnected, pick current index as fallback
-    const fallbackId = this.turnOrder[this.drawerIndex];
-    return { drawerId: fallbackId, turnIndex: this.currentTurnIndex };
+    if (player) {
+      player.turnCount++;
+      logger.info(`Next drawer chosen: ${player.displayName} (${candidateId}), turn: ${this.currentTurnIndex}`);
+      return { drawerId: candidateId, turnIndex: this.currentTurnIndex };
+    }
+
+    // Fallback if no mapped player found
+    return { drawerId: candidateId || this.turnOrder[0], turnIndex: this.currentTurnIndex };
   }
 
   public getCurrentDrawerId(): string | null {

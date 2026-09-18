@@ -19,16 +19,18 @@
       "act": 1,
       "sequence": 1,
       "eventType": "DRAW_EVENT",
-      "drawingObjective": "A security guard dropping their keys near the vault",
-      "visualElements": ["guard", "keys", "vault", "floor"],
+      "drawingObjective": "Vault Keys",
+      "visualElements": ["keys", "keychain", "brass keys", "vault door"],
       "acceptedConcepts": [
-        "guard drops keys",
-        "dropping keys",
-        "security guard losing keys",
-        "keys falling on floor"
+        "vault keys",
+        "keys",
+        "key",
+        "brass keys",
+        "security keys",
+        "master keys"
       ],
-      "semanticKeywords": ["guard", "keys", "drop", "vault", "floor"],
-      "hint": "Someone authorized is being careless with access.",
+      "semanticKeywords": ["keys", "vault", "lock", "brass", "security"],
+      "hint": "Category: Crime Scene Clue",
       "difficulty": "EASY",
       "narrativeDescription": "At 01:45 AM, Officer Miller is seen fumbling with heavy brass keys near Vault B.",
       "consequenceReveal": "Officer Miller was seen dropping the master vault keys near the ventilation shaft. Was it an accident, or deliberate?",
@@ -43,17 +45,18 @@
       "act": 1,
       "sequence": 2,
       "eventType": "DRAW_EVENT",
-      "drawingObjective": "A mysterious figure in black cutting the power wires",
-      "visualElements": ["shadow", "wire cutters", "sparks", "fuse box"],
+      "drawingObjective": "Wire Cutters",
+      "visualElements": ["wire cutters", "pliers", "wires", "spark"],
       "acceptedConcepts": [
-        "cutting wires",
-        "cutting power",
-        "figure cutting wires",
-        "thief cutting fuse box",
-        "cutting electricity"
+        "wire cutters",
+        "cutters",
+        "pliers",
+        "wires",
+        "wire cutter",
+        "cutting wires"
       ],
-      "semanticKeywords": ["cut", "wire", "power", "sparks", "fuse", "thief"],
-      "hint": "The cameras went black right before the heist.",
+      "semanticKeywords": ["wire", "cutters", "power", "pliers", "tools"],
+      "hint": "Category: Burglary Tool",
       "difficulty": "EASY",
       "narrativeDescription": "A hooded figure snips through the backup generator cables in the basement.",
       "consequenceReveal": "The main security cameras were disabled right before the alarm sounded.",
@@ -68,17 +71,18 @@
       "act": 2,
       "sequence": 3,
       "eventType": "DRAW_EVENT",
-      "drawingObjective": "A woman hiding a glowing blue diamond inside an umbrella",
-      "visualElements": ["woman", "diamond", "umbrella", "glow"],
+      "drawingObjective": "Blue Diamond",
+      "visualElements": ["diamond", "gem", "blue crystal", "jewel"],
       "acceptedConcepts": [
-        "diamond inside umbrella",
-        "hiding diamond in umbrella",
-        "woman hides diamond",
-        "stashing gem in umbrella",
-        "umbrella diamond"
+        "blue diamond",
+        "diamond",
+        "gem",
+        "jewel",
+        "crystal",
+        "eye of osiris"
       ],
-      "semanticKeywords": ["diamond", "umbrella", "hide", "woman", "gem"],
-      "hint": "She has an accessory ready for a rainy night indoors.",
+      "semanticKeywords": ["diamond", "blue", "gem", "jewel", "stone"],
+      "hint": "Category: Stolen Artifact",
       "difficulty": "MEDIUM",
       "narrativeDescription": "Dr. Aris Thorne slips the Eye of Osiris into the hollow ferrule of her silk umbrella.",
       "consequenceReveal": "The diamond was never taken out through the main doors—it was slipped inside Dr. Thorne's umbrella!",
@@ -97,17 +101,17 @@
       "act": 2,
       "sequence": 4,
       "eventType": "DRAW_EVENT",
-      "drawingObjective": "A secret handshake passing a briefcase behind a marble statue",
-      "visualElements": ["statue", "briefcase", "two people", "handshake"],
+      "drawingObjective": "Briefcase",
+      "visualElements": ["briefcase", "leather case", "handle", "locks"],
       "acceptedConcepts": [
-        "handshake behind statue",
-        "passing briefcase",
-        "handshake briefcase",
-        "two people meeting behind statue",
-        "secret deal statue"
+        "briefcase",
+        "black briefcase",
+        "suitcase",
+        "leather case",
+        "bag"
       ],
-      "semanticKeywords": ["handshake", "briefcase", "statue", "deal", "secret"],
-      "hint": "Two conspirators exchange payment out of sight.",
+      "semanticKeywords": ["briefcase", "bag", "case", "money", "deal"],
+      "hint": "Category: Suspect Gear",
       "difficulty": "MEDIUM",
       "narrativeDescription": "Miller exchanges a locked black briefcase with Dr. Thorne behind the Winged Victory statue.",
       "consequenceReveal": "Officer Miller was paid off by Dr. Thorne. The guard and the curator were partners all along!",
@@ -126,17 +130,18 @@
       "act": 3,
       "sequence": 5,
       "eventType": "DRAW_EVENT",
-      "drawingObjective": "A red sports car speeding through a broken museum gate",
-      "visualElements": ["red car", "broken gate", "headlights", "tire smoke"],
+      "drawingObjective": "Getaway Car",
+      "visualElements": ["red car", "sports car", "wheels", "smoke"],
       "acceptedConcepts": [
-        "red car breaking gate",
-        "car crashing gate",
-        "speeding red car",
-        "car escaping through gate",
-        "getaway car"
+        "getaway car",
+        "sports car",
+        "red car",
+        "car",
+        "convertible",
+        "vehicle"
       ],
-      "semanticKeywords": ["car", "gate", "red", "crash", "speed", "escape"],
-      "hint": "The dramatic getaway vehicle.",
+      "semanticKeywords": ["car", "vehicle", "red", "wheels", "speed"],
+      "hint": "Category: Escape Route",
       "difficulty": "HARD",
       "narrativeDescription": "A crimson convertible smashes through the wrought iron courtyard gates into the foggy rain.",
       "consequenceReveal": "The getaway driver panicked and fled, but left tire tracks leading toward the city docks.",
@@ -151,28 +156,33 @@
   "distractors": [
     {
       "distractorId": "dist_01",
-      "text": "A janitor mopping a spilled cup of coffee",
-      "category": "innocent"
+      "text": "Handcuffs",
+      "category": "evidence"
     },
     {
       "distractorId": "dist_02",
-      "text": "A tourist taking a flash photo of a mummy",
-      "category": "innocent"
+      "text": "Broken Glass",
+      "category": "clue"
     },
     {
       "distractorId": "dist_03",
-      "text": "A stray black cat slipping through a high skylight",
-      "category": "distraction"
+      "text": "Flashlight",
+      "category": "tool"
     },
     {
       "distractorId": "dist_04",
-      "text": "An old telephone ringing in an empty gallery",
-      "category": "mood"
+      "text": "Police Badge",
+      "category": "authority"
     },
     {
       "distractorId": "dist_05",
-      "text": "A painter restoring a damaged oil painting",
-      "category": "innocent"
+      "text": "Poison Bottle",
+      "category": "evidence"
+    },
+    {
+      "distractorId": "dist_06",
+      "text": "Secret Safe",
+      "category": "location"
     }
   ],
   "endings": [

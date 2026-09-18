@@ -135,7 +135,7 @@ export const Game: React.FC<GameProps> = ({
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
       SoundService.playDramaticSting();
       setIsStorySelection(false);
-      setSelectedStoryBriefing(payload);
+      setSelectedStoryBriefing(null);
       showGameBanner({
         id: 'story-selected',
         type: 'story',
@@ -145,7 +145,7 @@ export const Game: React.FC<GameProps> = ({
       }, 5000);
       setGameState((prev) => ({
         ...prev,
-        status: 'STORY_SELECTION',
+        status: 'PLAYER_DRAWING',
         currentCase: {
           id: payload.storyId,
           title: payload.title,
@@ -333,7 +333,14 @@ export const Game: React.FC<GameProps> = ({
         ...(payload?.gameState
           ? {
               status:
-                payload.gameState.state === 'DRAWING' || payload.gameState.state === 'PROMPT_SELECTION'
+                payload.gameState.state === 'DRAWING' ||
+                payload.gameState.state === 'PROMPT_SELECTION' ||
+                payload.gameState.state === 'ROUND_START' ||
+                payload.gameState.state === 'GUESSING' ||
+                payload.gameState.state === 'CLUE_SOLVED' ||
+                payload.gameState.state === 'STORY_REVEAL' ||
+                payload.gameState.state === 'NEXT_TURN' ||
+                (payload.gameState.turnIndex !== undefined && payload.gameState.turnIndex >= 0)
                   ? 'PLAYER_DRAWING'
                   : payload.gameState.state === 'FINAL_INVESTIGATION'
                   ? 'FINAL_THEORY'
@@ -657,7 +664,10 @@ export const Game: React.FC<GameProps> = ({
       )}
 
       {/* 1. DYNAMIC STORY SELECTION & CASE DOSSIER PHASE */}
-      {(gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO' || (gameState.status as string) === 'COUNTDOWN' || isStorySelection) && gameState.status !== 'PLAYER_DRAWING' && gameState.status !== 'FINAL_THEORY' && gameState.status !== 'RESULTS' && (
+      {(isStorySelection || (gameState.status === 'STORY_SELECTION' && !gameState.currentTurnPlayerId && gameState.turnIndex < 0)) &&
+        gameState.status !== 'PLAYER_DRAWING' &&
+        gameState.status !== 'FINAL_THEORY' &&
+        gameState.status !== 'RESULTS' && (
         <div className="relative z-10 flex flex-col min-h-screen justify-between">
           <GameHeader
             currentUser={currentUser}

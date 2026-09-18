@@ -83,27 +83,37 @@ export class StoryEngine {
         const j = Math.floor(Math.random() * (i + 1));
         [availableDistractors[i], availableDistractors[j]] = [availableDistractors[j], availableDistractors[i]];
       }
-      if (!distractor1) distractor1 = availableDistractors[0]?.text || 'A cat knocks over a vase';
-      if (!distractor2) distractor2 = availableDistractors[1]?.text || 'A shadow moves past the window';
+      if (!distractor1) distractor1 = availableDistractors[0]?.text || 'Handcuffs';
+      if (!distractor2) distractor2 = availableDistractors[1]?.text || 'Security Camera';
     }
+
+    const cleanClue = (txt: string): string => {
+      if (!txt) return 'Mystery Clue';
+      let clean = txt.replace(/^A\s+|^An\s+|^The\s+/i, '').replace(/[.!?:;]+$/, '').trim();
+      const words = clean.split(/\s+/);
+      if (words.length > 4) {
+        clean = words.slice(0, 3).join(' ');
+      }
+      return clean;
+    };
 
     const rawOptions: PromptOption[] = [
       {
         optionIndex: 0,
-        previewText: targetEvent.drawingObjective,
+        previewText: cleanClue(targetEvent.drawingObjective),
         difficulty: targetEvent.difficulty,
         isDistractor: false,
         eventId: targetEvent.eventId,
       },
       {
         optionIndex: 1,
-        previewText: distractor1,
+        previewText: cleanClue(distractor1),
         difficulty: 'MEDIUM',
         isDistractor: true,
       },
       {
         optionIndex: 2,
-        previewText: distractor2,
+        previewText: cleanClue(distractor2),
         difficulty: 'HARD',
         isDistractor: true,
       },

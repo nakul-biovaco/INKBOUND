@@ -100,19 +100,33 @@ export class MarkdownStoryParser {
       }
 
       // Extract 3 options (A, B, C)
-      const options = this.extractOptionsFromBlock(body);
-      const canonOption = options.find((o) => o.isCanon)?.text || objective;
+      const rawOptions = this.extractOptionsFromBlock(body);
+      const cleanEventTitle = MarkdownStoryParser.cleanToClueWord(eventTitle);
+      const canonRaw = rawOptions.find((o) => o.isCanon)?.text || objective;
+      const cleanObjective = MarkdownStoryParser.cleanToClueWord(canonRaw);
+      const finalObjective = cleanEventTitle && cleanEventTitle.split(' ').length <= 3 ? cleanEventTitle : cleanObjective;
+
+      const options = rawOptions.map(opt => ({
+        ...opt,
+        text: MarkdownStoryParser.cleanToClueWord(opt.text),
+      }));
+
+      const allAccepted = new Set<string>([
+        finalObjective.toLowerCase(),
+        cleanEventTitle.toLowerCase(),
+        ...acceptedConcepts,
+      ]);
 
       events.push({
         eventId: `evt_${storyNum}_${seq}`,
         act: Math.min(6, Math.ceil(seq / 4)),
         sequence: seq,
         eventType: 'DRAW_EVENT',
-        drawingObjective: canonOption,
+        drawingObjective: finalObjective,
         visualElements: visualElements.length > 0 ? visualElements : ['clue', 'scene', 'figure'],
-        acceptedConcepts,
-        semanticKeywords: this.extractKeywords(canonOption + ' ' + objective),
-        hint,
+        acceptedConcepts: Array.from(allAccepted).filter(s => s.length > 0),
+        semanticKeywords: this.extractKeywords(finalObjective + ' ' + eventTitle),
+        hint: `Category: Mystery Clue`,
         difficulty: seq > 12 ? 'HARD' : seq > 5 ? 'MEDIUM' : 'EASY',
         narrativeDescription: narrative,
         consequenceReveal: narrative,
@@ -203,9 +217,10 @@ export class MarkdownStoryParser {
             .replace(/\*B\*/gi, '')
             .replace(/\*C\*/gi, '')
             .trim();
-          choices.push({ text: cleaned, isCanon });
+          const cleanedClue = MarkdownStoryParser.cleanToClueWord(cleaned);
+          choices.push({ text: cleanedClue, isCanon });
           if (isCanon && !canonText) {
-            canonText = cleaned;
+            canonText = cleanedClue;
           }
         }
       }
@@ -213,12 +228,12 @@ export class MarkdownStoryParser {
       // Event narrative (text before the options block)
       const narrative = rest.split(/\*\(/)[0].trim().replace(/\*TWIST.*?\*:\s*/i, '');
       if (!canonText) {
-        canonText = narrative;
+        canonText = MarkdownStoryParser.cleanToClueWord(narrative);
       }
 
       // Extract hint if present
       const hintMatch = line.match(/Hint:\s*"([^"]+)"/i);
-      const hint = hintMatch ? hintMatch[1] : `Focus on the clue in this moment.`;
+      const hint = hintMatch ? hintMatch[1] : `Category: Mystery Clue`;
 
       // Accepted guesses derived from canon and narrative keywords
       const accepted = [
@@ -233,7 +248,7 @@ export class MarkdownStoryParser {
         eventType: seq === 14 || seq === 15 ? 'NARRATIVE_TWIST' : 'DRAW_EVENT',
         drawingObjective: canonText,
         visualElements: this.extractVisualElements(canonText + ' ' + narrative),
-        acceptedConcepts: Array.from(new Set(accepted)),
+        acceptedConcepts: Array.from(new Set(accepted)).filter(s => s.length > 0),
         semanticKeywords: this.extractKeywords(canonText),
         hint,
         difficulty: seq > 12 ? 'HARD' : seq > 5 ? 'MEDIUM' : 'EASY',
@@ -364,13 +379,29 @@ export class MarkdownStoryParser {
     return [phrase.toLowerCase()];
   }
 
+  public static cleanToClueWord(text: string): string {
+    if (!text) return 'Mystery Clue';
+    let clean = text
+      .replace(/^#*\s*\d+\s*[—–-]\s*/, '')
+      .replace(/^A\s+|^An\s+|^The\s+/i, '')
+      .replace(/^MAJOR TWIST\s*—\s*/i, '')
+      .replace(/[.!?:;]+$/, '')
+      .trim();
+    const words = clean.split(/\s+/);
+    if (words.length > 3) {
+      clean = words.slice(0, 3).join(' ');
+    }
+    return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : 'Mystery Clue';
+  }
+
   private static generateDistractors(title: string, events: StoryEvent[]): Array<{ distractorId: string; text: string; category: string }> {
     const distractors = [
-      { distractorId: 'dist_generic_1', text: 'A curious cat slipping past a door', category: 'innocent' },
-      { distractorId: 'dist_generic_2', text: 'A phone ringing in an empty corridor', category: 'mood' },
-      { distractorId: 'dist_generic_3', text: 'Someone hurriedly checking their watch', category: 'innocent' },
-      { distractorId: 'dist_generic_4', text: 'A cup of coffee spilling on paperwork', category: 'innocent' },
-      { distractorId: 'dist_generic_5', text: 'A shadow moving behind a frosted glass window', category: 'distraction' },
+      { distractorId: 'dist_generic_1', text: 'Handcuffs', category: 'evidence' },
+      { distractorId: 'dist_generic_2', text: 'Flashlight', category: 'tool' },
+      { distractorId: 'dist_generic_3', text: 'Broken Glass', category: 'clue' },
+      { distractorId: 'dist_generic_4', text: 'Police Badge', category: 'authority' },
+      { distractorId: 'dist_generic_5', text: 'Secret Safe', category: 'location' },
+      { distractorId: 'dist_generic_6', text: 'Poison Bottle', category: 'evidence' },
     ];
     return distractors;
   }
