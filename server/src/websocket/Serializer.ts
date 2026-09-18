@@ -83,9 +83,21 @@ export class Serializer {
   /**
    * Serializes room state for lobby view
    */
-  public static serializeRoom(room: Room): Omit<Room, 'players'> & { players: Array<Omit<Player, 'reconnectToken'>> } {
+  public static serializeRoom(room: Room): any {
+    const rawSettings = (room.settings as any) || {};
+    const settings = {
+      ...rawSettings,
+      drawingTimeLimit: rawSettings.drawingTimeLimit || rawSettings.turnDuration || 120,
+      turnDuration: rawSettings.drawingTimeLimit || rawSettings.turnDuration || 120,
+      roundsPerGame: rawSettings.roundsPerGame || rawSettings.rounds || 1,
+      rounds: rawSettings.roundsPerGame || rawSettings.rounds || 1,
+      storyId: rawSettings.storyId || rawSettings.selectedCaseId || 'all',
+      selectedCaseId: rawSettings.storyId || rawSettings.selectedCaseId || 'all',
+    };
+
     return {
       ...room,
+      settings,
       players: room.players.map(({ reconnectToken, ...publicPlayer }) => publicPlayer),
     };
   }

@@ -16,7 +16,7 @@ export const config = {
     defaultMaxPlayers: 8,
     defaultDrawingTimeSeconds: 120,
     defaultPromptSelectionSeconds: 15,
-    defaultStoryRevealSeconds: 3.5,
+    defaultStoryRevealSeconds: 15,
     reconnectGracePeriodSeconds: 45,
     drawerDisconnectGracePeriodSeconds: 30,
     guessRateLimitPerSecond: 2,

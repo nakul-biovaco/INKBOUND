@@ -60,8 +60,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [isCasePickerOpen, setIsCasePickerOpen] = useState(false);
   const [activePlayerMenu, setActivePlayerMenu] = useState<string | null>(null);
 
-  const [rounds, setRounds] = useState<number>(1);
-  const [drawingTime, setDrawingTime] = useState<number>(room.settings.turnDuration || 120);
+  const [rounds, setRounds] = useState<number>(room.settings?.rounds || 1);
+  const [drawingTime, setDrawingTime] = useState<number>(room.settings?.turnDuration || 120);
   const initialCaseId = room.settings?.selectedCaseId && room.settings.selectedCaseId !== 'midnight_museum'
     ? room.settings.selectedCaseId
     : 'all';
@@ -73,6 +73,18 @@ export const Lobby: React.FC<LobbyProps> = ({
       setSelectedCase(cleanId);
     }
   }, [room.settings?.selectedCaseId]);
+
+  useEffect(() => {
+    if (room.settings?.turnDuration) {
+      setDrawingTime(room.settings.turnDuration);
+    }
+  }, [room.settings?.turnDuration]);
+
+  useEffect(() => {
+    if (room.settings?.rounds) {
+      setRounds(room.settings.rounds);
+    }
+  }, [room.settings?.rounds]);
 
   const activeGenre = GENRE_OPTIONS[selectedCase] || GENRE_OPTIONS.all;
   const isHost = currentUser.id === room.hostId || currentUser.isHost;

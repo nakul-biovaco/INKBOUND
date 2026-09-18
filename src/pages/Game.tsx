@@ -11,6 +11,7 @@ import { InvestigationBoard } from '../components/investigation/InvestigationBoa
 import { FinalTheoryModal } from '../components/accusation/FinalTheoryModal';
 import { CinematicReveal } from '../components/reveal/CinematicReveal';
 import { ResultsScreen } from '../components/results/ResultsScreen';
+import { ClueDiscoveredCard } from '../components/common/ClueDiscoveredCard';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
 import { SoundService } from '../services/soundService';
 
@@ -110,6 +111,22 @@ export const Game: React.FC<GameProps> = ({
   // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
   const [gameBanner, setGameBanner] = useState<GameBanner | null>(null);
   const bannerTimerRef = useRef<any>(null);
+
+  // Big Parchment Clue Discovered Card modal (15s reading grace period with cross close button)
+  const [clueCardData, setClueCardData] = useState<{
+    isOpen: boolean;
+    clueNumber: number;
+    revealedText: string;
+    solvedObjective?: string | null;
+    solverName?: string | null;
+    drawerName?: string | null;
+    storyTitle?: string | null;
+    durationSeconds?: number;
+  }>({
+    isOpen: false,
+    clueNumber: 1,
+    revealedText: '',
+  });
 
   const showGameBanner = (banner: GameBanner, durationMs = 4500) => {
     if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
@@ -291,20 +308,22 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubStoryReveal = backend.on('STORY_REVEAL', (payload: any) => {
       SoundService.playDramaticSting();
-      const shortText = payload.revealedText && payload.revealedText.length > 70
-        ? payload.revealedText.substring(0, 68) + '...'
-        : (payload.revealedText || 'New evidence uncovered');
-      showGameBanner({
-        id: 'story-reveal',
-        type: 'reveal',
-        badge: `CLUE #${payload.solvedCount || 1} DISCOVERED`,
-        title: `"${shortText}"`,
-        subtitle: 'The mystery timeline is coming together...',
-      }, 4000);
+      // Show big vintage parchment clue discovery card with 15s grace period and cross button
+      setClueCardData({
+        isOpen: true,
+        clueNumber: payload.solvedCount || 1,
+        revealedText: payload.revealedText || 'A critical piece of evidence has been uncovered in this mystery.',
+        solvedObjective: payload.solvedObjective || null,
+        solverName: payload.solverName || null,
+        drawerName: payload.drawerName || null,
+        storyTitle: payload.storyTitle || gameState.currentCase?.title || null,
+        durationSeconds: payload.revealSeconds || 15,
+      });
     });
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
       SoundService.playTurnStart();
+      setClueCardData((prev) => ({ ...prev, isOpen: false }));
       showGameBanner({
         id: 'next-turn',
         type: 'turn',
@@ -945,6 +964,19 @@ export const Game: React.FC<GameProps> = ({
             </button>
           </div>
         )}
+
+      {/* VINTAGE PARCHMENT CLUE DISCOVERED CARD MODAL (15S READING GRACE PERIOD WITH CLOSE CROSS) */}
+      <ClueDiscoveredCard
+        isOpen={clueCardData.isOpen}
+        onClose={() => setClueCardData((prev) => ({ ...prev, isOpen: false }))}
+        clueNumber={clueCardData.clueNumber}
+        revealedText={clueCardData.revealedText}
+        solvedObjective={clueCardData.solvedObjective}
+        solverName={clueCardData.solverName}
+        drawerName={clueCardData.drawerName}
+        storyTitle={clueCardData.storyTitle}
+        durationSeconds={clueCardData.durationSeconds || 15}
+      />
     </div>
   );
 };

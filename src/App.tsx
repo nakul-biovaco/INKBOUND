@@ -275,19 +275,21 @@ export const App: React.FC = () => {
     const unsubRoomState = backend.on('ROOM_STATE', (payload: any) => {
       if (payload?.room) {
         const serverRoom = payload.room;
+        const rawSettings = serverRoom.settings || {};
         const mappedRoom: Room = {
-          id: serverRoom.roomId,
-          code: serverRoom.joinCode,
-          hostId: serverRoom.hostPlayerId,
+          id: serverRoom.roomId || serverRoom.id,
+          code: serverRoom.joinCode || serverRoom.code,
+          hostId: serverRoom.hostPlayerId || serverRoom.hostId,
           maxPlayers: serverRoom.maxPlayers || 8,
           status: serverRoom.status === 'IN_GAME' ? 'IN_GAME' : 'WAITING',
           settings: {
-            turnDuration: serverRoom.settings?.drawingTimeLimit || 120,
+            turnDuration: rawSettings.drawingTimeLimit || rawSettings.turnDuration || 120,
+            rounds: rawSettings.roundsPerGame || rawSettings.rounds || 1,
             distorterEnabled: false,
             selectedCaseId:
-              serverRoom.settings?.storyId && serverRoom.settings.storyId !== 'midnight_museum'
-                ? serverRoom.settings.storyId
-                : 'all',
+              rawSettings.storyId && rawSettings.storyId !== 'midnight_museum'
+                ? rawSettings.storyId
+                : (rawSettings.selectedCaseId && rawSettings.selectedCaseId !== 'midnight_museum' ? rawSettings.selectedCaseId : 'all'),
             allowQuestioning: true,
           },
           createdAt: new Date().toISOString(),

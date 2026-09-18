@@ -596,6 +596,9 @@ export class GameEngine {
     this.stateMachine.transition(GameStatus.STORY_REVEAL);
     this.session.state = GameStatus.STORY_REVEAL;
 
+    const room = RoomManager.getRoomOrThrow(this.roomId);
+    const solver = room.players.find((p) => p.playerId === record.solverPlayerId);
+    const drawer = room.players.find((p) => p.playerId === record.drawerPlayerId);
     const revealSeconds = config.gameplay.defaultStoryRevealSeconds;
 
     this.emit('STORY_REVEAL', {
@@ -603,6 +606,10 @@ export class GameEngine {
       revealedText: record.revealedText,
       storyVariables: this.session.storyVariables,
       solvedCount: this.session.solvedEvents.length,
+      solvedObjective: this.session.selectedEvent ? this.session.selectedEvent.drawingObjective : null,
+      solverName: solver?.displayName || 'Detective',
+      drawerName: drawer?.displayName || 'The Artist',
+      storyTitle: this.session.currentStory?.title || 'Case Mystery',
       revealSeconds,
     });
 
@@ -659,8 +666,9 @@ export class GameEngine {
 
     const room = RoomManager.getRoomOrThrow(this.roomId);
 
-    // Check if max rounds reached or all 5 events solved
-    if (this.session.solvedEvents.length >= 5 || this.session.turnIndex >= room.settings.roundsPerGame - 1) {
+    // Check if max rounds reached (roundsPerGame * playerCount) or all 5 events solved
+    const totalRequiredTurns = Math.max(1, room.settings.roundsPerGame || 1) * Math.max(1, room.players.length);
+    if (this.session.solvedEvents.length >= 5 || this.session.turnIndex >= totalRequiredTurns - 1) {
       return this.startFinalInvestigation();
     }
 
