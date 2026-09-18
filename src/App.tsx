@@ -5,7 +5,7 @@ import { AuthoritativeGameState } from './types/game';
 import { AuthService } from './services/authService';
 import { RoomService } from './services/roomService';
 import { GameService } from './services/gameService';
-import { BackendClient } from './realtime/backendClient';
+import { BackendClient, checkBackendHealth } from './realtime/backendClient';
 import { Home } from './pages/Home';
 import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
@@ -53,6 +53,15 @@ const saveCachedSession = (
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Player>(() => AuthService.getProfile());
+
+  // Active client keep-alive: Warm up Render backend immediately on page load and keep it alive while open
+  useEffect(() => {
+    checkBackendHealth().catch(() => {});
+    const interval = setInterval(() => {
+      checkBackendHealth().catch(() => {});
+    }, 300000); // every 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   const initialInviteParamRef = useRef<string | null>(
     typeof window !== 'undefined'

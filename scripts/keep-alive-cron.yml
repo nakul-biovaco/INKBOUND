@@ -1,0 +1,26 @@
+name: Keep Alive Cron (Render & Vercel)
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render's 15-minute idle sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  ping:
+    name: Ping Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend
+        run: |
+          RENDER_URL="${{ secrets.RENDER_BACKEND_URL || 'https://inkbound-backend.onrender.com' }}"
+          echo "Pinging Render Backend at $RENDER_URL/health..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$RENDER_URL/health" || echo "failed")
+          echo "Render HTTP Status: $STATUS"
+
+      - name: Ping Vercel Frontend
+        run: |
+          VERCEL_URL="${{ secrets.VERCEL_FRONTEND_URL || 'https://inkbound.vercel.app' }}"
+          echo "Pinging Vercel at $VERCEL_URL/api/keep-alive..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$VERCEL_URL/api/keep-alive" || echo "failed")
+          echo "Vercel HTTP Status: $STATUS"

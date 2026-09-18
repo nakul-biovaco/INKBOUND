@@ -47,6 +47,29 @@ async function bootstrap() {
     }
   }, 300000);
 
+  // Self-Ping Keep-Alive Cron for Render (prevents free-tier idle sleep after 15 minutes)
+  const selfUrl =
+    process.env.RENDER_EXTERNAL_URL ||
+    process.env.SELF_URL ||
+    process.env.BACKEND_URL ||
+    process.env.SERVER_URL;
+
+  let keepAliveInterval: NodeJS.Timeout | null = null;
+  if (selfUrl) {
+    logger.info(`[KeepAlive] Automated Render self-pinger active for ${selfUrl}/health (every 10m)`);
+    keepAliveInterval = setInterval(async () => {
+      try {
+        const pingTarget = `${selfUrl.replace(/\/$/, '')}/health`;
+        const res = await fetch(pingTarget);
+        logger.info(`[KeepAlive] Render self-ping status: ${res.status}`);
+      } catch (pingErr: any) {
+        logger.warn(`[KeepAlive] Render self-ping attempt error: ${pingErr?.message}`);
+      }
+    }, 600000); // 10 minutes
+  } else {
+    logger.info('[KeepAlive] Tip: Set RENDER_EXTERNAL_URL or SELF_URL in Render dashboard to auto-ping.');
+  }
+
   // Process safety guards - keep server and active rooms alive
   process.on('uncaughtException', (err) => {
     logger.error('Uncaught Exception safely caught by server watchdog:', {
@@ -65,6 +88,7 @@ async function bootstrap() {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     clearInterval(sweeperInterval);
+    if (keepAliveInterval) clearInterval(keepAliveInterval);
     await app.close();
     process.exit(0);
   };

@@ -39,6 +39,11 @@ const getBaseHttpUrl = (): string => {
 
 const getBaseWsUrl = (): string => {
   if (env.VITE_WS_URL) return env.VITE_WS_URL;
+  if (env.VITE_BACKEND_URL) {
+    const wsProto = env.VITE_BACKEND_URL.startsWith('https') ? 'wss:' : 'ws:';
+    const host = env.VITE_BACKEND_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `${wsProto}//${host}/ws`;
+  }
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -54,6 +59,34 @@ const DEFAULT_CONFIG: BackendConfig = {
   httpUrl: getBaseHttpUrl(),
   wsUrl: getBaseWsUrl(),
 };
+
+/**
+ * Pings the backend health endpoint to warm up Render free-tier instances
+ */
+export async function checkBackendHealth(): Promise<{ ok: boolean; status?: number; uptime?: number; latencyMs?: number; error?: string }> {
+  const start = Date.now();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(`${DEFAULT_CONFIG.httpUrl.replace(/\/$/, '')}/health`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json().catch(() => ({}));
+    return {
+      ok: res.ok,
+      status: res.status,
+      uptime: data?.uptimeSeconds,
+      latencyMs: Date.now() - start,
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      error: err?.message || 'Failed to reach backend',
+      latencyMs: Date.now() - start,
+    };
+  }
+}
 
 const BACKEND_SESSION_KEY = 'inkbound_backend_session';
 
