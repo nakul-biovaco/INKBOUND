@@ -950,17 +950,34 @@ export const Game: React.FC<GameProps> = ({
 
       {/* SKRIBBL-STYLE CLUE PICKER (Only shown to active drawer if clue hasn't been chosen yet and not during handover transition) */}
       {drawerPromptOptions.length > 0 && isDrawer && !secretDrawObjective && !turnTransitionData && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-          <div className="max-w-2xl w-full bg-[#0e1320] border-2 border-red-500/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(220,38,38,0.35)] text-center animate-fadeIn relative">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-300 font-mono text-xs uppercase tracking-widest font-bold mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-red-400" /> YOUR TURN TO DRAW
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          {/* VINTAGE INVESTIGATION EVIDENCE DOSSIER MODAL */}
+          <div
+            className="max-w-2xl w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9),inset_0_0_90px_rgba(139,94,60,0.22)] text-center animate-fadeIn relative overflow-hidden select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Parchment Corner Decorative Accents */}
+            <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            {/* Vintage Brass Paperclip Illustration */}
+            <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ CLASSIFIED EVIDENCE // YOUR TURN TO SKETCH
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-wide mb-1">
+            <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] tracking-wide mb-1">
               Choose a Secret Clue
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mb-6">
-              Pick 1 clue below to sketch for the room. Others will guess while you draw!
+            <p className="text-xs sm:text-sm text-[#5c422e] font-mono mb-6">
+              Pick 1 evidence card below to sketch for the room. Detectives will decipher while you draw!
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
@@ -973,39 +990,39 @@ export const Game: React.FC<GameProps> = ({
                     SoundService.playStamp();
                     handleSelectPrompt(opt.optionIndex, cleanCardText(opt.previewText));
                   }}
-                  className="group relative p-5 rounded-2xl bg-[#161c2e] hover:bg-[#1e2740] border-2 border-slate-700 hover:border-red-500 transition-all text-left shadow-lg hover:shadow-red-500/25 hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
+                  className="group relative p-4 sm:p-5 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">
-                        Card #{opt.optionIndex + 1}
+                      <span className="text-[10px] font-mono text-[#7a4e2d] font-bold uppercase tracking-wider">
+                        CARD #{opt.optionIndex + 1}
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border-2 ${
                           opt.difficulty?.toLowerCase() === 'easy'
-                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60'
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-700'
                             : opt.difficulty?.toLowerCase() === 'hard'
-                            ? 'bg-purple-950/80 text-purple-300 border-purple-500/60'
-                            : 'bg-amber-950/80 text-amber-300 border-amber-500/60'
+                            ? 'bg-purple-100 text-purple-900 border-purple-700'
+                            : 'bg-amber-100 text-amber-900 border-amber-700'
                         }`}
                       >
                         {opt.difficulty || 'NORMAL'}
                       </span>
                     </div>
 
-                    <div className="text-sm sm:text-base font-bold text-white group-hover:text-red-300 font-serif leading-snug">
+                    <div className="text-base sm:text-lg font-black text-[#1a110a] group-hover:text-red-900 font-serif leading-snug">
                       "{cleanCardText(opt.previewText)}"
                     </div>
                   </div>
 
-                  <div className="mt-5 w-full py-2.5 rounded-xl bg-red-600 group-hover:bg-red-500 text-white text-xs font-bold font-mono uppercase tracking-wider text-center transition-colors shadow">
+                  <div className="mt-5 w-full py-2.5 rounded-xl bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white text-xs font-bold font-mono uppercase tracking-wider text-center transition-colors shadow">
                     Draw This Clue →
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className="mt-5 flex items-center justify-between text-xs font-mono text-slate-500 pt-3 border-t border-slate-800">
+            <div className="mt-5 flex items-center justify-between text-xs font-mono text-[#7a5839] pt-3 border-t border-[#bfa98e]/80">
               <span>Auto-picks first option if not chosen</span>
               <button
                 type="button"
@@ -1014,7 +1031,7 @@ export const Game: React.FC<GameProps> = ({
                     handleSelectPrompt(drawerPromptOptions[0].optionIndex, drawerPromptOptions[0].previewText);
                   }
                 }}
-                className="text-slate-400 hover:text-white underline cursor-pointer"
+                className="text-red-900 font-bold hover:underline cursor-pointer"
               >
                 Auto-Pick & Start
               </button>

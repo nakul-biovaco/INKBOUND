@@ -756,16 +756,27 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const roundDisplay = `Turn ${gameState.turnIndex + 1} of ${totalTurns}`;
 
   const renderDetectivesRoster = () => (
-    <div className="bg-[#0e1320]/95 border border-slate-700/80 rounded-2xl p-3 sm:p-3.5 shadow-xl backdrop-blur-md space-y-2.5">
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+    <div
+      className="relative rounded-2xl border-2 border-[#8c6d48] p-3 sm:p-3.5 shadow-lg overflow-hidden select-none text-[#221711]"
+      style={{
+        background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+        backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+        backgroundSize: '16px 16px, 100% 100%',
+      }}
+    >
+      <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute -top-1.5 left-5 w-3 h-6 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
+      <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2 mb-2">
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-sky-400" />
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+          <Users className="w-4 h-4 text-[#7a4e2d]" />
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a]">
             Detectives ({rosterPlayers.length}/8)
           </span>
         </div>
-        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+        <span className="text-[10px] font-mono text-emerald-900 bg-emerald-100 border border-emerald-700/60 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" /> ON DUTY
         </span>
       </div>
 
@@ -780,24 +791,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               key={p.id}
               className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
                 isDrawing
-                  ? 'bg-red-950/40 border-red-500/70 shadow-[0_0_12px_rgba(220,38,38,0.25)]'
+                  ? 'bg-red-100/90 border-red-700/80 shadow-sm'
                   : hasSolved
-                  ? 'bg-emerald-950/30 border-emerald-500/60'
-                  : 'bg-slate-900/60 border-slate-800'
+                  ? 'bg-emerald-100/80 border-emerald-600/70'
+                  : 'bg-[#f4ebe0] border-[#cfbea8]'
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
+                <div className="w-7 h-7 rounded-full bg-[#ded0bd] border border-[#a88f72] flex items-center justify-center text-xs shrink-0">
                   <AvatarBadge avatar={p.avatar} size="xs" />
                 </div>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-1 min-w-0">
-                    <span className={`text-xs font-bold truncate ${isMe ? 'text-amber-300' : 'text-white'}`}>
+                    <span className={`text-xs font-bold truncate ${isMe ? 'text-red-900 font-black' : 'text-[#1a110a]'}`}>
                       {p.nickname} {isMe && '(You)'}
                     </span>
-                    {p.isHost && <span className="text-amber-400 text-xs" title="Room Host">👑</span>}
+                    {p.isHost && <span className="text-amber-700 text-xs" title="Room Host">👑</span>}
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[10px] font-mono text-[#6e533d] font-semibold">
                     {p.score || 0} pts
                   </span>
                 </div>
@@ -805,16 +816,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
               <div className="shrink-0">
                 {isDrawing ? (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-600 text-white shadow flex items-center gap-1">
-                    <Pencil className="w-2.5 h-2.5 animate-bounce" /> Drawing
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-800 text-white shadow flex items-center gap-1">
+                    <Pencil className="w-2.5 h-2.5 animate-bounce" /> Sketching
                   </span>
                 ) : hasSolved ? (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-500/20 border border-emerald-500/60 text-emerald-300">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-200 border border-emerald-700 text-emerald-950">
                     ✓ Solved
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
-                    Guessing
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-[#543e2d] bg-[#ded0bd] border border-[#bfa98e]">
+                    Investigating
                   </span>
                 )}
               </div>
@@ -826,15 +837,26 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   );
 
   const renderCaseDossier = () => (
-    <div className="bg-[#0e1320]/90 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-lg backdrop-blur-md space-y-2">
-      <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-amber-400">
-        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-        <span>Case File Dossier</span>
+    <div
+      className="relative rounded-2xl border-2 border-[#8c6d48] p-3.5 text-[#221711] shadow-lg overflow-hidden select-none"
+      style={{
+        background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+        backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+        backgroundSize: '16px 16px, 100% 100%',
+      }}
+    >
+      <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+      <div className="absolute -top-1.5 left-5 w-3 h-6 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
+      <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-[#7a4e2d] mb-1">
+        <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+        <span className="tracking-wider">CASE FILE DOSSIER</span>
       </div>
-      <div className="text-sm font-serif font-bold text-white leading-snug">
+      <div className="text-sm sm:text-base font-serif font-black text-[#1a110a] leading-snug">
         {gameState.currentCase?.title || 'The Midnight Museum Heist'}
       </div>
-      <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-slate-800/80">
+      <div className="text-[11px] text-[#543e2d] font-mono leading-relaxed pt-2 mt-2 border-t border-[#bfa98e]/70">
         🎯 <strong>Golden Rule:</strong> Guessing any 2 matching words in the secret clue scores points for both you and the sketch artist!
       </div>
     </div>
@@ -1118,16 +1140,28 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           </div>
 
-          {/* 4. GUESSER CONSOLE & LIVE GUESS STREAM */}
-          <div className="w-full rounded-2xl border border-sky-500/50 bg-[#0d1322]/95 backdrop-blur-md p-3 shadow-2xl space-y-2">
+          {/* 4. VINTAGE EVIDENCE & TELEGRAPH GUESS CONSOLE */}
+          <div
+            className="relative w-full rounded-2xl border-2 border-[#8c6d48] p-3 shadow-xl overflow-hidden select-none text-[#221711] space-y-2.5"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Parchment Corner Decorative Accents */}
+            <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute -top-1.5 left-5 w-3 h-6 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none bg-[#d1b89d]/30" />
+
             {!isCurrentDrawer ? (
               <>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-sky-300">
-                    <Crosshair className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Type Your Guess</span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a]">
+                    <Crosshair className="w-3.5 h-3.5 text-red-800" />
+                    <span>Type Your Evidence Guess</span>
                   </div>
-                  <span className="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] text-[#7a4e2d] font-bold bg-[#ede0ce] border border-[#bfa98e] px-2 py-0.5 rounded-full font-mono">
                     Any 2 matching words = Right Answer!
                   </span>
                 </div>
@@ -1138,62 +1172,62 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     value={guessInput}
                     onChange={(e) => setGuessInput(e.target.value)}
                     placeholder="Type 2-3 words (e.g. tunnel map, guard sleeping)..."
-                    className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-600 focus:border-sky-400 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans shadow-inner"
+                    className="min-w-0 flex-1 px-3.5 py-2.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-sm text-[#1a110a] placeholder-[#8a725b] focus:outline-none focus:ring-1 focus:ring-red-800 font-mono shadow-inner"
                   />
                   <button
                     type="submit"
                     disabled={!guessInput.trim()}
-                    className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
+                    className="px-4 sm:px-6 py-2.5 bg-red-800 hover:bg-red-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer font-mono"
                   >
-                    Guess
+                    Submit Guess
                   </button>
                 </form>
               </>
             ) : (
-              <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-100/90 border-2 border-amber-700/60 text-[#3d2714] text-xs font-mono">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-                  <span className="font-bold">You are Sketching! Detective guesses appear live below:</span>
+                  <Sparkles className="w-4 h-4 text-amber-800 animate-pulse shrink-0" />
+                  <span className="font-bold">You are Sketching! Detective telegraph guesses appear live below:</span>
                 </div>
               </div>
             )}
 
             {guessFeedback && (
-              <div className="p-2 rounded-xl text-xs font-bold text-amber-200 bg-amber-950/80 border border-amber-500/80 flex items-center justify-between animate-fadeIn">
+              <div className="p-2 rounded-xl text-xs font-bold text-amber-950 bg-amber-100 border border-amber-600 flex items-center justify-between animate-fadeIn font-mono">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Lightbulb className="w-4 h-4 text-amber-800 shrink-0" />
                   <span>{guessFeedback}</span>
                 </div>
               </div>
             )}
 
             {/* Recent Live Guesses Stream */}
-            <div className="pt-1 border-t border-slate-800/80">
-              <div className="text-[10px] font-mono text-slate-400 mb-1.5 flex items-center justify-between">
-                <span>Recent Live Guesses:</span>
-                {isCurrentDrawer && <span className="text-[9px] text-amber-400 font-bold uppercase">Drawer Monitoring</span>}
+            <div className="pt-2 border-t border-[#bfa98e]/80">
+              <div className="text-[10px] font-mono text-[#6e533d] mb-1.5 flex items-center justify-between font-bold">
+                <span>Recent Telegraph Guesses:</span>
+                {isCurrentDrawer && <span className="text-[9px] text-red-900 font-black uppercase tracking-wider">DRAWER MONITORING</span>}
               </div>
               <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto pr-1">
                 {guessFeed.length === 0 ? (
-                  <span className="text-[11px] text-slate-500 italic">
-                    {isCurrentDrawer ? 'Waiting for investigators to type guesses...' : 'No guesses yet. Be the first to guess!'}
+                  <span className="text-[11px] text-[#8a725b] italic font-mono">
+                    {isCurrentDrawer ? 'Waiting for investigators to type guesses...' : 'No guesses recorded yet. Be the first to deduce!'}
                   </span>
                 ) : (
                   guessFeed.slice(-6).map((g, idx) => (
                     <span
                       key={idx}
-                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
+                      className={`px-2 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1.5 border shadow-sm ${
                         g.isCorrect
-                          ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
+                          ? 'bg-emerald-100 border-emerald-700 text-emerald-950 font-black animate-bounce'
                           : g.isClose
-                          ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
-                          : 'bg-slate-900 border border-slate-700 text-slate-300'
+                          ? 'bg-amber-100 border-amber-600 text-amber-950 font-bold'
+                          : 'bg-[#f4ede0] border-[#b89e7c] text-[#1a110a]'
                       }`}
                     >
-                      <span className="font-bold text-white">{g.playerName}:</span>
+                      <span className="font-black text-[#1a110a]">{g.playerName}:</span>
                       <span>{g.text}</span>
-                      {g.isClose && <span className="text-amber-400 text-[9px] font-bold">★ CLOSE</span>}
-                      {g.isCorrect && <span className="text-emerald-400 text-[9px] font-bold">✓ SOLVED</span>}
+                      {g.isClose && <span className="text-amber-800 text-[9px] font-black">★ CLOSE</span>}
+                      {g.isCorrect && <span className="text-emerald-800 text-[9px] font-black">✓ SOLVED</span>}
                     </span>
                   ))
                 )}
@@ -1202,7 +1236,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           </div>
 
           {/* 5. MOBILE TABS SWITCHER (< lg) */}
-          <div className="lg:hidden flex items-center bg-[#0d1322]/95 border border-slate-700/80 rounded-2xl p-1 shadow-lg mt-1 select-none">
+          <div className="lg:hidden flex items-center bg-[#ebe0ce] border-2 border-[#8c6d48] rounded-2xl p-1 shadow-md mt-1 select-none">
             <button
               type="button"
               onClick={() => {
@@ -1211,8 +1245,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               }}
               className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 mobileTab === 'chat'
-                  ? 'bg-sky-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-800 text-white shadow-md'
+                  : 'text-[#6e533d] hover:text-[#1a110a]'
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -1226,8 +1260,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               }}
               className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 mobileTab === 'detectives'
-                  ? 'bg-sky-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-800 text-white shadow-md'
+                  : 'text-[#6e533d] hover:text-[#1a110a]'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
