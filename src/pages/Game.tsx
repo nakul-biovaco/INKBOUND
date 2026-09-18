@@ -376,7 +376,7 @@ export const Game: React.FC<GameProps> = ({
         if (typeof localStorage !== 'undefined') {
           localStorage.removeItem(getClueStorageKey(room.id, gameState.turnIndex));
         }
-      } catch {}
+      } catch { }
 
       if (payload) {
         setTurnTransitionData({
@@ -538,8 +538,8 @@ export const Game: React.FC<GameProps> = ({
         ...(reconnectedCase ? { caseId: reconnectedCase.id, currentCase: reconnectedCase } : {}),
         ...(payload?.gameState
           ? {
-              status:
-                payload.gameState.state === 'DRAWING' ||
+            status:
+              payload.gameState.state === 'DRAWING' ||
                 payload.gameState.state === 'PROMPT_SELECTION' ||
                 payload.gameState.state === 'ROUND_START' ||
                 payload.gameState.state === 'GUESSING' ||
@@ -547,28 +547,28 @@ export const Game: React.FC<GameProps> = ({
                 payload.gameState.state === 'STORY_REVEAL' ||
                 payload.gameState.state === 'NEXT_TURN' ||
                 (payload.gameState.turnIndex !== undefined && payload.gameState.turnIndex >= 0)
-                  ? 'PLAYER_DRAWING'
-                  : payload.gameState.state === 'FINAL_INVESTIGATION'
+                ? 'PLAYER_DRAWING'
+                : payload.gameState.state === 'FINAL_INVESTIGATION'
                   ? 'FINAL_THEORY'
                   : prev.status,
-              currentTurnPlayerId: payload.gameState.currentDrawerId,
-              turnIndex: payload.gameState.turnIndex,
-              turnStartedAt: payload.gameState.roundStartedAt ? new Date(payload.gameState.roundStartedAt).toISOString() : null,
-              turnEndsAt: payload.gameState.roundEndsAt ? new Date(payload.gameState.roundEndsAt).toISOString() : null,
-            }
+            currentTurnPlayerId: payload.gameState.currentDrawerId,
+            turnIndex: payload.gameState.turnIndex,
+            turnStartedAt: payload.gameState.roundStartedAt ? new Date(payload.gameState.roundStartedAt).toISOString() : null,
+            turnEndsAt: payload.gameState.roundEndsAt ? new Date(payload.gameState.roundEndsAt).toISOString() : null,
+          }
           : {}),
         players: payload?.gameState
           ? payload.gameState.players.map((p: any) => ({
-              id: p.playerId,
-              nickname: p.displayName,
-              avatar: p.avatar,
-              isHost: p.isHost,
-              isReady: p.isReady,
-              score: p.score || 0,
-              isOnline: p.isConnected !== false,
-              joinedAt: new Date(p.joinedAt || Date.now()).toISOString(),
-              lastSeenAt: new Date().toISOString(),
-            }))
+            id: p.playerId,
+            nickname: p.displayName,
+            avatar: p.avatar,
+            isHost: p.isHost,
+            isReady: p.isReady,
+            score: p.score || 0,
+            isOnline: p.isConnected !== false,
+            joinedAt: new Date(p.joinedAt || Date.now()).toISOString(),
+            lastSeenAt: new Date().toISOString(),
+          }))
           : prev.players.map((p) => p.id === payload?.playerId ? { ...p, isOnline: true } : p),
       }));
 
@@ -785,29 +785,27 @@ export const Game: React.FC<GameProps> = ({
         <div className="fixed top-14 sm:top-16 right-3 sm:right-6 z-50 max-w-sm w-[calc(100vw-24px)] sm:w-[380px] animate-fadeIn select-none pointer-events-auto">
           <div
             onClick={() => setGameBanner(null)}
-            className={`cursor-pointer rounded-2xl p-2.5 sm:p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${
-              gameBanner.type === 'solved'
+            className={`cursor-pointer rounded-2xl p-2.5 sm:p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${gameBanner.type === 'solved'
                 ? 'bg-emerald-950/95 border-emerald-500 text-emerald-100 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:bg-emerald-900/95'
                 : gameBanner.type === 'story'
-                ? 'bg-amber-950/95 border-amber-500 text-amber-100 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:bg-amber-900/95'
-                : gameBanner.type === 'reveal'
-                ? 'bg-purple-950/95 border-purple-500 text-purple-100 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:bg-purple-900/95'
-                : gameBanner.type === 'turn'
-                ? 'bg-sky-950/95 border-sky-500 text-sky-100 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:bg-sky-900/95'
-                : 'bg-slate-900/95 border-slate-600 text-slate-200 hover:bg-slate-800/95'
-            }`}
+                  ? 'bg-amber-950/95 border-amber-500 text-amber-100 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:bg-amber-900/95'
+                  : gameBanner.type === 'reveal'
+                    ? 'bg-purple-950/95 border-purple-500 text-purple-100 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:bg-purple-900/95'
+                    : gameBanner.type === 'turn'
+                      ? 'bg-sky-950/95 border-sky-500 text-sky-100 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:bg-sky-900/95'
+                      : 'bg-slate-900/95 border-slate-600 text-slate-200 hover:bg-slate-800/95'
+              }`}
           >
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               <div
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                  gameBanner.type === 'solved'
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border ${gameBanner.type === 'solved'
                     ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
                     : gameBanner.type === 'story'
-                    ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                    : gameBanner.type === 'reveal'
-                    ? 'bg-purple-500/20 border-purple-400 text-purple-300'
-                    : 'bg-sky-500/20 border-sky-400 text-sky-300'
-                }`}
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                      : gameBanner.type === 'reveal'
+                        ? 'bg-purple-500/20 border-purple-400 text-purple-300'
+                        : 'bg-sky-500/20 border-sky-400 text-sky-300'
+                  }`}
               >
                 {gameBanner.type === 'solved' ? (
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
@@ -865,13 +863,12 @@ export const Game: React.FC<GameProps> = ({
             {chatToasts.slice(-1).map((toast) => (
               <div
                 key={toast.id}
-                className={`pointer-events-none max-w-[94vw] px-3 py-1.5 rounded-full shadow-lg backdrop-blur-md border text-xs flex items-center gap-2 animate-fadeIn transition-all ${
-                  toast.isClose
+                className={`pointer-events-none max-w-[94vw] px-3 py-1.5 rounded-full shadow-lg backdrop-blur-md border text-xs flex items-center gap-2 animate-fadeIn transition-all ${toast.isClose
                     ? 'bg-amber-950/95 border-amber-500 text-amber-200 shadow-amber-900/40'
                     : toast.isGuess
-                    ? 'bg-[#0e1626]/95 border-sky-500/80 text-sky-200'
-                    : 'bg-[#0f172a]/95 border-slate-700 text-slate-200'
-                }`}
+                      ? 'bg-[#0e1626]/95 border-sky-500/80 text-sky-200'
+                      : 'bg-[#0f172a]/95 border-slate-700 text-slate-200'
+                  }`}
               >
                 <span className="text-xs shrink-0">{toast.senderAvatar || '🕵️‍♂️'}</span>
                 <span className="font-bold text-white shrink-0 truncate max-w-[70px]">{toast.senderName}:</span>
@@ -886,13 +883,12 @@ export const Game: React.FC<GameProps> = ({
             {chatToasts.map((toast) => (
               <div
                 key={toast.id}
-                className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${
-                  toast.isClose
+                className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${toast.isClose
                     ? 'bg-amber-950/95 border-amber-500/80 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)]'
                     : toast.isGuess
-                    ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
-                    : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
-                }`}
+                      ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
+                      : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
+                  }`}
               >
                 <div className="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
                   {toast.senderAvatar || '🕵️‍♂️'}
@@ -905,9 +901,8 @@ export const Game: React.FC<GameProps> = ({
                       </span>
                       {toast.isGuess ? (
                         <span
-                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
-                            toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
-                          }`}
+                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                            }`}
                         >
                           {toast.isClose ? 'Almost' : 'Guess'}
                         </span>
@@ -998,13 +993,12 @@ export const Game: React.FC<GameProps> = ({
                         CARD #{opt.optionIndex + 1}
                       </span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border-2 ${
-                          opt.difficulty?.toLowerCase() === 'easy'
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border-2 ${opt.difficulty?.toLowerCase() === 'easy'
                             ? 'bg-emerald-100 text-emerald-900 border-emerald-700'
                             : opt.difficulty?.toLowerCase() === 'hard'
-                            ? 'bg-purple-100 text-purple-900 border-purple-700'
-                            : 'bg-amber-100 text-amber-900 border-amber-700'
-                        }`}
+                              ? 'bg-purple-100 text-purple-900 border-purple-700'
+                              : 'bg-amber-100 text-amber-900 border-amber-700'
+                          }`}
                       >
                         {opt.difficulty || 'NORMAL'}
                       </span>
@@ -1045,199 +1039,199 @@ export const Game: React.FC<GameProps> = ({
         gameState.status !== 'PLAYER_DRAWING' &&
         gameState.status !== 'FINAL_THEORY' &&
         gameState.status !== 'RESULTS' && (
-        <div className="relative z-10 flex flex-col min-h-screen justify-between">
-          <GameHeader
-            currentUser={currentUser}
-            roomCode={room.code}
-            playerCount={gameState.players.length}
-            maxPlayers={8}
-            currentPhase="STORY_SELECTION"
-            caseTitle={selectedStoryBriefing ? selectedStoryBriefing.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
-            roundText="Story Selection"
-            onLeaveRoom={onExitGame}
-          />
+          <div className="relative z-10 flex flex-col min-h-screen justify-between">
+            <GameHeader
+              currentUser={currentUser}
+              roomCode={room.code}
+              playerCount={gameState.players.length}
+              maxPlayers={8}
+              currentPhase="STORY_SELECTION"
+              caseTitle={selectedStoryBriefing ? selectedStoryBriefing.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
+              roundText="Story Selection"
+              onLeaveRoom={onExitGame}
+            />
 
-          <main className="flex-1 max-w-5xl mx-auto px-4 py-8 flex items-center justify-center w-full">
-            {selectedStoryBriefing ? (
-              /* GRAND CASE BRIEFING (After Story is Picked) - VINTAGE CASE DOSSIER */
-              <div
-                className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden text-center space-y-6 animate-fadeIn select-none"
-                style={{
-                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                  backgroundSize: '16px 16px, 100% 100%',
-                }}
-              >
-                {/* Parchment Corner Decorative Accents */}
-                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <main className="flex-1 max-w-5xl mx-auto px-4 py-8 flex items-center justify-center w-full">
+              {selectedStoryBriefing ? (
+                /* GRAND CASE BRIEFING (After Story is Picked) - VINTAGE CASE DOSSIER */
+                <div
+                  className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden text-center space-y-6 animate-fadeIn select-none"
+                  style={{
+                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                    backgroundSize: '16px 16px, 100% 100%',
+                  }}
+                >
+                  {/* Parchment Corner Decorative Accents */}
+                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
 
-                {/* Vintage Brass Paperclip Illustration */}
-                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+                  {/* Vintage Brass Paperclip Illustration */}
+                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
 
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ OFFICIAL CASE DOSSIER UNSEALED
-                </div>
-
-                <h1 className="text-3xl sm:text-5xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
-                  {selectedStoryBriefing.title}
-                </h1>
-
-                <div className="flex items-center justify-center gap-4 text-xs font-mono text-[#7a5839]">
-                  <span className="px-3 py-1 bg-[#ede1cf] border border-[#b89e7c] rounded-lg text-[#3e2b1b] font-bold uppercase">
-                    {selectedStoryBriefing.genre}
-                  </span>
-                  <span>•</span>
-                  <span className="text-[#5c422e] font-bold">CLASSIFIED DOSSIER</span>
-                </div>
-
-                <div className="max-w-3xl mx-auto p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic text-left shadow-inner">
-                  "{selectedStoryBriefing.description}"
-                </div>
-
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-[#5c422e]">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-red-800 animate-spin" />
-                    <span className="font-bold">Cataloging evidence for Detective drawing round...</span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedStoryBriefing(null)}
-                    className="px-5 py-2.5 rounded-xl bg-red-800 hover:bg-red-700 text-white border border-red-900 text-xs font-bold font-mono uppercase tracking-wider transition-colors shadow-md cursor-pointer"
-                  >
-                    Acknowledge & Proceed (×)
-                  </button>
-                </div>
-              </div>
-            ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
-              /* STORY CHOOSER VIEW: 3 VINTAGE CASE ARCHIVES */
-              <div
-                className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden space-y-6 animate-fadeIn select-none"
-                style={{
-                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                  backgroundSize: '16px 16px, 100% 100%',
-                }}
-              >
-                {/* Parchment Corner Decorative Accents */}
-                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-
-                {/* Vintage Brass Paperclip */}
-                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
-
-                <div className="text-center space-y-2">
                   <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                    <BookOpen className="w-3.5 h-3.5" /> ★ CLASSIFIED ARCHIVES // PICK THE MYSTERY CASE
+                    <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ OFFICIAL CASE DOSSIER UNSEALED
                   </div>
-                  <h1 className="text-2xl sm:text-4xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
-                    Select an Active Mystery Dossier
-                  </h1>
-                  <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-xl mx-auto">
-                    You are the Lead Investigator! Pick any case file below to distribute clues to your detective squad.
-                  </p>
-                </div>
 
-                {offeredStories.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-                    {offeredStories.map((st) => (
-                      <div
-                        key={st.storyId}
-                        onMouseEnter={() => SoundService.playCardFlip()}
-                        onClick={() => {
-                          SoundService.playStamp();
-                          handleChooseStory(st.storyId);
-                        }}
-                        className="group relative p-5 sm:p-6 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
-                              {st.genre}
-                            </span>
-                            <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border-2 bg-amber-100 text-amber-900 border-amber-700">
-                              {st.difficulty || 'NORMAL'}
-                            </span>
+                  <h1 className="text-3xl sm:text-5xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                    {selectedStoryBriefing.title}
+                  </h1>
+
+                  <div className="flex items-center justify-center gap-4 text-xs font-mono text-[#7a5839]">
+                    <span className="px-3 py-1 bg-[#ede1cf] border border-[#b89e7c] rounded-lg text-[#3e2b1b] font-bold uppercase">
+                      {selectedStoryBriefing.genre}
+                    </span>
+                    <span>•</span>
+                    <span className="text-[#5c422e] font-bold">CLASSIFIED DOSSIER</span>
+                  </div>
+
+                  <div className="max-w-3xl mx-auto p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic text-left shadow-inner">
+                    "{selectedStoryBriefing.description}"
+                  </div>
+
+                  <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-[#5c422e]">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-red-800 animate-spin" />
+                      <span className="font-bold">Cataloging evidence for Detective drawing round...</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedStoryBriefing(null)}
+                      className="px-5 py-2.5 rounded-xl bg-red-800 hover:bg-red-700 text-white border border-red-900 text-xs font-bold font-mono uppercase tracking-wider transition-colors shadow-md cursor-pointer"
+                    >
+                      Acknowledge & Proceed (×)
+                    </button>
+                  </div>
+                </div>
+              ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
+                /* STORY CHOOSER VIEW: 3 VINTAGE CASE ARCHIVES */
+                <div
+                  className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden space-y-6 animate-fadeIn select-none"
+                  style={{
+                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                    backgroundSize: '16px 16px, 100% 100%',
+                  }}
+                >
+                  {/* Parchment Corner Decorative Accents */}
+                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                  {/* Vintage Brass Paperclip */}
+                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
+                  <div className="text-center space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
+                      <BookOpen className="w-3.5 h-3.5" /> ★ CLASSIFIED ARCHIVES // PICK THE MYSTERY CASE
+                    </div>
+                    <h1 className="text-2xl sm:text-4xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                      Select an Active Mystery Dossier
+                    </h1>
+                    <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-xl mx-auto">
+                      You are the Lead Investigator! Pick any case file below to distribute clues to your detective squad.
+                    </p>
+                  </div>
+
+                  {offeredStories.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+                      {offeredStories.map((st) => (
+                        <div
+                          key={st.storyId}
+                          onMouseEnter={() => SoundService.playCardFlip()}
+                          onClick={() => {
+                            SoundService.playStamp();
+                            handleChooseStory(st.storyId);
+                          }}
+                          className="group relative p-5 sm:p-6 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2">
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
+                                {st.genre}
+                              </span>
+                              <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border-2 bg-amber-100 text-amber-900 border-amber-700">
+                                {st.difficulty || 'NORMAL'}
+                              </span>
+                            </div>
+
+                            <h3 className="text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
+                              {st.title}
+                            </h3>
+
+                            <p className="text-xs text-[#3e2c1e] line-clamp-5 leading-relaxed font-serif italic">
+                              "{st.description}"
+                            </p>
                           </div>
 
-                          <h3 className="text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
-                            {st.title}
-                          </h3>
-
-                          <p className="text-xs text-[#3e2c1e] line-clamp-5 leading-relaxed font-serif italic">
-                            "{st.description}"
-                          </p>
+                          <button className="mt-6 w-full py-3 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
+                            Open This Case File →
+                          </button>
                         </div>
-
-                        <button className="mt-6 w-full py-3 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
-                          Open This Case File →
-                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-16 text-center space-y-4">
+                      <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto" />
+                      <div className="text-sm font-mono text-[#5c422e]">
+                        Unsealing case archives...
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-16 text-center space-y-4">
-                    <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto" />
-                    <div className="text-sm font-mono text-[#5c422e]">
-                      Unsealing case archives...
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* WAITING FOR CHOOSER SCREEN - VINTAGE PAPER CASE DISPATCH */
+                <div
+                  className="w-full max-w-2xl text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-8 sm:p-12 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6 select-none"
+                  style={{
+                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                    backgroundSize: '16px 16px, 100% 100%',
+                  }}
+                >
+                  {/* Parchment Corner Decorative Accents */}
+                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                  {/* Vintage Brass Paperclip */}
+                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
+                  <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-red-800/20 animate-ping" />
+                    <div className="w-14 h-14 rounded-full bg-[#ede1cf] border-2 border-red-800 flex items-center justify-center text-red-800 shadow-md">
+                      <BookOpen className="w-6 h-6 animate-pulse" />
                     </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              /* WAITING FOR CHOOSER SCREEN - VINTAGE PAPER CASE DISPATCH */
-              <div
-                className="w-full max-w-2xl text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-8 sm:p-12 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6 select-none"
-                style={{
-                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                  backgroundSize: '16px 16px, 100% 100%',
-                }}
-              >
-                {/* Parchment Corner Decorative Accents */}
-                <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
 
-                {/* Vintage Brass Paperclip */}
-                <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+                  <div className="space-y-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
+                      ★ CASE ASSIGNMENT IN PROGRESS
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] pt-1">
+                      {storyChooserName ? `${storyChooserName} is choosing the case dossier...` : 'Selecting lead investigator...'}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-md mx-auto leading-relaxed">
+                      Your fellow detective is reviewing case files in the archives. Prepare your sketchpad!
+                    </p>
+                  </div>
 
-                <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-red-800/20 animate-ping" />
-                  <div className="w-14 h-14 rounded-full bg-[#ede1cf] border-2 border-red-800 flex items-center justify-center text-red-800 shadow-md">
-                    <BookOpen className="w-6 h-6 animate-pulse" />
+                  <div className="p-4 rounded-xl bg-[#ede1cf]/80 border-2 border-[#b89e7c] text-xs text-[#443020] font-mono flex items-center justify-center gap-2 shadow-inner">
+                    <Clock className="w-4 h-4 text-red-800 animate-spin" />
+                    <span className="font-bold">The sketching & deduction phase starts immediately after!</span>
                   </div>
                 </div>
+              )}
+            </main>
 
-                <div className="space-y-2">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                    ★ CASE ASSIGNMENT IN PROGRESS
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] pt-1">
-                    {storyChooserName ? `${storyChooserName} is choosing the case dossier...` : 'Selecting lead investigator...'}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-md mx-auto leading-relaxed">
-                    Your fellow detective is reviewing case files in the archives. Prepare your sketchpad!
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#ede1cf]/80 border-2 border-[#b89e7c] text-xs text-[#443020] font-mono flex items-center justify-center gap-2 shadow-inner">
-                  <Clock className="w-4 h-4 text-red-800 animate-spin" />
-                  <span className="font-bold">The sketching & deduction phase starts immediately after!</span>
-                </div>
-              </div>
-            )}
-          </main>
-
-          <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-3 text-center text-xs font-mono text-slate-500">
-            INKBOUND • Draw, Guess & Solve
-          </footer>
-        </div>
-      )}
+            <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-3 text-center text-xs font-mono text-slate-500">
+              INKBOUND • Draw, Guess & Solve
+            </footer>
+          </div>
+        )}
 
       {/* 2. SERIAL DRAWING PHASE */}
       {gameState.status === 'PLAYER_DRAWING' && (

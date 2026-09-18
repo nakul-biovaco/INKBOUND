@@ -352,6 +352,52 @@ export class WSServer {
         break;
       }
 
+      case WSClientEvent.LEAVE_ROOM: {
+        const roomId = ws.roomId || payload?.roomId;
+        const playerId = ws.playerId || payload?.playerId;
+        if (!roomId || !playerId) break;
+
+        logger.info('Player explicitly requested to leave room', { roomId, playerId });
+
+        // Cancel any pending disconnect timer
+        const timer = this.pendingDisconnects.get(playerId);
+        if (timer) {
+          clearTimeout(timer);
+          this.pendingDisconnects.delete(playerId);
+        }
+
+        // Clean up socket mapping
+        if (this.playerSockets.get(playerId) === ws) {
+          this.playerSockets.delete(playerId);
+        }
+        const roomSet = this.roomSockets.get(roomId);
+        if (roomSet) {
+          roomSet.delete(ws);
+        }
+
+        // Remove from game engine if in progress
+        const engine = GameEngine.getEngine(roomId);
+        if (engine) {
+          engine.handlePlayerDisconnect(playerId);
+        }
+
+        // Remove player from room immediately
+        const { room } = RoomManager.leaveRoom(roomId, playerId);
+
+        // Broadcast to remaining players
+        this.broadcastToRoom(roomId, WSServerEvent.PLAYER_LEFT, { playerId });
+
+        if (room && room.players.length > 0) {
+          this.broadcastToRoom(roomId, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
+        } else {
+          // No players remain - forcefully terminate room and engine
+          RoomManager.deleteRoom(roomId);
+          GameEngine.removeEngine(roomId);
+          logger.info('Room forcefully terminated because all players left', { roomId });
+        }
+        break;
+      }
+
       case WSClientEvent.READY: {
         this.assertSocketAuthenticated(ws);
         const isReady = Boolean(payload?.isReady);
@@ -623,7 +669,7 @@ export class WSServer {
       this.pendingDisconnects.delete(playerId);
     }
 
-    // Start 15-second grace period before declaring player left
+    // Start 6-second grace period before declaring player left
     const timer = setTimeout(() => {
       this.pendingDisconnects.delete(playerId);
       logger.info('Player disconnect grace period expired, finalizing disconnect', { playerId, roomId });
@@ -631,14 +677,22 @@ export class WSServer {
       const engine = GameEngine.getEngine(roomId);
       if (engine) {
         engine.handlePlayerDisconnect(playerId);
-      } else {
-        RoomManager.markPlayerConnection(roomId, playerId, false);
-        this.broadcastToRoom(roomId, WSServerEvent.PLAYER_LEFT, { playerId });
       }
-    }, 15000);
+      
+      const { room } = RoomManager.leaveRoom(roomId, playerId);
+      this.broadcastToRoom(roomId, WSServerEvent.PLAYER_LEFT, { playerId });
+
+      if (room && room.players.length > 0) {
+        this.broadcastToRoom(roomId, WSServerEvent.ROOM_STATE, { room: Serializer.serializeRoom(room) });
+      } else {
+        RoomManager.deleteRoom(roomId);
+        GameEngine.removeEngine(roomId);
+        logger.info('Room forcefully deleted because all players disconnected', { roomId });
+      }
+    }, 6000);
 
     this.pendingDisconnects.set(playerId, timer);
-    logger.info('Player disconnect grace timer started (15s)', { playerId, roomId });
+    logger.info('Player disconnect grace timer started (6s)', { playerId, roomId });
   }
 
   private assertSocketAuthenticated(ws: ExtendedSocket): void {

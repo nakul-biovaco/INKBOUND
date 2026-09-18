@@ -127,33 +127,49 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
       {/* MAIN CONTENT FORM */}
       <main className="relative z-10 w-full max-w-5xl mx-auto my-auto px-4 py-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        {/* LEFT CARD: FINAL THEORY FORM (7 cols) */}
-        <div className="md:col-span-7 bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-4 backdrop-blur-md">
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        {/* LEFT CARD: FINAL THEORY FORM (7 cols) - VINTAGE INVESTIGATION DOSSIER */}
+        <div
+          className="md:col-span-7 relative text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] space-y-4 overflow-hidden select-none"
+          style={{
+            background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+            backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+            backgroundSize: '16px 16px, 100% 100%',
+          }}
+        >
+          {/* Parchment Corner Decorative Accents */}
+          <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+          <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+          <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+          <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+          {/* Vintage Brass Paperclip */}
+          <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
+
+          <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-3">
             <div>
-              <h2 className="text-xl font-bold font-serif text-white tracking-wide">
+              <h2 className="text-xl sm:text-2xl font-black font-serif text-[#1a110a] tracking-wide">
                 Make Your Final Guess
               </h2>
-              <p className="text-[11px] font-mono text-slate-400 mt-0.5">
-                Case: <span className="text-amber-300 font-semibold">{activeCase.title}</span>
+              <p className="text-[11px] font-mono text-[#5c422e] mt-0.5">
+                Case: <span className="text-red-900 font-bold">{activeCase.title}</span>
               </p>
             </div>
-            <span className="text-[11px] font-mono text-red-400 font-semibold uppercase px-2 py-0.5 rounded bg-red-950/60 border border-red-800/50">
-              Secret Ballot
+            <span className="text-[10px] font-mono text-red-800 border-2 border-red-800 bg-red-800/10 font-black uppercase tracking-widest px-2.5 py-0.5 rounded -rotate-2 shadow-sm">
+              ★ SECRET BALLOT
             </span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
             {/* 1. Who was the culprit? */}
             <div>
-              <label className="block text-slate-300 font-medium mb-1.5">
+              <label className="block text-[#3e2b1b] font-mono font-bold mb-1">
                 Who was the culprit?
               </label>
               <select
                 disabled={isSubmitted}
                 value={culprit}
                 onChange={(e) => setCulprit(e.target.value)}
-                className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                className="w-full py-2.5 px-3.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-[#1a110a] font-mono outline-none shadow-inner disabled:opacity-75"
                 required
               >
                 <option value="">-- Select Chief Suspect --</option>
@@ -167,14 +183,14 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
             {/* 2. What happened? */}
             <div>
-              <label className="block text-slate-300 font-medium mb-1.5">
+              <label className="block text-[#3e2b1b] font-mono font-bold mb-1">
                 What happened?
               </label>
               <select
                 disabled={isSubmitted}
                 value={whatHappened}
                 onChange={(e) => setWhatHappened(e.target.value)}
-                className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                className="w-full py-2.5 px-3.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-[#1a110a] font-mono outline-none shadow-inner disabled:opacity-75"
                 required
               >
                 <option value="">-- Select Event Sequence --</option>
@@ -188,14 +204,14 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
             {/* 3. How did they do it? */}
             <div>
-              <label className="block text-slate-300 font-medium mb-1.5">
+              <label className="block text-[#3e2b1b] font-mono font-bold mb-1">
                 How did they do it?
               </label>
               <select
                 disabled={isSubmitted}
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                className="w-full py-2.5 px-3.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-[#1a110a] font-mono outline-none shadow-inner disabled:opacity-75"
                 required
               >
                 <option value="">-- Select Crime Method --</option>
@@ -209,14 +225,14 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
             {/* 4. Why did they do it? */}
             <div>
-              <label className="block text-slate-300 font-medium mb-1.5">
+              <label className="block text-[#3e2b1b] font-mono font-bold mb-1">
                 Why did they do it?
               </label>
               <select
                 disabled={isSubmitted}
                 value={motive}
                 onChange={(e) => setMotive(e.target.value)}
-                className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                className="w-full py-2.5 px-3.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-[#1a110a] font-mono outline-none shadow-inner disabled:opacity-75"
                 required
               >
                 <option value="">-- Select Suspect Motive --</option>
@@ -230,14 +246,14 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
             {/* 5. Accuse Distorter */}
             <div>
-              <label className="block text-slate-300 font-medium mb-1.5">
+              <label className="block text-[#3e2b1b] font-mono font-bold mb-1">
                 Who was the Impostor / Saboteur?
               </label>
               <select
                 disabled={isSubmitted}
                 value={distorterGuess}
                 onChange={(e) => setDistorterGuess(e.target.value)}
-                className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                className="w-full py-2.5 px-3.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-[#1a110a] font-mono outline-none shadow-inner disabled:opacity-75"
               >
                 <option value="">No impostor / Not sure</option>
                 {otherPlayers.map((p) => (
@@ -250,9 +266,9 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
             {/* 6. Confidence Slider */}
             <div className="pt-1">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-slate-300 font-medium">How confident are you?</label>
-                <span className="font-mono text-white font-bold">{confidence * 10}%</span>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[#3e2b1b] font-mono font-bold">How confident are you?</label>
+                <span className="font-mono text-red-900 font-black text-sm">{confidence * 10}%</span>
               </div>
               <input
                 type="range"
@@ -261,7 +277,7 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 disabled={isSubmitted}
                 value={confidence}
                 onChange={(e) => setConfidence(Number(e.target.value))}
-                className="w-full accent-red-600 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                className="w-full accent-red-800 cursor-pointer h-1.5 bg-[#cbba9e] rounded-lg"
               />
             </div>
 
@@ -270,28 +286,28 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
               {!isSubmitted ? (
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] text-white font-bold text-sm uppercase tracking-wider shadow-[0_4px_20px_rgba(220,38,38,0.45)] transition-all transform active:scale-98"
+                  className="w-full py-3.5 rounded-xl bg-red-800 hover:bg-red-700 text-white font-mono font-black text-sm uppercase tracking-wider shadow-md transition-all transform active:scale-98 cursor-pointer"
                 >
-                  Lock In My Guess
+                  LOCK IN MY GUESS
                 </button>
               ) : (
-                <div className="w-full py-3 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Guess Locked In ✓</span>
+                <div className="w-full py-3 rounded-xl bg-emerald-100 border-2 border-emerald-700 text-emerald-950 font-mono font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-800" />
+                  <span>GUESS LOCKED IN THE ARCHIVE ✓</span>
                 </div>
               )}
             </div>
 
-            <p className="text-[11px] text-slate-500 text-center font-mono flex items-center justify-center gap-1">
-              <Lock className="w-3 h-3" />
+            <p className="text-[11px] text-[#7a5839] text-center font-mono flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3 text-red-800" />
               <span>You cannot change your guess once submitted.</span>
             </p>
           </form>
 
           {/* Live Detective Lock Status */}
-          <div className="pt-3 border-t border-slate-800/80">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-2">
-              Players Ready ({Object.keys(gameState.theories).length}/{gameState.players.length})
+          <div className="pt-3 border-t border-[#bfa98e]/80">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#6e533d] font-bold mb-2">
+              PLAYERS READY ({Object.keys(gameState.theories).length}/{gameState.players.length})
             </div>
             <div className="flex flex-wrap gap-2">
               {gameState.players.map((p) => {
@@ -299,15 +315,15 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 return (
                   <span
                     key={p.id}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 border ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 border shadow-sm ${
                       hasLocked
-                        ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                        ? 'bg-emerald-100 border-emerald-700 text-emerald-950 font-bold'
+                        : 'bg-[#ede1cf] border-[#bfa98e] text-[#5c422e]'
                     }`}
                   >
                     <AvatarBadge avatar={p.avatar} size="xs" />
                     <span>{p.nickname}</span>
-                    <span>{hasLocked ? '✓' : '...'}</span>
+                    <span className="font-bold">{hasLocked ? '✓' : '...'}</span>
                   </span>
                 );
               })}
@@ -315,8 +331,8 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
           </div>
 
           {/* Host / Group Reveal Trigger */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-            <div className="text-xs text-slate-400 font-mono">
+          <div className="pt-4 border-t border-[#bfa98e]/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs text-[#5c422e] font-mono">
               {Object.keys(gameState.theories).length >= gameState.players.length
                 ? 'Everyone has locked in their guess! Ready to see the truth.'
                 : isHost
@@ -326,9 +342,9 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
             {(isHost || Object.keys(gameState.theories).length >= gameState.players.length || gameState.players.length <= 1) && (
               <button
                 onClick={onLockAccusations}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-700 to-rose-700 hover:from-red-600 hover:to-rose-600 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer hover:shadow-lg"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-800 hover:bg-red-700 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer hover:shadow-lg shrink-0"
               >
-                See Who Did It →
+                SEE WHO DID IT →
               </button>
             )}
           </div>

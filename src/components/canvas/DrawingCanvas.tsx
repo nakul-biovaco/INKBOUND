@@ -195,11 +195,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             return (
               <span
                 key={cIdx}
-                className={`inline-block border-b-2 sm:border-b-[3px] ${
-                  showChar
+                className={`inline-block border-b-2 sm:border-b-[3px] ${showChar
                     ? 'border-emerald-700 text-emerald-800 bg-emerald-100/80 font-black rounded-t-sm'
                     : 'border-[#4a3424] text-[#1f150d] font-bold'
-                } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base sm:text-lg`}
+                  } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base sm:text-lg`}
               >
                 {showChar ? firstChar : '\u00A0'}
               </span>
@@ -789,13 +788,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           return (
             <div
               key={p.id}
-              className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
-                isDrawing
+              className={`flex items-center justify-between p-2 rounded-xl border transition-all ${isDrawing
                   ? 'bg-red-100/90 border-red-700/80 shadow-sm'
                   : hasSolved
-                  ? 'bg-emerald-100/80 border-emerald-600/70'
-                  : 'bg-[#f4ebe0] border-[#cfbea8]'
-              }`}
+                    ? 'bg-emerald-100/80 border-emerald-600/70'
+                    : 'bg-[#f4ebe0] border-[#cfbea8]'
+                }`}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-full bg-[#ded0bd] border border-[#a88f72] flex items-center justify-center text-xs shrink-0">
@@ -970,13 +968,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   Investigation Clock
                 </span>
                 <div
-                  className={`px-2.5 sm:px-3 py-1 rounded-xl border-2 font-mono text-xl sm:text-2xl font-black tabular-nums transition-all shadow-md ${
-                    remainingSeconds <= 10
+                  className={`px-2.5 sm:px-3 py-1 rounded-xl border-2 font-mono text-xl sm:text-2xl font-black tabular-nums transition-all shadow-md ${remainingSeconds <= 10
                       ? 'bg-red-900 border-red-700 text-white animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.7)]'
                       : remainingSeconds <= 25
-                      ? 'bg-[#3b281c] border-amber-600 text-amber-300'
-                      : 'bg-[#221811] border-[#7d5f42] text-amber-200'
-                  }`}
+                        ? 'bg-[#3b281c] border-amber-600 text-amber-300'
+                        : 'bg-[#221811] border-[#7d5f42] text-amber-200'
+                    }`}
                 >
                   {formattedTimer}
                 </div>
@@ -1005,9 +1002,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('pencil');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
-                    currentTool === 'pencil' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${currentTool === 'pencil' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
+                    }`}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   <span className="text-xs">Draw</span>
@@ -1018,9 +1014,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('fill');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
-                    currentTool === 'fill' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${currentTool === 'fill' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
+                    }`}
                 >
                   <PaintBucket className="w-3.5 h-3.5" />
                   <span className="text-xs">Fill</span>
@@ -1028,9 +1023,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentTool('eraser')}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${
-                    currentTool === 'eraser' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-mono font-bold transition-all cursor-pointer ${currentTool === 'eraser' ? 'bg-red-800 text-white shadow' : 'text-[#6e533d] hover:text-[#1a110a]'
+                    }`}
                 >
                   <Eraser className="w-3.5 h-3.5" />
                   <span className="text-xs">Eraser</span>
@@ -1050,9 +1044,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         if (currentTool === 'eraser') setCurrentTool('pencil');
                       }}
                       style={{ backgroundColor: color }}
-                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${
-                        isSelected ? 'scale-125 ring-2 ring-red-800 border-white shadow-lg' : 'border-[#8c6d48] hover:scale-110 opacity-90'
-                      }`}
+                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer ${isSelected ? 'scale-125 ring-2 ring-red-800 border-white shadow-lg' : 'border-[#8c6d48] hover:scale-110 opacity-90'
+                        }`}
                     />
                   );
                 })}
@@ -1136,13 +1129,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 onPointerLeave={handlePointerUp}
-                className={`w-full h-full block select-none ${
-                  isCurrentDrawer
+                className={`w-full h-full block select-none ${isCurrentDrawer
                     ? currentTool === 'fill'
                       ? 'cursor-cell pointer-events-auto'
                       : 'cursor-crosshair pointer-events-auto'
                     : 'cursor-default pointer-events-none'
-                }`}
+                  }`}
               />
             </div>
           </div>
@@ -1223,13 +1215,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   guessFeed.slice(-6).map((g, idx) => (
                     <span
                       key={idx}
-                      className={`px-2 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1.5 border shadow-sm ${
-                        g.isCorrect
+                      className={`px-2 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1.5 border shadow-sm ${g.isCorrect
                           ? 'bg-emerald-100 border-emerald-700 text-emerald-950 font-black animate-bounce'
                           : g.isClose
-                          ? 'bg-amber-100 border-amber-600 text-amber-950 font-bold'
-                          : 'bg-[#f4ede0] border-[#b89e7c] text-[#1a110a]'
-                      }`}
+                            ? 'bg-amber-100 border-amber-600 text-amber-950 font-bold'
+                            : 'bg-[#f4ede0] border-[#b89e7c] text-[#1a110a]'
+                        }`}
                     >
                       <span className="font-black text-[#1a110a]">{g.playerName}:</span>
                       <span>{g.text}</span>
@@ -1250,11 +1241,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 SoundService.playClick();
                 setMobileTab('chat');
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                mobileTab === 'chat'
+              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${mobileTab === 'chat'
                   ? 'bg-red-800 text-white shadow-md'
                   : 'text-[#6e533d] hover:text-[#1a110a]'
-              }`}
+                }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Interrogation Chat</span>
@@ -1265,11 +1255,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 SoundService.playClick();
                 setMobileTab('detectives');
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                mobileTab === 'detectives'
+              className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${mobileTab === 'detectives'
                   ? 'bg-red-800 text-white shadow-md'
                   : 'text-[#6e533d] hover:text-[#1a110a]'
-              }`}
+                }`}
             >
               <Users className="w-3.5 h-3.5" />
               <span>Detectives ({rosterPlayers.length})</span>

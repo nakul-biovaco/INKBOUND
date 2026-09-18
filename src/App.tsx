@@ -28,29 +28,24 @@ const saveCachedSession = (
   activeView: AppView
 ) => {
   try {
-    if (typeof sessionStorage === 'undefined' && typeof localStorage === 'undefined') return;
+    if (typeof sessionStorage === 'undefined') return;
 
     if (room) {
       const roomStr = JSON.stringify(room);
       sessionStorage.setItem(CACHED_ROOM_KEY, roomStr);
-      localStorage.setItem(CACHED_ROOM_KEY, roomStr);
       sessionStorage.setItem(ACTIVE_ROOM_ID_KEY, room.id);
-      localStorage.setItem(ACTIVE_ROOM_ID_KEY, room.id);
       RoomService.saveLocalRoom(room, playersList);
     }
     if (playersList && playersList.length > 0) {
       const playersStr = JSON.stringify(playersList);
       sessionStorage.setItem(CACHED_PLAYERS_KEY, playersStr);
-      localStorage.setItem(CACHED_PLAYERS_KEY, playersStr);
     }
     if (gameStateObj) {
       const gameStr = JSON.stringify(gameStateObj);
       sessionStorage.setItem(CACHED_GAME_STATE_KEY, gameStr);
-      localStorage.setItem(CACHED_GAME_STATE_KEY, gameStr);
       GameService.saveGameState(gameStateObj);
     }
     sessionStorage.setItem(ACTIVE_VIEW_KEY, activeView);
-    localStorage.setItem(ACTIVE_VIEW_KEY, activeView);
   } catch {
     // ignore
   }
@@ -74,17 +69,10 @@ export const App: React.FC = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
         const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
-        const storedRoomId =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_ROOM_ID_KEY) : null);
-        const storedView =
-          (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null) : null) ||
-          (typeof localStorage !== 'undefined' ? (localStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null) : null);
+        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
 
-        // 1. Check cached room directly
-        const cached =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(CACHED_ROOM_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(CACHED_ROOM_KEY) : null);
+        // 1. Check cached room directly from current tab session
+        const cached = sessionStorage.getItem(CACHED_ROOM_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && parsed.id) return parsed;
@@ -96,28 +84,10 @@ export const App: React.FC = () => {
           if (local?.room) return local.room;
         }
 
-        // 3. Check local room by code
+        // 3. Check local room by code from URL
         if (codeFromUrl) {
           const local = RoomService.findLocalRoomByCode(codeFromUrl);
           if (local?.room) return local.room;
-        }
-
-        // 4. If stored view was GAME, synthesize fallback room immediately so user is never blocked
-        if (storedView === 'GAME') {
-          return {
-            id: storedRoomId || `room_${Date.now()}`,
-            code: codeFromUrl || 'ROOM',
-            hostId: '',
-            maxPlayers: 8,
-            status: 'IN_GAME',
-            settings: {
-              turnDuration: 40,
-              distorterEnabled: false,
-              selectedCaseId: 'all',
-              allowQuestioning: true,
-            },
-            createdAt: new Date().toISOString(),
-          };
         }
       }
     } catch {
@@ -130,17 +100,13 @@ export const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
       if (typeof window !== 'undefined') {
-        const cached =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(CACHED_PLAYERS_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(CACHED_PLAYERS_KEY) : null);
+        const cached = sessionStorage.getItem(CACHED_PLAYERS_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
 
-        const storedRoomId =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_ROOM_ID_KEY) : null);
+        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
         if (storedRoomId) {
           const local = RoomService.getLocalRoom(storedRoomId);
           if (local?.players && local.players.length > 0) return local.players;
@@ -156,20 +122,20 @@ export const App: React.FC = () => {
   const [gameState, setGameState] = useState<AuthoritativeGameState | null>(() => {
     try {
       if (typeof window !== 'undefined') {
-        const cached =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(CACHED_GAME_STATE_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(CACHED_GAME_STATE_KEY) : null);
+        const cached = sessionStorage.getItem(CACHED_GAME_STATE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed && parsed.status) return parsed;
+          if (parsed && parsed.status && parsed.status !== 'GAME_OVER' && (parsed.status as string) !== 'COMPLETED') {
+            return parsed;
+          }
         }
 
-        const storedRoomId =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_ROOM_ID_KEY) : null);
+        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
         if (storedRoomId) {
           const existing = GameService.getGameState(storedRoomId);
-          if (existing) return existing;
+          if (existing && (existing.status as string) !== 'GAME_OVER' && (existing.status as string) !== 'COMPLETED') {
+            return existing;
+          }
         }
       }
     } catch {
@@ -185,32 +151,22 @@ export const App: React.FC = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
         const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
-        let storedRoomId =
-          (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(ACTIVE_ROOM_ID_KEY) : null) ||
-          (typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_ROOM_ID_KEY) : null);
 
-        const storedView =
-          (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null) : null) ||
-          (typeof localStorage !== 'undefined' ? (localStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null) : null);
-
-        // If stored view was GAME, restore GAME view immediately!
-        if (storedView === 'GAME') {
-          return 'GAME';
+        if (codeFromUrl) {
+          return 'LOBBY';
         }
 
-        if (storedRoomId) {
+        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
+        const storedView = sessionStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null;
+
+        if (storedRoomId && storedView) {
           const existingGame = GameService.getGameState(storedRoomId);
-          if (existingGame && existingGame.status !== 'LOBBY' && (existingGame.status as string) !== 'WAITING' && (existingGame.status as string) !== 'CASE_INTRO') {
-            return 'GAME';
+          if (existingGame && (existingGame.status as string) !== 'GAME_OVER' && (existingGame.status as string) !== 'COMPLETED') {
+            return storedView;
           }
           if (storedView === 'LOBBY') {
             return 'LOBBY';
           }
-          return 'LOBBY';
-        }
-
-        if (codeFromUrl) {
-          return 'LOBBY';
         }
       }
     } catch {
@@ -891,7 +847,7 @@ export const App: React.FC = () => {
 
   const handleLeaveRoom = () => {
     try {
-      BackendClient.getInstance().disconnect();
+      BackendClient.getInstance().leaveRoom();
       sessionStorage.removeItem(ACTIVE_ROOM_ID_KEY);
       sessionStorage.removeItem(ACTIVE_VIEW_KEY);
       sessionStorage.removeItem(CACHED_ROOM_KEY);

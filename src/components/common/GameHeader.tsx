@@ -151,141 +151,156 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
     <header className="w-full relative z-40 bg-[#07080c]/90 border-b border-slate-800/80 backdrop-blur-md select-none">
       {/* IN-GAME SINGLE STREAMLINED TOPBAR */}
       {currentPhase !== 'LOBBY' ? (
-        <div className="max-w-[1720px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
-          {/* Left: INKBOUND Logo & Case Information */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              onClick={() => {
-                SoundService.playClick();
-                setIsConfirmLeaveOpen(true);
-              }}
-              className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shrink-0"
-              title="INKBOUND Game"
-            >
-              <img
-                src="/assets/logo.png"
-                alt="INKBOUND"
-                className="h-6 sm:h-7 object-contain filter drop-shadow"
-              />
-            </div>
-
-            <div className="hidden sm:block h-6 w-px bg-slate-800 shrink-0" />
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-white font-serif tracking-wide truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px]">
-                  {caseTitle}
-                </span>
-                <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-md bg-red-950/80 border border-red-800/60 text-[9px] font-mono text-red-300 font-bold uppercase tracking-wider">
-                  ACTIVE CASE
-                </span>
-              </div>
-              <div className="text-[10px] font-mono text-slate-400 truncate">
-                {roundText}
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Phase Progression Pills */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0">
-            {steps.map((step, idx) => {
-              const isActive = activeStep === idx;
-              const isPast = activeStep > idx;
-
-              return (
-                <div key={step.label} className="flex items-center gap-1.5">
-                  <div
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase transition-all ${
-                      isActive
-                        ? 'bg-red-600/95 text-white shadow-[0_0_15px_rgba(220,38,38,0.8)] border border-red-400 ring-1 ring-red-400/50'
-                        : isPast
-                        ? 'bg-slate-900 text-emerald-400 border border-emerald-500/40'
-                        : 'bg-slate-950/80 text-slate-500 border border-slate-800'
-                    }`}
-                  >
-                    <span className="w-3.5 h-3.5 flex items-center justify-center">
-                      {step.icon}
-                    </span>
-                    <span>{step.label}</span>
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div
-                      className={`w-2.5 h-0.5 ${
-                        isPast ? 'bg-emerald-600' : 'bg-slate-800'
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Right: Room Code, Live Player Counter, Audio, Profile, Exit */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Room Code with 1-click copy */}
-            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono">
-              <span className="text-slate-400 text-[10px] hidden sm:inline">ROOM:</span>
-              <span className="font-bold text-white tracking-wider sm:tracking-widest text-xs">{roomCode}</span>
-              <button
-                onClick={handleCopy}
-                title="Copy Invite Link"
-                className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-0.5"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-
-            {/* Live Reactive Player Count badge with pulsating green dot */}
-            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-200">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <Users className="w-3.5 h-3.5 text-sky-400" />
-              <span className="font-bold tabular-nums">
-                {playerCount}/{maxPlayers}
-              </span>
-            </div>
-
-            <AudioControl />
-
-            {/* Detective Profile Badge */}
-            <button
-              onClick={() => {
-                SoundService.playClick();
-                if (onOpenProfile) {
-                  onOpenProfile();
-                } else {
-                  setNicknameInput(currentUser.nickname);
-                  setSelectedAvatar(currentUser.avatar);
-                  setIsProfileModalOpen(true);
-                }
-              }}
-              title="Edit Detective Identity"
-              className="flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
-            >
-              <AvatarBadge avatar={currentUser.avatar} size="xs" />
-              <span className="font-medium text-white truncate max-w-[70px] hidden sm:inline">
-                {currentUser.nickname}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
-            </button>
-
-            {/* Leave Room Button */}
-            {onLeaveRoom && (
-              <button
+        <>
+          <div className="max-w-[1720px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+            {/* Left: INKBOUND Logo & Case Information */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div
                 onClick={() => {
                   SoundService.playClick();
                   setIsConfirmLeaveOpen(true);
                 }}
-                className="px-2.5 py-1.5 rounded-xl border border-red-700/60 bg-red-950/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shrink-0"
+                title="INKBOUND Game"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Exit</span>
+                <img
+                  src="/assets/logo.png"
+                  alt="INKBOUND"
+                  className="h-6 sm:h-7 object-contain filter drop-shadow"
+                />
+              </div>
+
+              <div className="hidden sm:block h-6 w-px bg-slate-800 shrink-0" />
+
+              <div className="hidden sm:block min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-bold text-white font-serif tracking-wide truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px]">
+                    {caseTitle}
+                  </span>
+                  <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-md bg-red-950/80 border border-red-800/60 text-[9px] font-mono text-red-300 font-bold uppercase tracking-wider">
+                    ACTIVE CASE
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-400 truncate">
+                  {roundText}
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Phase Progression Pills */}
+            <div className="hidden lg:flex items-center gap-2 shrink-0">
+              {steps.map((step, idx) => {
+                const isActive = activeStep === idx;
+                const isPast = activeStep > idx;
+
+                return (
+                  <div key={step.label} className="flex items-center gap-1.5">
+                    <div
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase transition-all ${isActive
+                          ? 'bg-red-600/95 text-white shadow-[0_0_15px_rgba(220,38,38,0.8)] border border-red-400 ring-1 ring-red-400/50'
+                          : isPast
+                            ? 'bg-slate-900 text-emerald-400 border border-emerald-500/40'
+                            : 'bg-slate-950/80 text-slate-500 border border-slate-800'
+                        }`}
+                    >
+                      <span className="w-3.5 h-3.5 flex items-center justify-center">
+                        {step.icon}
+                      </span>
+                      <span>{step.label}</span>
+                    </div>
+                    {idx < steps.length - 1 && (
+                      <div
+                        className={`w-2.5 h-0.5 ${isPast ? 'bg-emerald-600' : 'bg-slate-800'
+                          }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right: Room Code, Live Player Counter, Audio, Profile, Exit */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Room Code with 1-click copy */}
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono">
+                <span className="text-slate-400 text-[10px] hidden sm:inline">ROOM:</span>
+                <span className="font-bold text-white tracking-wider sm:tracking-widest text-xs">{roomCode}</span>
+                <button
+                  onClick={handleCopy}
+                  title="Copy Invite Link"
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-0.5"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {/* Live Reactive Player Count badge with pulsating green dot */}
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-200">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Users className="w-3.5 h-3.5 text-sky-400" />
+                <span className="font-bold tabular-nums">
+                  {playerCount}/{maxPlayers}
+                </span>
+              </div>
+
+              <AudioControl />
+
+              {/* Detective Profile Badge */}
+              <button
+                onClick={() => {
+                  SoundService.playClick();
+                  if (onOpenProfile) {
+                    onOpenProfile();
+                  } else {
+                    setNicknameInput(currentUser.nickname);
+                    setSelectedAvatar(currentUser.avatar);
+                    setIsProfileModalOpen(true);
+                  }
+                }}
+                title="Edit Detective Identity"
+                className="flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
+              >
+                <AvatarBadge avatar={currentUser.avatar} size="xs" />
+                <span className="font-medium text-white truncate max-w-[70px] hidden sm:inline">
+                  {currentUser.nickname}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
               </button>
-            )}
+
+              {/* Leave Room Button */}
+              {onLeaveRoom && (
+                <button
+                  onClick={() => {
+                    SoundService.playClick();
+                    setIsConfirmLeaveOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl border border-red-700/60 bg-red-950/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Exit</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* DEDICATED MOBILE STORY TITLE & ROUND RIBBON (< sm) */}
+          <div className="sm:hidden w-full px-3 py-1.5 bg-[#0f1422] border-t border-slate-800/90 flex items-center justify-between gap-2 select-none">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="px-1.5 py-0.5 rounded bg-red-950/90 border border-red-800/70 text-[9px] font-mono text-red-300 font-bold uppercase tracking-wider shrink-0">
+                CASE FILE
+              </span>
+              <span className="text-xs font-serif font-bold text-amber-200 truncate" title={caseTitle}>
+                {caseTitle}
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-slate-400 shrink-0 font-medium">
+              {roundText}
+            </span>
+          </div>
+        </>
       ) : (
         /* LOBBY GLOBAL NAVIGATION BAR */
         <div className="max-w-[1440px] mx-auto px-3 sm:px-8 py-2.5 flex items-center justify-between gap-3">
@@ -306,9 +321,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               <button
                 key={item}
                 onClick={() => handleNavClick(item)}
-                className={`hover:text-white cursor-pointer transition-colors ${
-                  idx === 0 ? 'text-white font-semibold' : 'text-slate-400'
-                }`}
+                className={`hover:text-white cursor-pointer transition-colors ${idx === 0 ? 'text-white font-semibold' : 'text-slate-400'
+                  }`}
               >
                 {item}
               </button>

@@ -183,175 +183,245 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-700/80" />
           </div>
 
-          {/* BIG ROOM CODE CARD */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="pl-3">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                Room Code
+          {/* BIG ROOM CODE CARD (VINTAGE INVESTIGATION CASE FILE DOCKET) */}
+          <div
+            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-4 sm:p-5 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Corner Decorative Accents */}
+            <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            {/* Vintage Brass Eyelet & Twine Tag Accent */}
+            <div className="absolute -top-1 left-7 flex flex-col items-center pointer-events-none">
+              <div className="w-4 h-4 rounded-full border-2 border-[#7a5833] bg-[#d9c5ab] shadow-inner flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#3a2818]" />
               </div>
+            </div>
+
+            <div className="pl-3 sm:pl-4 pt-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#6e533d]">
+                  CONFIDENTIAL CASE DOCKET NO.
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#e8dac6] text-[#543b27] border border-[#b89e7c]">
+                  FILE REF
+                </span>
+              </div>
+
               <div className="flex items-center gap-3 mt-1">
-                <span className="text-3xl sm:text-4xl font-mono font-bold tracking-wider text-white">
+                <span className="text-3xl sm:text-4xl font-mono font-black tracking-widest text-[#1a110a] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] border-b-2 border-[#8c6d48]/40 pb-0.5">
                   {room.code}
                 </span>
                 <button
                   onClick={handleCopy}
-                  title="Copy Room Code"
-                  className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/60"
+                  title="Copy Dossier Room Code"
+                  className="p-2 rounded-lg bg-[#ede1cf] hover:bg-[#dfceb7] text-[#3e2b1b] hover:text-[#1a110a] transition-all border-2 border-[#b89e7c] cursor-pointer shadow-sm active:scale-95"
                 >
-                  {hasCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {hasCopied ? <Check className="w-4 h-4 text-emerald-800 stroke-[3]" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <div className="flex items-center flex-wrap gap-2 mt-1.5 text-xs text-slate-400">
-                <span>Share this code with your friends</span>
-                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Room Open
+
+              <div className="flex items-center flex-wrap gap-2 mt-2 text-xs text-[#5c422e] font-mono">
+                <span className="text-[11px] text-[#6e533d]">Status:</span>
+                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-950 font-mono font-black px-2 py-0.5 rounded bg-emerald-100/90 border-2 border-emerald-800 shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse" />
+                  CASE ROOM OPEN
                 </span>
                 {room.settings?.isPublic !== false && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-sky-300 font-mono font-semibold px-2 py-0.5 rounded bg-sky-950/70 border border-sky-500/40">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                    🌐 Global Matchmaking Active
+                  <span className="inline-flex items-center gap-1 text-[10px] text-sky-950 font-mono font-bold px-2 py-0.5 rounded bg-sky-100/90 border border-sky-700 shadow-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping" />
+                    🌐 POLICE WIRE ACTIVE
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Right Badge: 6/8 Players */}
-            <div className="text-right flex flex-col items-center bg-slate-900/80 border border-slate-800 px-3.5 py-2 rounded-xl">
-              <div className="flex items-center gap-1.5 text-white font-mono font-bold text-sm">
-                <Users className="w-4 h-4 text-slate-400" />
+            {/* Right Badge: Physical Evidence Tag with Brass Rivet */}
+            <div className="relative text-right flex flex-col items-center bg-[#fdfcf9] border-2 border-[#8c6d48] px-4 py-2.5 rounded-xl shadow-[0_3px_10px_rgba(0,0,0,0.08),inset_0_0_20px_rgba(139,94,60,0.1)] shrink-0 self-start sm:self-center">
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border border-[#8c6d48] bg-[#d9c5ab] shadow-xs flex items-center justify-center">
+                <div className="w-1 h-1 rounded-full bg-[#4a3421]" />
+              </div>
+              <div className="flex items-center gap-1.5 text-[#1a110a] font-mono font-black text-sm sm:text-base pt-0.5">
+                <Users className="w-4 h-4 text-[#8c6d48]" />
                 <span>
                   {displayPlayers.length} / {maxSlots}
                 </span>
               </div>
-              <div className="text-[10px] uppercase font-mono text-slate-400 mt-0.5">Players</div>
+              <div className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#6e533d] mt-0.5">
+                DETECTIVES
+              </div>
             </div>
           </div>
 
-          {/* PLAYERS LIST ROSTER */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-md space-y-2">
-            {displayPlayers.map((p) => {
-              const isPlayerHost = p.id === room.hostId || p.isHost;
-              const isCurrent = p.id === currentUser.id;
+          {/* PLAYERS LIST ROSTER (VINTAGE INVESTIGATION PHOTO MUGSHOT LEDGER) */}
+          <div
+            className="relative text-[#221711] border-2 sm:border-3 border-[#8c6d48] rounded-2xl p-3.5 sm:p-4 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] space-y-2.5 select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Header Docket Bar */}
+            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#6e533d] pb-1 border-b border-[#bfa98e]/70 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="text-red-900 font-black">★</span>
+                <span>ACTIVE DETECTIVE ROSTER • PERSONNEL LOG</span>
+              </span>
+              <span className="text-red-900 font-mono font-black text-[11px] bg-red-50 border border-red-800/40 px-2 py-0.2 rounded">
+                {displayPlayers.length} ON DUTY
+              </span>
+            </div>
 
-              return (
-                <div
-                  key={p.id}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all ${
-                    isCurrent
-                      ? 'bg-slate-800/50 border-slate-600/70'
-                      : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700'
-                  }`}
-                >
-                  {/* Left: Avatar + Name + Host tag */}
-                  <div className="flex items-center gap-3">
-                    <AvatarBadge avatar={p.avatar} size="sm" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm font-semibold text-white">
-                        {p.nickname}
-                      </span>
-                      {isPlayerHost && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-amber-400 text-xs">👑</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40">
-                            Host
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+            {/* Individual Polaroid Investigation Photo Cards */}
+            <div className="space-y-2">
+              {displayPlayers.map((p) => {
+                const isPlayerHost = p.id === room.hostId || p.isHost;
+                const isCurrent = p.id === currentUser.id;
 
-                  {/* Right: Ready status + Options menu */}
-                  <div className="flex items-center gap-3">
-                    {p.isReady ? (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 font-mono">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                        Ready
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 font-mono">
-                        <span className="w-2 h-2 rounded-full bg-slate-500" />
-                        Not Ready
-                      </span>
-                    )}
-
-                    <div className="relative">
-                      <button
-                        onClick={() => setActivePlayerMenu(activePlayerMenu === p.id ? null : p.id)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded hover:bg-slate-800"
-                        title="Player options"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-
-                      {activePlayerMenu === p.id && (
-                        <div className="absolute right-0 top-8 z-50 bg-[#121620] border border-slate-700 rounded-xl p-1.5 shadow-2xl min-w-[130px] space-y-1">
-                          {isHost && p.id !== currentUser.id && onPromoteHost && (
-                            <button
-                              onClick={() => {
-                                onPromoteHost(p.id);
-                                setActivePlayerMenu(null);
-                              }}
-                              className="w-full text-left px-2.5 py-1.5 text-xs text-amber-300 hover:bg-slate-800 rounded-lg flex items-center gap-1.5"
-                            >
-                              <span>👑</span> Make Host
-                            </button>
-                          )}
-                          {isHost && p.id !== currentUser.id && onKickPlayer && (
-                            <button
-                              onClick={() => {
-                                onKickPlayer(p.id);
-                                setActivePlayerMenu(null);
-                              }}
-                              className="w-full text-left px-2.5 py-1.5 text-xs text-red-400 hover:bg-slate-800 rounded-lg flex items-center gap-1.5"
-                            >
-                              <span>✕</span> Kick
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setActivePlayerMenu(null)}
-                            className="w-full text-left px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-300 rounded-lg"
-                          >
-                            Close
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Waiting for player empty slots */}
-            {Array.from({ length: waitingSlotsCount }).map((_, i) => (
-              <div
-                key={`wait-${i}`}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-dashed border-slate-800/90 text-slate-500 text-xs font-mono bg-slate-950/20"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-[10px] text-slate-500">
-                    +
-                  </div>
-                  <span>Waiting for player...</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isHost && onAddBot && i === 0 && (
-                    <button
-                      onClick={onAddBot}
-                      className="px-2.5 py-1 rounded-lg border border-red-800/60 bg-red-950/30 hover:bg-red-900/50 text-red-400 hover:text-white text-[10px] font-semibold transition-colors flex items-center gap-1"
-                    >
-                      <span>+ Add Bot</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setIsInviteModalOpen(true)}
-                    className="px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-white text-[11px] font-medium transition-colors"
+                return (
+                  <div
+                    key={p.id}
+                    className={`relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 transition-all ${
+                      isCurrent
+                        ? 'bg-[#fffdf9] border-red-800 shadow-md ring-1 ring-red-800/50'
+                        : 'bg-[#fffdf9]/95 border-[#b89e7c] hover:border-[#8c6d48] shadow-sm'
+                    }`}
                   >
-                    Invite
-                  </button>
+                    {/* Corner subtle vignette pin */}
+                    <div className="absolute top-1 left-2 w-1.5 h-1.5 rounded-full bg-[#8c6d48]/40" />
+
+                    {/* Left: Vintage Photo Portrait Frame + Detective Dossier Name */}
+                    <div className="flex items-center gap-3">
+                      {/* Photo Print Frame */}
+                      <div className="relative p-1 bg-[#fdfcf9] border border-[#cfbeab] rounded shadow-sm">
+                        <AvatarBadge avatar={p.avatar} size="sm" className="ring-1 ring-[#8c6d48]/50 contrast-105" />
+                        {/* Polaroid Bottom Border Margin */}
+                        <div className="h-1 bg-[#fdfcf9]" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold font-serif text-[#1a110a] tracking-tight">
+                            {p.nickname}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#ede1cf] text-[#543b27] border border-[#b89e7c]">
+                              YOU
+                            </span>
+                          )}
+                          {isPlayerHost && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 border border-amber-700 text-amber-950 shadow-xs">
+                              <span className="text-amber-800 text-[10px]">★</span>
+                              <span className="text-[9px] font-mono font-black tracking-wider">
+                                CHIEF
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-[#7a5e45] font-mono mt-0.5">
+                          AGENT REF #{p.id.slice(-4).toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Authentic Stamped Ink Badge + Dossier Options */}
+                    <div className="flex items-center gap-2.5">
+                      {p.isReady ? (
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-black text-emerald-950 bg-emerald-100 border-2 border-emerald-800 font-mono shadow-xs -rotate-1">
+                          ✓ READY ON DUTY
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold text-[#6e533d] bg-[#ede1cf] border border-[#bfa98e] font-mono shadow-xs">
+                          ⏳ PREPARING
+                        </span>
+                      )}
+
+                      <div className="relative">
+                        <button
+                          onClick={() => setActivePlayerMenu(activePlayerMenu === p.id ? null : p.id)}
+                          className="text-[#7a5e45] hover:text-[#1a110a] transition-colors p-1.5 rounded-lg hover:bg-[#ede1cf] border border-transparent hover:border-[#b89e7c] cursor-pointer"
+                          title="Personnel dossier options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+
+                        {activePlayerMenu === p.id && (
+                          <div className="absolute right-0 top-8 z-50 bg-[#fffdf9] border-2 border-[#8c6d48] rounded-xl p-1.5 shadow-2xl min-w-[140px] space-y-1 font-mono">
+                            {isHost && p.id !== currentUser.id && onPromoteHost && (
+                              <button
+                                onClick={() => {
+                                  onPromoteHost(p.id);
+                                  setActivePlayerMenu(null);
+                                }}
+                                className="w-full text-left px-2.5 py-1.5 text-xs text-[#1a110a] hover:bg-[#ede1cf] rounded-lg flex items-center gap-1.5 cursor-pointer font-bold"
+                              >
+                                <span>★</span> Promote to Chief
+                              </button>
+                            )}
+                            {isHost && p.id !== currentUser.id && onKickPlayer && (
+                              <button
+                                onClick={() => {
+                                  onKickPlayer(p.id);
+                                  setActivePlayerMenu(null);
+                                }}
+                                className="w-full text-left px-2.5 py-1.5 text-xs text-red-900 hover:bg-red-100 rounded-lg flex items-center gap-1.5 cursor-pointer font-bold"
+                              >
+                                <span>✕</span> Dismiss from Case
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setActivePlayerMenu(null)}
+                              className="w-full text-left px-2.5 py-1 text-[11px] text-[#7a5e45] hover:text-[#1a110a] rounded-lg cursor-pointer"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Waiting for player empty slots (Blank Photo Mounts) */}
+              {Array.from({ length: waitingSlotsCount }).map((_, i) => (
+                <div
+                  key={`wait-${i}`}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 border-dashed border-[#bfa98e] text-[#7a5e45] text-xs font-mono bg-[#f4ede0]/60"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-sm border-2 border-dashed border-[#8c6d48]/60 bg-[#ede1cf]/50 flex items-center justify-center text-xs text-[#7a5e45] font-bold">
+                      +
+                    </div>
+                    <span className="text-[11px]">VACANT DESK • Awaiting detective...</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isHost && onAddBot && i === 0 && (
+                      <button
+                        onClick={onAddBot}
+                        className="px-2.5 py-1 rounded-lg border-2 border-red-800 bg-red-100 hover:bg-red-200 text-red-900 text-[10px] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <span>+ Deploy Bot</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="px-3 py-1 rounded-lg border-2 border-[#b89e7c] bg-[#ede1cf] hover:bg-[#e4d3ba] text-[#3e2b1b] text-[11px] font-mono font-bold transition-colors cursor-pointer shadow-xs active:scale-95"
+                    >
+                      Enlist
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* ACTION BUTTONS BELOW PLAYER LIST */}
@@ -360,39 +430,39 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setIsInviteModalOpen(true)}
-                className="py-2.5 px-4 rounded-xl border border-slate-700/80 hover:border-slate-500 bg-[#0e131f]/80 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-md"
+                className="py-2.5 px-4 rounded-xl border-2 border-[#b89e7c] hover:border-red-800 bg-[#ede1cf] hover:bg-[#fffdf9] text-[#221711] text-xs font-mono font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5 text-slate-400" />
-                <span>Invite Friends</span>
+                <Plus className="w-3.5 h-3.5 text-red-800 stroke-[2.5]" />
+                <span>Enlist Detectives</span>
               </button>
 
               <button
                 onClick={handleCopyLink}
-                className="py-2.5 px-4 rounded-xl border border-slate-700/80 hover:border-slate-500 bg-[#0e131f]/80 text-slate-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-md"
+                className="py-2.5 px-4 rounded-xl border-2 border-[#b89e7c] hover:border-red-800 bg-[#ede1cf] hover:bg-[#fffdf9] text-[#221711] text-xs font-mono font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95"
               >
-                <Link className="w-3.5 h-3.5 text-slate-400" />
-                <span>{hasCopied ? 'Link Copied!' : 'Copy Invite Link'}</span>
+                <Link className="w-3.5 h-3.5 text-red-800 stroke-[2.5]" />
+                <span>{hasCopied ? 'Link Copied!' : 'Copy Dossier Link'}</span>
               </button>
             </div>
 
-            {/* Non-host Ready Toggle */}
+            {/* Non-host Ready Toggle (Stamped Ink Slip Button) */}
             {!isHost && (
               <button
                 onClick={() => {
                   SoundService.playBadgeClick();
                   onToggleReady();
                 }}
-                className={`w-full py-3.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                className={`w-full py-3.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-98 ${
                   currentUser.isReady
-                    ? 'game-btn-dark text-slate-300'
-                    : 'game-btn-gold text-white'
+                    ? 'bg-[#ede1cf] border-2 border-[#8c6d48] text-[#1a110a]'
+                    : 'bg-[#8a1c1c] hover:bg-[#9e2222] text-white border-2 border-[#541010]'
                 }`}
               >
-                {currentUser.isReady ? '✓ You Are Ready (Click to Cancel)' : 'Mark Yourself Ready'}
+                {currentUser.isReady ? '✓ You Are Ready (Click to Withdraw)' : '✦ Declare Ready for Duty ✦'}
               </button>
             )}
 
-            {/* BIG PRIMARY "START GAME" BUTTON */}
+            {/* BIG PRIMARY "START INVESTIGATION" WAX SEAL BUTTON */}
             {isHost && (
               <div className="space-y-2">
                 <button
@@ -401,10 +471,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                     onStartGame();
                   }}
                   disabled={displayPlayers.length < 2}
-                  className="w-full py-4 px-6 rounded-2xl game-btn-red text-white font-bold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-4 px-6 rounded-2xl bg-[#8a1c1c] hover:bg-[#9e2222] disabled:opacity-40 text-white font-mono font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg border-2 border-[#541010] active:scale-98"
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  <span>Start Game ({displayPlayers.length}/8 Players)</span>
+                  <span>COMMENCE INVESTIGATION ({displayPlayers.length}/8 DETECTIVES)</span>
                 </button>
 
                 {displayPlayers.length < 2 && onAddBot && (
@@ -413,20 +483,20 @@ export const Lobby: React.FC<LobbyProps> = ({
                       SoundService.playClick();
                       onAddBot();
                     }}
-                    className="w-full py-2.5 rounded-xl border border-red-700/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow cursor-pointer"
+                    className="w-full py-2.5 rounded-xl border-2 border-red-800/80 bg-[#ede1cf] hover:bg-red-100 text-red-900 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
                   >
-                    <span>+ Add Bot Player</span>
+                    <span>+ Deploy Bureau Bot (Solo Play Supported)</span>
                   </button>
                 )}
               </div>
             )}
 
-            <div className="text-center text-[11px] font-mono text-slate-400">
+            <div className="text-center text-[11px] font-mono text-[#5c422e]">
               {displayPlayers.length < 2
-                ? 'Need at least 2 players to start (invite friends or click Add Bot)'
+                ? 'Need at least 2 detectives to commence (enlist squad or deploy Bureau Bot)'
                 : isHost
-                ? 'Ready to go! Click Start Game when everyone is ready.'
-                : 'Waiting for the host to start the game...'}
+                ? 'Ready to proceed! Click Commence Investigation when detectives are prepared.'
+                : 'Awaiting the Chief Investigator to launch the case docket...'}
             </div>
           </div>
         </div>
@@ -435,70 +505,93 @@ export const Lobby: React.FC<LobbyProps> = ({
         {/* RIGHT COLUMN: GAME SETTINGS (HOST ONLY) & NOTES          */}
         {/* ======================================================== */}
         <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-3">
-          {/* GAME SETTINGS CARD — HOST ONLY */}
+          {/* GAME SETTINGS CARD — HOST ONLY (VINTAGE BUREAU INVESTIGATION DIRECTIVES) */}
           {isHost ? (
-            <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-4">
+            <div
+              className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-5 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] space-y-4 select-none"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
+            >
+              {/* Corner Decorative Accents */}
+              <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
               {/* Header with Reset button */}
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center justify-between border-b-2 border-[#bfa98e]/70 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-slate-300" />
-                  <span className="font-bold text-white text-sm">Game Settings (Host)</span>
+                  <div className="w-6 h-6 rounded-md bg-red-100 border border-red-800 flex items-center justify-center text-red-900 shadow-xs">
+                    <Settings className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-serif font-black text-[#1a110a] text-sm sm:text-base tracking-tight block">
+                      Case Directives (Chief Only)
+                    </span>
+                    <span className="text-[9px] font-mono text-[#7a5e45] uppercase tracking-widest block -mt-0.5">
+                      BUREAU PROTOCOL ORDER
+                    </span>
+                  </div>
                 </div>
 
                 <button
                   onClick={() => {
                     setRounds(1);
-                    setDrawingTime(40);
+                    setDrawingTime(120);
                     setSelectedCase('all');
                     onUpdateSettings({
-                      turnDuration: 40,
+                      turnDuration: 120,
                       distorterEnabled: false,
                       selectedCaseId: 'all',
                       allowQuestioning: true,
                     });
                   }}
-                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-[11px] font-mono text-[#7a5e45] hover:text-[#1a110a] transition-colors cursor-pointer font-bold px-2 py-1 rounded bg-[#ede1cf] border border-[#b89e7c] shadow-xs active:scale-95"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-3 h-3 text-[#8c6d48]" />
                   <span>Reset</span>
                 </button>
-
               </div>
 
               {/* 1. Case Genre / Mystery Theme */}
               <div>
-                <label className="block text-slate-400 text-xs font-mono mb-1.5">Mystery Theme</label>
+                <label className="block text-[#5c422e] text-[11px] font-mono font-bold uppercase tracking-wider mb-1.5">
+                  Mystery Case Theme
+                </label>
                 <div
                   onClick={() => isHost && setIsCasePickerOpen(true)}
-                  className={`p-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl flex items-center justify-between transition-all ${
-                    isHost ? 'cursor-pointer hover:border-slate-500 group' : 'cursor-default opacity-90'
+                  className={`p-3 bg-[#fffdf9] border-2 border-[#b89e7c] rounded-xl flex items-center justify-between transition-all shadow-sm ${
+                    isHost ? 'cursor-pointer hover:border-red-800 group active:scale-99' : 'cursor-default opacity-90'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 border border-slate-700 flex items-center justify-center text-xl">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#ede1cf] flex-shrink-0 border-2 border-[#b89e7c] flex items-center justify-center text-xl shadow-inner group-hover:border-red-800 transition-colors">
                       {activeGenre.icon}
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
+                      <div className="text-xs sm:text-sm font-serif font-black text-[#1a110a] group-hover:text-red-900 transition-colors">
                         {activeGenre.title}
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        {isHost ? 'Click to pick a theme' : 'Theme selected by host'}
+                      <div className="text-[10px] text-[#7a5e45] font-mono">
+                        {isHost ? 'Click to select classified archive category' : 'Category selected by Chief'}
                       </div>
                     </div>
                   </div>
-                  {isHost && <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white" />}
+                  {isHost && <ChevronDown className="w-4 h-4 text-[#7a5e45] group-hover:text-[#1a110a]" />}
                 </div>
               </div>
 
               {/* 2. Number of Rounds with Quick Selection & Custom Input */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-slate-400 text-xs font-mono">
-                    Number of Rounds
+                  <label className="text-[#5c422e] text-[11px] font-mono font-bold uppercase tracking-wider">
+                    Investigation Acts (Rounds)
                   </label>
-                  <span className="text-[11px] font-mono text-red-400 font-bold">
-                    {rounds} {rounds === 1 ? 'Round' : 'Rounds'}
+                  <span className="text-[11px] font-mono text-red-900 font-black bg-red-50 border border-red-800/40 px-2 py-0.2 rounded">
+                    {rounds} {rounds === 1 ? 'Act' : 'Acts'}
                   </span>
                 </div>
                 <div className="grid grid-cols-5 gap-1.5 mb-2">
@@ -509,18 +602,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                         setRounds(r);
                         onUpdateSettings({ ...room.settings, rounds: r });
                       }}
-                      className={`py-2 rounded-xl text-xs font-mono font-bold transition-all ${
+                      className={`py-2 rounded-xl text-xs font-mono font-black transition-all cursor-pointer shadow-xs active:scale-95 ${
                         rounds === r
-                          ? 'bg-red-700 text-white shadow-[0_0_12px_rgba(220,38,38,0.5)] border border-red-500'
-                          : 'bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-white'
+                          ? 'bg-[#8a1c1c] text-white shadow-md border-2 border-[#541010]'
+                          : 'bg-[#ede1cf] text-[#4a3525] border-2 border-[#b89e7c] hover:border-[#8c6d48] hover:text-[#1a110a]'
                       }`}
                     >
                       {r}
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5">
-                  <span className="text-[11px] font-mono text-slate-400 shrink-0">Custom:</span>
+                <div className="flex items-center gap-2 bg-[#fffdf9] border-2 border-[#b89e7c] rounded-xl px-3 py-1.5 shadow-inner">
+                  <span className="text-[11px] font-mono text-[#7a5e45] font-bold shrink-0">Custom:</span>
                   <input
                     type="number"
                     min="1"
@@ -531,16 +624,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                       setRounds(val);
                       onUpdateSettings({ ...room.settings, rounds: val });
                     }}
-                    className="w-full bg-transparent text-white font-mono text-xs outline-none"
-                    placeholder="Enter rounds (1-25)"
+                    className="w-full bg-transparent text-[#1a110a] font-mono text-xs outline-none font-bold"
+                    placeholder="Enter acts (1-25)"
                   />
-                  <span className="text-[10px] font-mono text-slate-500 shrink-0">(1–25)</span>
+                  <span className="text-[10px] font-mono text-[#8a725b] shrink-0">(1–25)</span>
                 </div>
               </div>
 
               {/* 3. Drawing Time Dropdown */}
               <div>
-                <label className="block text-slate-400 text-xs font-mono mb-1.5">Drawing Time</label>
+                <label className="block text-[#5c422e] text-[11px] font-mono font-bold uppercase tracking-wider mb-1.5">
+                  Crime Scene Sketch Timer
+                </label>
                 <div className="relative">
                   <select
                     value={drawingTime}
@@ -549,37 +644,46 @@ export const Lobby: React.FC<LobbyProps> = ({
                       setDrawingTime(val);
                       onUpdateSettings({ ...room.settings, turnDuration: val });
                     }}
-                    className="w-full py-2.5 px-3.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-white text-xs font-mono appearance-none outline-none focus:border-red-500 cursor-pointer"
+                    className="w-full py-2.5 px-3.5 bg-[#fffdf9] border-2 border-[#b89e7c] rounded-xl text-[#1a110a] text-xs font-mono appearance-none outline-none focus:border-red-800 cursor-pointer shadow-inner font-bold"
                   >
-                    <option value={30}>30 seconds</option>
-                    <option value={40}>40 seconds</option>
-                    <option value={60}>60 seconds</option>
-                    <option value={80}>80 seconds</option>
-                    <option value={120}>120 seconds (Default)</option>
-                    <option value={160}>160 seconds</option>
-                    <option value={180}>180 seconds</option>
+                    <option value={30}>30 seconds (Rapid Deduction)</option>
+                    <option value={40}>40 seconds (Fast Sketch)</option>
+                    <option value={60}>60 seconds (Standard)</option>
+                    <option value={80}>80 seconds (Detailed Inspection)</option>
+                    <option value={120}>120 seconds (Default Investigation)</option>
+                    <option value={160}>160 seconds (Extended Forensics)</option>
+                    <option value={180}>180 seconds (Full Masterpiece)</option>
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-[#7a5e45] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
           ) : (
             /* NON-HOST VIEW: Case Intel Briefing */
-            <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-3">
-              <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
-                <span>Story & Rules</span>
-                <span className="text-emerald-400 text-[10px]">Host Controlled</span>
+            <div
+              className="relative text-[#221711] border-2 border-[#8c6d48] rounded-2xl p-5 shadow-lg space-y-3 select-none"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
+            >
+              <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a] border-b border-[#bfa98e]/80 pb-2 flex items-center justify-between">
+                <span>Investigation Directives</span>
+                <span className="text-red-900 text-[10px] font-mono font-bold border border-red-800 bg-red-100 px-2 py-0.5 rounded">
+                  Lead Controlled
+                </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                The host is setting up the game. When the game starts, a random player will choose which mystery story to play!
+              <p className="text-xs text-[#5c422e] leading-relaxed font-mono">
+                The Lead Detective is preparing the case docket. When launched, a mystery dossier will be unsealed for the squad!
               </p>
-              <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-950/70 border border-amber-600/50 flex items-center justify-center text-amber-400 shrink-0">
+              <div className="p-3 bg-[#fffdf9] rounded-xl border-2 border-[#b89e7c] flex items-center gap-3 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-[#ede1cf] border border-[#b89e7c] flex items-center justify-center text-red-800 shrink-0">
                   <Search className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-white">Active Theme: {selectedCase || 'All Mysteries'}</div>
-                  <div className="text-[10px] text-slate-400">Draw Time: {drawingTime}s • {rounds} round(s)</div>
+                  <div className="text-xs font-bold text-[#1a110a] font-serif">Active Theme: {selectedCase || 'All Mysteries'}</div>
+                  <div className="text-[10px] text-[#7a5e45] font-mono">Sketch Time: {drawingTime}s • {rounds} round(s)</div>
                 </div>
               </div>
             </div>
@@ -618,69 +722,100 @@ export const Lobby: React.FC<LobbyProps> = ({
         </div>
       </main>
 
-      {/* INVITE MODAL */}
+      {/* INVITE MODAL (VINTAGE INVESTIGATION DISPATCH) */}
       {isInviteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div
+            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl max-w-sm w-full p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-4 overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
             <button
               onClick={() => setIsInviteModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-[#7a5e45] hover:text-[#1a110a] font-bold cursor-pointer"
             >
               ✕
             </button>
 
             <div className="text-left space-y-1">
-              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">
-                INVITE FRIENDS
+              <span className="text-[10px] font-mono text-red-900 border border-red-800 bg-red-100 px-2 py-0.5 rounded font-black uppercase tracking-widest">
+                ★ DISPATCH CALL
               </span>
-              <h3 className="text-lg font-bold text-white font-serif">Share Room Code or Link</h3>
-              <p className="text-xs text-slate-400">Send this to your friends so they can join your lobby!</p>
+              <h3 className="text-lg font-black font-serif text-[#1a110a] pt-1">
+                Summon Fellow Detectives
+              </h3>
+              <p className="text-xs text-[#5c422e] font-mono">
+                Send this room code or telegram link to enlist detectives for this case!
+              </p>
             </div>
 
-            <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center space-y-2">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Room Code</span>
-              <div className="text-3xl font-mono font-bold tracking-widest text-amber-400">
+            <div className="p-4 bg-[#fffdf9] border-2 border-[#b89e7c] rounded-xl text-center space-y-2 shadow-inner">
+              <span className="text-[10px] font-mono text-[#7a5e45] uppercase tracking-widest font-bold">
+                BUREAU ROOM CODE
+              </span>
+              <div className="text-3xl font-mono font-black tracking-widest text-[#1a110a]">
                 {room.code}
               </div>
               <button
                 onClick={handleCopy}
-                className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-white transition-colors cursor-pointer"
+                className="w-full py-2.5 rounded-lg bg-[#ede1cf] hover:bg-[#e2d3be] border border-[#b89e7c] text-xs font-mono font-bold text-[#1a110a] transition-colors cursor-pointer"
               >
-                {hasCopied ? '✓ Code Copied!' : 'Copy Code'}
+                {hasCopied ? '✓ Room Code Copied!' : 'Copy Room Code'}
               </button>
             </div>
 
             <div className="space-y-2">
               <button
                 onClick={handleCopyLink}
-                className="w-full py-3 rounded-xl game-btn-red text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 rounded-xl bg-red-800 hover:bg-red-700 text-white text-xs font-mono font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
                 <Link className="w-3.5 h-3.5" />
-                <span>{hasCopied ? '✓ Game Link Copied!' : 'Copy Game Link'}</span>
+                <span>{hasCopied ? '✓ Invite Link Copied!' : 'Copy Telegram Invite Link'}</span>
               </button>
-              <p className="text-[11px] font-mono text-slate-400 text-center">
-                Anyone clicking the link will jump straight into this lobby.
+              <p className="text-[11px] font-mono text-[#6e533d] text-center">
+                Anyone with the telegram link will enter this detective bureau instantly.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* CASE GENRE PICKER MODAL (HOST ONLY) */}
+      {/* CASE GENRE PICKER MODAL (VINTAGE CLASSIFIED ARCHIVES) */}
       {isCasePickerOpen && isHost && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121620] border border-slate-700/80 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div
+            className="relative text-[#221711] border-4 border-[#8c6d48] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9),inset_0_0_80px_rgba(139,94,60,0.18)] space-y-4 overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Corner Decorative Accents */}
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <button
               onClick={() => setIsCasePickerOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-[#7a5e45] hover:text-[#1a110a] font-bold text-base cursor-pointer"
             >
               ✕
             </button>
 
             <div className="text-left space-y-1">
-              <h3 className="text-lg font-bold text-white font-serif">Select Case Genre & Theme</h3>
-              <p className="text-xs text-slate-400">
-                Stories offered to the random story chooser will be tailored to this genre.
+              <span className="text-[10px] font-mono text-red-900 border-2 border-red-800 bg-red-100 px-2.5 py-0.5 rounded font-black uppercase tracking-widest">
+                ★ CLASSIFIED ARCHIVES
+              </span>
+              <h3 className="text-xl font-black font-serif text-[#1a110a] pt-1">
+                Select Case Genre & Dossier Category
+              </h3>
+              <p className="text-xs text-[#5c422e] font-mono">
+                Mystery stories distributed to detectives will follow this investigation category.
               </p>
             </div>
 
@@ -693,16 +828,16 @@ export const Lobby: React.FC<LobbyProps> = ({
                     onUpdateSettings({ ...room.settings, selectedCaseId: g.id });
                     setIsCasePickerOpen(false);
                   }}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 shadow-sm ${
                     selectedCase === g.id
-                      ? 'bg-red-950/40 border-red-500 shadow-md ring-1 ring-red-500'
-                      : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                      ? 'bg-[#fffdf9] border-red-800 ring-2 ring-red-800 shadow-md'
+                      : 'bg-[#ede1cf] border-[#b89e7c] hover:border-[#8c6d48] hover:bg-[#fffdf9]'
                   }`}
                 >
                   <span className="text-2xl">{g.icon}</span>
                   <div>
-                    <div className="text-xs font-bold text-white font-serif">{g.title}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{g.desc}</div>
+                    <div className="text-xs font-serif font-black text-[#1a110a]">{g.title}</div>
+                    <div className="text-[10px] text-[#5c422e] font-mono mt-0.5 leading-snug">{g.desc}</div>
                   </div>
                 </div>
               ))}

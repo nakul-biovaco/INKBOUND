@@ -425,4 +425,13 @@ export class BackendClient {
   public sendChatMessage(text: string): void {
     this.send('CHAT_MESSAGE', { text });
   }
+
+  public leaveRoom(): void {
+    try {
+      if (this.roomId && this.playerId) {
+        this.send('LEAVE_ROOM', { roomId: this.roomId, playerId: this.playerId });
+      }
+    } catch {}
+    this.clearSession();
+  }
 }

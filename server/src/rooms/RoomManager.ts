@@ -459,4 +459,16 @@ export class RoomManager {
       room.status = status;
     }
   }
+
+  public static deleteRoom(roomId: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room) return false;
+    for (const p of room.players) {
+      this.playerToRoomId.delete(p.playerId);
+    }
+    this.codeToRoomId.delete(room.joinCode.toUpperCase());
+    this.rooms.delete(roomId);
+    logger.info('Room forcefully deleted and purged', { roomId, code: room.joinCode });
+    return true;
+  }
 }
