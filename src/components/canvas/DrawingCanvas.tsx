@@ -39,6 +39,7 @@ interface DrawingCanvasProps {
   publicHint?: string | null;
   roomCode?: string;
   channel: RoomChannelManager;
+  isDrawer?: boolean;
   onSubmitDrawing?: (previewDataUrl: string, strokes: Stroke[]) => void;
   onLeaveRoom?: () => void;
 }
@@ -60,6 +61,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   publicHint,
   roomCode,
   channel,
+  isDrawer: propIsDrawer,
   onLeaveRoom,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,9 +80,17 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [guessFeed, setGuessFeed] = useState<Array<{ playerId: string; playerName: string; text: string; isClose?: boolean; isCorrect?: boolean }>>([]);
   const [guessFeedback, setGuessFeedback] = useState<string | null>(null);
 
-  const isCurrentDrawer = gameState.currentTurnPlayerId === currentUser.id;
-  const currentDrawer = gameState.players.find((p) => p.id === gameState.currentTurnPlayerId);
   const backend = BackendClient.getInstance();
+  const myBackendId = backend.getPlayerId();
+  const currentDrawer = gameState.players.find((p) => p.id === gameState.currentTurnPlayerId);
+
+  // Multi-factor drawer check: ID match, backend ID match, or nickname match with active drawer
+  const isCurrentDrawer = Boolean(
+    propIsDrawer ||
+    (gameState.currentTurnPlayerId && currentUser?.id && gameState.currentTurnPlayerId === currentUser.id) ||
+    (gameState.currentTurnPlayerId && myBackendId && gameState.currentTurnPlayerId === myBackendId) ||
+    (currentDrawer && currentUser && currentDrawer.nickname.trim().toLowerCase() === currentUser.nickname.trim().toLowerCase())
+  );
 
   // Authoritative server timer calculation
   useEffect(() => {
@@ -265,7 +275,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const lastBroadcastRef = useRef<number>(0);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): Point | null => {
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent): Point | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
@@ -280,8 +290,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       clientX = e.changedTouches[0].clientX;
       clientY = e.changedTouches[0].clientY;
     } else if ('clientX' in e) {
-      clientX = (e as MouseEvent).clientX;
-      clientY = (e as MouseEvent).clientY;
+      clientX = (e as MouseEvent | PointerEvent).clientX;
+      clientY = (e as MouseEvent | PointerEvent).clientY;
     }
 
     const scaleX = canvas.width / rect.width;
@@ -293,8 +303,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     };
   };
 
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent) => {
     if (!isCurrentDrawer) return;
+
+    if ('pointerId' in e && e.target && 'setPointerCapture' in (e.target as any)) {
+      try {
+        (e.target as any).setPointerCapture((e as any).pointerId);
+      } catch {
+        // ignore capture failure
+      }
+    }
 
     const pt = getCoordinates(e);
     if (!pt) return;
@@ -345,7 +363,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e?: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent) => {
+    if (e && 'pointerId' in e && e.target && 'releasePointerCapture' in (e.target as any)) {
+      try {
+        (e.target as any).releasePointerCapture((e as any).pointerId);
+      } catch {
+        // ignore
+      }
+    }
+
     if (!isDrawingRef.current || !currentStrokeRef.current || !isCurrentDrawer) return;
 
     isDrawingRef.current = false;
@@ -761,12 +787,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               style={{
                 touchAction: 'none',
               }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
               onMouseDown={handlePointerDown}
               onMouseMove={handlePointerMove}
               onMouseUp={handlePointerUp}
               onMouseLeave={handlePointerUp}
-              className={`w-full h-full object-contain ${
-                isCurrentDrawer ? 'cursor-crosshair' : 'cursor-default pointer-events-none'
+              className={`w-full h-full object-contain select-none ${
+                isCurrentDrawer ? 'cursor-crosshair pointer-events-auto' : 'cursor-default pointer-events-none'
               }`}
             />
           </div>

@@ -1,5 +1,6 @@
 import {
   AuthoritativeGameSession,
+  GameStatus,
   Player,
   PrivateDrawerState,
   PromptOption,
@@ -43,8 +44,9 @@ export class Serializer {
    * Serializes private drawer-only state (never sent to guessers)
    */
   public static serializePrivateDrawerState(session: AuthoritativeGameSession): PrivateDrawerState {
+    const isSelecting = session.state === GameStatus.PROMPT_SELECTION;
     return {
-      options: session.activePromptOptions,
+      options: isSelecting ? session.activePromptOptions : [],
       selectedObjective: session.selectedEvent ? session.selectedEvent.drawingObjective : null,
       hint: session.selectedEvent ? session.selectedEvent.hint : null,
       visualElements: session.selectedEvent ? session.selectedEvent.visualElements : null,

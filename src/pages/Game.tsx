@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Clock, Sparkles, CheckCircle } from 'lucide-react';
 import { AuthoritativeGameState, TheorySubmission } from '../types/game';
 import { Player } from '../types/player';
@@ -23,6 +23,41 @@ interface GameProps {
   onGameStateChange?: (state: AuthoritativeGameState) => void;
 }
 
+interface GameBanner {
+  id: string;
+  type: 'solved' | 'story' | 'reveal' | 'turn' | 'status';
+  title: string;
+  subtitle?: string;
+  pointsText?: string;
+  badge?: string;
+}
+
+const getClueStorageKey = (roomId: string, turnIndex: number) =>
+  `inkbound_chosen_clue_${roomId}_turn_${turnIndex}`;
+
+const saveStoredClue = (roomId: string, turnIndex: number, optionIndex: number, objective: string) => {
+  try {
+    const data = JSON.stringify({ optionIndex, objective, turnIndex, roomId, timestamp: Date.now() });
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(getClueStorageKey(roomId, turnIndex), data);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(getClueStorageKey(roomId, turnIndex), data);
+  } catch (e) {
+    console.warn('[Game] Storage save failed', e);
+  }
+};
+
+const getStoredClue = (roomId: string, turnIndex: number): { optionIndex: number; objective: string; turnIndex: number } | null => {
+  try {
+    const key = getClueStorageKey(roomId, turnIndex);
+    const raw =
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return null;
+};
+
 export const Game: React.FC<GameProps> = ({
   room,
   initialState,
@@ -42,20 +77,37 @@ export const Game: React.FC<GameProps> = ({
   const [storyChooserId, setStoryChooserId] = useState<string | null>(null);
   const [storyChooserName, setStoryChooserName] = useState<string>('');
   const [offeredStories, setOfferedStories] = useState<Array<{ storyId: string; title: string; genre: string; difficulty: string; description: string }>>([]);
-  const [selectedStoryBanner, setSelectedStoryBanner] = useState<{ title: string; genre: string; description: string } | null>(null);
+  const [selectedStoryBriefing, setSelectedStoryBriefing] = useState<{ title: string; genre: string; description: string } | null>(null);
 
-  // Authoritative drawer prompt options
+  // Authoritative drawer prompt options & persistent secret clue
+  const initialStoredClue = getStoredClue(room.id, initialState.turnIndex);
   const [drawerPromptOptions, setDrawerPromptOptions] = useState<Array<{ optionIndex: number; previewText: string; difficulty: string }>>([]);
-  const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(null);
+  const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(
+    initialStoredClue?.objective || null
+  );
   const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
   const [publicHint, setPublicHint] = useState<string | null>(null);
 
-  // Authoritative round feedback and transitions
-  const [clueSolvedBanner, setClueSolvedBanner] = useState<{ solverName: string; drawerName: string; objective: string; solverPoints: number; drawerPoints: number } | null>(null);
-  const [storyRevealData, setStoryRevealData] = useState<{ revealedText: string; solvedCount: number } | null>(null);
-  const [nextTurnNotice, setNextTurnNotice] = useState<string | null>(null);
-  const [playerStatusNotice, setPlayerStatusNotice] = useState<string | null>(null);
+  // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
+  const [gameBanner, setGameBanner] = useState<GameBanner | null>(null);
+  const bannerTimerRef = useRef<any>(null);
 
+  const showGameBanner = (banner: GameBanner, durationMs = 4500) => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    setGameBanner(banner);
+    bannerTimerRef.current = setTimeout(() => {
+      setGameBanner(null);
+    }, durationMs);
+  };
+
+  // Multi-factor drawer check: ID match, backend client ID match, or nickname match with active drawer
+  const myBackendId = backend.getPlayerId();
+  const currentDrawer = gameState.players.find((p) => p.id === gameState.currentTurnPlayerId);
+  const isDrawer = Boolean(
+    (gameState.currentTurnPlayerId && currentUser?.id && gameState.currentTurnPlayerId === currentUser.id) ||
+    (gameState.currentTurnPlayerId && myBackendId && gameState.currentTurnPlayerId === myBackendId) ||
+    (currentDrawer && currentUser && currentDrawer.nickname.trim().toLowerCase() === currentUser.nickname.trim().toLowerCase())
+  );
 
   const updateState = (next: AuthoritativeGameState) => {
     setGameState(next);
@@ -83,8 +135,14 @@ export const Game: React.FC<GameProps> = ({
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
       SoundService.playDramaticSting();
       setIsStorySelection(false);
-      setSelectedStoryBanner(payload);
-      setTimeout(() => setSelectedStoryBanner(null), 5000);
+      setSelectedStoryBriefing(payload);
+      showGameBanner({
+        id: 'story-selected',
+        type: 'story',
+        badge: 'CASE SELECTED',
+        title: `${payload.title} (${payload.genre})`,
+        subtitle: payload.description,
+      }, 5000);
       setGameState((prev) => ({
         ...prev,
         status: 'STORY_SELECTION',
@@ -109,18 +167,27 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubTurnStarted = backend.on('TURN_STARTED', (payload: any) => {
       SoundService.playTurnStart();
-      setClueSolvedBanner(null);
-      setStoryRevealData(null);
-      setNextTurnNotice(null);
+      setGameBanner(null);
       setIsStorySelection(false);
-      setSelectedStoryBanner(null);
-      setPlayerStatusNotice(null);
+      setSelectedStoryBriefing(null);
       setPublicHint(null);
+
+      const newTurn = payload.turnIndex || 0;
+      const stored = getStoredClue(room.id, newTurn);
+      if (stored && stored.objective) {
+        setSecretDrawObjective(stored.objective);
+        setDrawerPromptOptions([]);
+      } else {
+        setSecretDrawObjective(null);
+        setSecretDrawHint(null);
+        setDrawerPromptOptions([]);
+      }
+
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
         currentTurnPlayerId: payload.drawerPlayerId,
-        turnIndex: payload.turnIndex || 0,
+        turnIndex: newTurn,
         turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
         turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
       }));
@@ -128,19 +195,23 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
       SoundService.playTurnStart();
-      setClueSolvedBanner(null);
-      setStoryRevealData(null);
-      setNextTurnNotice(null);
-      setSelectedStoryBanner(null);
-      setPlayerStatusNotice(null);
+      setIsStorySelection(false);
       if (payload?.hint) {
         setPublicHint(payload.hint);
       }
+
+      const newTurn = payload.turnIndex || 0;
+      const stored = getStoredClue(room.id, newTurn);
+      if (stored && stored.objective) {
+        setSecretDrawObjective(stored.objective);
+        setDrawerPromptOptions([]);
+      }
+
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
         currentTurnPlayerId: payload.drawerPlayerId,
-        turnIndex: payload.turnIndex || 0,
+        turnIndex: newTurn,
         turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
         turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
       }));
@@ -148,6 +219,14 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubPromptOptions = backend.on('PROMPT_OPTIONS', (payload: any) => {
       // Sent ONLY to active drawer
+      const stored = getStoredClue(room.id, gameState.turnIndex);
+      if (stored && stored.objective) {
+        // Clue already fixed in storage for this turn! Do not show modal
+        setSecretDrawObjective(stored.objective);
+        setDrawerPromptOptions([]);
+        backend.selectPrompt(stored.optionIndex);
+        return;
+      }
       if (payload?.options) {
         setDrawerPromptOptions(payload.options);
       }
@@ -158,18 +237,20 @@ export const Game: React.FC<GameProps> = ({
       setDrawerPromptOptions([]);
       setSecretDrawObjective(payload.objective);
       setSecretDrawHint(payload.hint || null);
+      saveStoredClue(room.id, gameState.turnIndex, 0, payload.objective);
     });
 
     const unsubClueSolved = backend.on('CLUE_SOLVED', (payload: any) => {
       SoundService.playSuccess();
-      setClueSolvedBanner({
-        solverName: payload.solverName,
-        drawerName: payload.drawerName,
-        objective: payload.solvedObjective,
-        solverPoints: payload.scoreAward?.solverPoints || 150,
-        drawerPoints: payload.scoreAward?.drawerPoints || 100,
-      });
-      setTimeout(() => setClueSolvedBanner(null), 5000);
+      showGameBanner({
+        id: 'clue-solved',
+        type: 'solved',
+        badge: 'CLUE SOLVED',
+        title: `${payload.solverName} solved the clue!`,
+        subtitle: `"${payload.solvedObjective}"`,
+        pointsText: `+${payload.scoreAward?.solverPoints || 150} pts (${payload.solverName}) • +${payload.scoreAward?.drawerPoints || 100} pts (${payload.drawerName})`,
+      }, 5500);
+
       if (payload.updatedScores) {
         setGameState((prev) => ({
           ...prev,
@@ -183,29 +264,35 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubStoryReveal = backend.on('STORY_REVEAL', (payload: any) => {
       SoundService.playDramaticSting();
-      setClueSolvedBanner(null);
-      setStoryRevealData({
-        revealedText: payload.revealedText,
-        solvedCount: payload.solvedCount,
-      });
-      setTimeout(() => setStoryRevealData(null), 7000);
+      showGameBanner({
+        id: 'story-reveal',
+        type: 'reveal',
+        badge: `CLUE #${payload.solvedCount} DISCOVERED`,
+        title: `"${payload.revealedText}"`,
+        subtitle: 'The mystery timeline is coming together...',
+      }, 6000);
     });
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
       SoundService.playTurnStart();
-      setStoryRevealData(null);
-      setClueSolvedBanner(null);
-      setSelectedStoryBanner(null);
-      setPlayerStatusNotice(null);
-      setNextTurnNotice(`Round over! Next player's turn to draw...`);
-      setTimeout(() => setNextTurnNotice(null), 3000);
+      showGameBanner({
+        id: 'next-turn',
+        type: 'turn',
+        badge: 'ROUND COMPLETE',
+        title: "Next detective's turn to draw!",
+        subtitle: 'Preparing secret clues for the next turn...',
+      }, 3500);
     });
 
     const unsubPlayerLeft = backend.on('PLAYER_LEFT', (payload: any) => {
       if (!payload?.playerId) return;
       const player = gameState.players.find((p) => p.id === payload.playerId);
-      setPlayerStatusNotice(`${player?.nickname || 'A player'} left the game.`);
-      setTimeout(() => setPlayerStatusNotice(null), 3500);
+      showGameBanner({
+        id: 'player-left',
+        type: 'status',
+        badge: 'STATUS UPDATE',
+        title: `${player?.nickname || 'A detective'} left the room.`,
+      }, 3000);
       setGameState((prev) => ({
         ...prev,
         players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: false } : p),
@@ -213,13 +300,28 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
-      setPlayerStatusNotice(`${payload?.displayName || 'A player'} came back!`);
-      setTimeout(() => setPlayerStatusNotice(null), 3500);
+      showGameBanner({
+        id: 'player-back',
+        type: 'status',
+        badge: 'STATUS UPDATE',
+        title: `${payload?.displayName || 'A detective'} came back!`,
+      }, 3000);
 
-      // Restore secret drawer clue if this reconnecting client is the active drawer
-      if (payload?.isDrawer && payload?.drawerPrivateState) {
-        if (payload.drawerPrivateState.objective) {
-          setSecretDrawObjective(payload.drawerPrivateState.objective);
+      const targetTurn = payload?.gameState?.turnIndex ?? gameState.turnIndex;
+      const stored = getStoredClue(room.id, targetTurn);
+
+      if (stored && stored.objective) {
+        // Clue in storage takes precedence - DO NOT prompt user again!
+        setSecretDrawObjective(stored.objective);
+        setDrawerPromptOptions([]);
+      } else if (payload?.isDrawer && payload?.drawerPrivateState) {
+        if (payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective) {
+          const obj = payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective;
+          setSecretDrawObjective(obj);
+          setDrawerPromptOptions([]);
+          saveStoredClue(room.id, targetTurn, 0, obj);
+        } else if (payload.drawerPrivateState.options && payload.drawerPrivateState.options.length > 0) {
+          setDrawerPromptOptions(payload.drawerPrivateState.options);
         }
         if (payload.drawerPrivateState.hint) {
           setSecretDrawHint(payload.drawerPrivateState.hint);
@@ -256,17 +358,9 @@ export const Game: React.FC<GameProps> = ({
             }))
           : prev.players.map((p) => p.id === payload?.playerId ? { ...p, isOnline: true } : p),
       }));
-      if (payload?.drawerPrivateState?.selectedObjective) {
-        setSecretDrawObjective(payload.drawerPrivateState.selectedObjective);
-      }
-      if (payload?.drawerPrivateState?.hint) {
-        setSecretDrawHint(payload.drawerPrivateState.hint);
-      }
+
       if (payload?.gameState?.hint) {
         setPublicHint(payload.gameState.hint);
-      }
-      if (payload?.drawerPrivateState?.options) {
-        setDrawerPromptOptions(payload.drawerPrivateState.options);
       }
     });
 
@@ -279,7 +373,6 @@ export const Game: React.FC<GameProps> = ({
       SoundService.playSuccess();
       setGameState((prev) => ({ ...prev, status: 'RESULTS' }));
     });
-
 
     return () => {
       unsubChooser();
@@ -296,8 +389,9 @@ export const Game: React.FC<GameProps> = ({
       unsubPlayerReconnected();
       unsubFinalInvestigation();
       unsubGameEnd();
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     };
-  }, [backend, gameState.players]);
+  }, [backend, gameState.players, gameState.turnIndex, room.id]);
 
 
   // Automated Bot Turn execution: if a bot's turn is active, host executes their turn
@@ -391,8 +485,12 @@ export const Game: React.FC<GameProps> = ({
     setIsStorySelection(false);
   };
 
-  const handleSelectPrompt = (optionIndex: number) => {
+  const handleSelectPrompt = (optionIndex: number, chosenText?: string) => {
+    const opt = drawerPromptOptions.find((o) => o.optionIndex === optionIndex);
+    const text = chosenText || opt?.previewText || 'Secret Clue';
+    saveStoredClue(room.id, gameState.turnIndex, optionIndex, text);
     backend.selectPrompt(optionIndex);
+    setSecretDrawObjective(text);
     setDrawerPromptOptions([]);
   };
 
@@ -406,180 +504,153 @@ export const Game: React.FC<GameProps> = ({
       />
       <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
 
-      {/* SELECTED STORY BROADCAST BANNER */}
-      {selectedStoryBanner && (
-        <div
-          onClick={() => setSelectedStoryBanner(null)}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-all"
-        >
-          <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
-          <div className="text-left">
-            <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider">Case Selected</div>
-            <div className="text-sm font-bold font-serif">{selectedStoryBanner.title} ({selectedStoryBanner.genre})</div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedStoryBanner(null);
-            }}
-            className="text-amber-400 hover:text-white font-bold ml-2 text-base shrink-0 leading-none"
-            title="Dismiss"
+      {/* INTEGRATED HUD GAME ALERT BANNER (Replacing fragmented vibe-coded floating pills) */}
+      {gameBanner && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 animate-fadeIn select-none pointer-events-auto">
+          <div
+            onClick={() => setGameBanner(null)}
+            className={`cursor-pointer rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${
+              gameBanner.type === 'solved'
+                ? 'bg-emerald-950/95 border-emerald-500 text-emerald-100 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:bg-emerald-900/95'
+                : gameBanner.type === 'story'
+                ? 'bg-amber-950/95 border-amber-500 text-amber-100 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:bg-amber-900/95'
+                : gameBanner.type === 'reveal'
+                ? 'bg-purple-950/95 border-purple-500 text-purple-100 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:bg-purple-900/95'
+                : gameBanner.type === 'turn'
+                ? 'bg-sky-950/95 border-sky-500 text-sky-100 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:bg-sky-900/95'
+                : 'bg-slate-900/95 border-slate-600 text-slate-200 hover:bg-slate-800/95'
+            }`}
           >
-            ×
-          </button>
-        </div>
-      )}
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                  gameBanner.type === 'solved'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                    : gameBanner.type === 'story'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                    : gameBanner.type === 'reveal'
+                    ? 'bg-purple-500/20 border-purple-400 text-purple-300'
+                    : 'bg-sky-500/20 border-sky-400 text-sky-300'
+                }`}
+              >
+                {gameBanner.type === 'solved' ? (
+                  <CheckCircle className="w-5 h-5 animate-bounce" />
+                ) : gameBanner.type === 'story' ? (
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                ) : gameBanner.type === 'reveal' ? (
+                  <BookOpen className="w-5 h-5" />
+                ) : (
+                  <Clock className="w-5 h-5 animate-spin" />
+                )}
+              </div>
 
-      {/* CLUE SOLVED SUCCESS BANNER */}
-      {clueSolvedBanner && (
-        <div
-          onClick={() => setClueSolvedBanner(null)}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-emerald-950/95 border border-emerald-500 text-emerald-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-emerald-900/95 transition-all"
-        >
-          <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
-          <div className="text-left">
-            <div className="text-xs font-bold text-white">
-              {clueSolvedBanner.solverName} solved the clue: "{clueSolvedBanner.objective}"!
+              <div className="min-w-0 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-90">
+                    {gameBanner.badge}
+                  </span>
+                  {gameBanner.pointsText && (
+                    <span className="text-[11px] font-mono font-bold text-emerald-300 hidden sm:inline">
+                      • {gameBanner.pointsText}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm font-bold text-white truncate font-serif">
+                  {gameBanner.title}
+                </div>
+                {gameBanner.subtitle && (
+                  <div className="text-xs text-slate-300 truncate font-sans">
+                    {gameBanner.subtitle}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="text-[11px] font-mono text-emerald-300">
-              +{clueSolvedBanner.solverPoints} pts to {clueSolvedBanner.solverName} • +{clueSolvedBanner.drawerPoints} pts to {clueSolvedBanner.drawerName} (Drawer)
-            </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setClueSolvedBanner(null);
-            }}
-            className="text-emerald-400 hover:text-white font-bold text-base ml-2 shrink-0 leading-none"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
 
-      {/* STORY REVEAL FLOATING BANNER (NON-BLOCKING) */}
-      {storyRevealData && (
-        <div
-          onClick={() => setStoryRevealData(null)}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-950/95 border border-amber-500 text-amber-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-amber-900/95 transition-all max-w-xl text-left"
-        >
-          <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider font-bold">
-              Clue Discovered #{storyRevealData.solvedCount}
-            </div>
-            <div className="text-xs font-serif text-white italic truncate">
-              "{storyRevealData.revealedText}"
-            </div>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setStoryRevealData(null);
-            }}
-            className="text-amber-400 hover:text-white font-bold text-base ml-2 shrink-0 leading-none"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* NEXT TURN TRANSITION NOTICE */}
-      {nextTurnNotice && (
-        <div
-          onClick={() => setNextTurnNotice(null)}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-sky-500 text-sky-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-slate-800 transition-all"
-        >
-          <Clock className="w-5 h-5 text-sky-400 animate-spin" />
-          <span className="text-xs font-mono font-bold uppercase">{nextTurnNotice}</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setNextTurnNotice(null);
-            }}
-            className="text-sky-400 hover:text-white font-bold ml-1 text-sm leading-none"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {playerStatusNotice && (
-        <div
-          onClick={() => setPlayerStatusNotice(null)}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-amber-500 text-amber-100 px-5 py-2.5 rounded-full shadow-2xl text-xs font-mono flex items-center gap-3 cursor-pointer hover:bg-slate-800 transition-all backdrop-blur-md"
-        >
-          <span>{playerStatusNotice}</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setPlayerStatusNotice(null);
-            }}
-            className="text-amber-400 hover:text-white font-bold text-sm leading-none"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* DRAWER SECRET PROMPT SELECTION OVERLAY */}
-      {drawerPromptOptions.length > 0 && gameState.currentTurnPlayerId === currentUser.id && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-3xl w-full bg-[#0e131f] border border-red-600/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-center animate-fadeIn relative">
             <button
-              onClick={() => {
-                if (drawerPromptOptions.length > 0) handleSelectPrompt(0);
-                setDrawerPromptOptions([]);
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setGameBanner(null);
               }}
-              className="absolute top-4 right-4 text-xs font-mono text-slate-400 hover:text-white px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 transition-colors"
-              title="Pick default clue and begin"
+              className="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/60 text-white/80 hover:text-white text-xs font-mono font-bold transition-colors shrink-0"
+              title="Dismiss"
             >
-              Auto-Pick Clue
+              ×
             </button>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs uppercase tracking-widest font-bold mb-2">
-              <Sparkles className="w-3.5 h-3.5" /> SECRET MISSION
+          </div>
+        </div>
+      )}
+
+      {/* SKRIBBL-STYLE CLUE PICKER (Only shown to active drawer if clue hasn't been chosen yet) */}
+      {drawerPromptOptions.length > 0 && isDrawer && !secretDrawObjective && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+          <div className="max-w-2xl w-full bg-[#0e1320] border-2 border-red-500/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(220,38,38,0.35)] text-center animate-fadeIn relative">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-300 font-mono text-xs uppercase tracking-widest font-bold mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-red-400" /> YOUR TURN TO DRAW
             </div>
-            <h2 className="text-xl sm:text-3xl font-black font-serif text-white mb-2">
-              Pick Your Secret Clue
+
+            <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-wide mb-1">
+              Choose a Secret Clue
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mb-6 max-w-md mx-auto">
-              Only you see these cards! Pick one clue to sketch for the room.
+            <p className="text-xs sm:text-sm text-slate-400 mb-6">
+              Pick 1 clue below to sketch for the room. Others will guess while you draw!
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
               {drawerPromptOptions.map((opt) => (
-                <div
+                <button
                   key={opt.optionIndex}
+                  type="button"
                   onMouseEnter={() => SoundService.playCardFlip()}
                   onClick={() => {
                     SoundService.playStamp();
-                    handleSelectPrompt(opt.optionIndex);
+                    handleSelectPrompt(opt.optionIndex, opt.previewText);
                   }}
-                  className="game-card p-5 cursor-pointer flex flex-col justify-between border-slate-700/80 hover:border-red-500 group"
+                  className="group relative p-5 rounded-2xl bg-[#161c2e] hover:bg-[#1e2740] border-2 border-slate-700 hover:border-red-500 transition-all text-left shadow-lg hover:shadow-red-500/25 hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">
-                        CARD #{String.fromCharCode(65 + opt.optionIndex)}
+                        Card #{opt.optionIndex + 1}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                        {opt.difficulty}
+                      <span
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
+                          opt.difficulty?.toLowerCase() === 'easy'
+                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60'
+                            : opt.difficulty?.toLowerCase() === 'hard'
+                            ? 'bg-purple-950/80 text-purple-300 border-purple-500/60'
+                            : 'bg-amber-950/80 text-amber-300 border-amber-500/60'
+                        }`}
+                      >
+                        {opt.difficulty || 'NORMAL'}
                       </span>
                     </div>
 
-                    <div className="text-sm font-bold text-white group-hover:text-red-300 transition-colors font-serif leading-snug">
+                    <div className="text-sm sm:text-base font-bold text-white group-hover:text-red-300 font-serif leading-snug">
                       "{opt.previewText}"
                     </div>
                   </div>
 
-                  <button className="mt-5 w-full py-2.5 rounded-xl game-btn-red text-white text-xs font-bold uppercase tracking-wider">
-                    Draw This Clue
-                  </button>
-                </div>
+                  <div className="mt-5 w-full py-2.5 rounded-xl bg-red-600 group-hover:bg-red-500 text-white text-xs font-bold font-mono uppercase tracking-wider text-center transition-colors shadow">
+                    Draw This Clue →
+                  </div>
+                </button>
               ))}
+            </div>
+
+            <div className="mt-5 flex items-center justify-between text-xs font-mono text-slate-500 pt-3 border-t border-slate-800">
+              <span>Auto-picks first option if not chosen</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (drawerPromptOptions.length > 0) {
+                    handleSelectPrompt(drawerPromptOptions[0].optionIndex, drawerPromptOptions[0].previewText);
+                  }
+                }}
+                className="text-slate-400 hover:text-white underline cursor-pointer"
+              >
+                Auto-Pick & Start
+              </button>
             </div>
           </div>
         </div>
@@ -594,13 +665,13 @@ export const Game: React.FC<GameProps> = ({
             playerCount={gameState.players.length}
             maxPlayers={8}
             currentPhase="STORY_SELECTION"
-            caseTitle={selectedStoryBanner ? selectedStoryBanner.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
+            caseTitle={selectedStoryBriefing ? selectedStoryBriefing.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
             roundText="Story Selection"
             onLeaveRoom={onExitGame}
           />
 
           <main className="flex-1 max-w-5xl mx-auto px-4 py-8 flex items-center justify-center w-full">
-            {selectedStoryBanner ? (
+            {selectedStoryBriefing ? (
               /* GRAND CASE BRIEFING (After Story is Picked) */
               <div className="w-full bg-[#0e131f]/95 border border-amber-500/60 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs uppercase tracking-widest font-bold">
@@ -608,19 +679,19 @@ export const Game: React.FC<GameProps> = ({
                 </div>
 
                 <h1 className="text-3xl sm:text-5xl font-black text-white font-serif tracking-wide">
-                  {selectedStoryBanner.title}
+                  {selectedStoryBriefing.title}
                 </h1>
 
                 <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-400">
                   <span className="px-3 py-1 bg-slate-800/80 rounded-lg text-amber-300 font-bold uppercase">
-                    {selectedStoryBanner.genre}
+                    {selectedStoryBriefing.genre}
                   </span>
                   <span>•</span>
                   <span className="text-slate-300">Mystery Case</span>
                 </div>
 
                 <div className="max-w-3xl mx-auto p-6 bg-slate-950/80 border border-slate-800 rounded-2xl font-serif text-base sm:text-lg text-slate-200 leading-relaxed italic text-left">
-                  "{selectedStoryBanner.description}"
+                  "{selectedStoryBriefing.description}"
                 </div>
 
                 <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-slate-400">
@@ -629,7 +700,7 @@ export const Game: React.FC<GameProps> = ({
                     <span>Getting clues ready for the drawing round...</span>
                   </div>
                   <button
-                    onClick={() => setSelectedStoryBanner(null)}
+                    onClick={() => setSelectedStoryBriefing(null)}
                     className="px-4 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold font-mono transition-colors"
                   >
                     Ready / Dismiss (×)
@@ -744,6 +815,7 @@ export const Game: React.FC<GameProps> = ({
           publicHint={publicHint || secretDrawHint}
           roomCode={room.code}
           channel={channel}
+          isDrawer={isDrawer}
           onSubmitDrawing={handleSubmitDrawing}
           onLeaveRoom={onExitGame}
         />
@@ -808,7 +880,7 @@ export const Game: React.FC<GameProps> = ({
         (gameState.status as string) !== 'CASE_INTRO' &&
         (gameState.status as string) !== 'COUNTDOWN' &&
         !isStorySelection &&
-        !selectedStoryBanner && (
+        !selectedStoryBriefing && (
           <div className="relative z-10 flex flex-col min-h-screen justify-center items-center py-12 px-4 text-center font-mono">
             <div className="w-14 h-14 rounded-full border-4 border-amber-600/40 border-t-amber-400 animate-spin mb-4" />
             <h2 className="text-xl font-serif font-bold text-amber-300">GAME IN PROGRESS</h2>
