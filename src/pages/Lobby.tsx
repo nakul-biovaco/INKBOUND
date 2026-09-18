@@ -191,7 +191,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
           {/* BIG ROOM CODE CARD (VINTAGE INVESTIGATION CASE FILE DOCKET) */}
           <div
-            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-4 sm:p-5 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none"
+            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-3.5 sm:p-5 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] overflow-hidden flex flex-col gap-3 select-none"
             style={{
               background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
               backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
@@ -211,64 +211,68 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
             </div>
 
-            <div className="pl-3 sm:pl-4 pt-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#6e533d]">
-                  CONFIDENTIAL CASE DOCKET NO.
-                </span>
-                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#e8dac6] text-[#543b27] border border-[#b89e7c]">
-                  FILE REF
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-3xl sm:text-4xl font-mono font-black tracking-widest text-[#1a110a] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] border-b-2 border-[#8c6d48]/40 pb-0.5">
-                  {room.code}
-                </span>
-                <button
-                  onClick={handleCopy}
-                  title="Copy Dossier Room Code"
-                  className="p-2 rounded-lg bg-[#ede1cf] hover:bg-[#dfceb7] text-[#3e2b1b] hover:text-[#1a110a] transition-all border-2 border-[#b89e7c] cursor-pointer shadow-sm active:scale-95"
-                >
-                  {hasCopied ? <Check className="w-4 h-4 text-emerald-800 stroke-[3]" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-
-              <div className="flex items-center flex-wrap gap-2 mt-2 text-xs text-[#5c422e] font-mono">
-                <span className="text-[11px] text-[#6e533d]">Status:</span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-950 font-mono font-black px-2 py-0.5 rounded bg-emerald-100/90 border-2 border-emerald-800 shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse" />
-                  CASE ROOM OPEN
-                </span>
-                {room.settings?.isPublic !== false && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-sky-950 font-mono font-bold px-2 py-0.5 rounded bg-sky-100/90 border border-sky-700 shadow-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping" />
-                    🌐 POLICE WIRE ACTIVE
+            {/* Top Row: Docket Header + Code on Left, Detective Counter Tag on Right */}
+            <div className="flex items-start justify-between gap-2.5 pl-2 sm:pl-3 pt-0.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-widest text-[#6e533d] truncate">
+                    CASE DOCKET NO.
                   </span>
-                )}
+                  <span className="text-[8px] sm:text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#e8dac6] text-[#543b27] border border-[#b89e7c] shrink-0">
+                    FILE REF
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-3 mt-1">
+                  <span className="text-2xl sm:text-4xl font-mono font-black tracking-widest text-[#1a110a] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] border-b-2 border-[#8c6d48]/40 pb-0.5">
+                    {room.code}
+                  </span>
+                  <button
+                    onClick={handleCopy}
+                    title="Copy Dossier Room Code"
+                    className="p-1.5 sm:p-2 rounded-lg bg-[#ede1cf] hover:bg-[#dfceb7] text-[#3e2b1b] hover:text-[#1a110a] transition-all border-2 border-[#b89e7c] cursor-pointer shadow-sm active:scale-95 shrink-0"
+                  >
+                    {hasCopied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800 stroke-[3]" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Detective Counter Badge */}
+              <div className="relative text-center flex flex-col items-center bg-[#fdfcf9] border-2 border-[#8c6d48] px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl shadow-[0_3px_10px_rgba(0,0,0,0.08),inset_0_0_20px_rgba(139,94,60,0.1)] shrink-0">
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border border-[#8c6d48] bg-[#d9c5ab] shadow-xs flex items-center justify-center">
+                  <div className="w-1 h-1 rounded-full bg-[#4a3421]" />
+                </div>
+                <div className="flex items-center gap-1 text-[#1a110a] font-mono font-black text-xs sm:text-base pt-0.5">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8c6d48]" />
+                  <span>
+                    {displayPlayers.length} / {maxSlots}
+                  </span>
+                </div>
+                <div className="text-[8px] sm:text-[9px] uppercase font-mono font-bold tracking-wider text-[#6e533d]">
+                  DETECTIVES
+                </div>
               </div>
             </div>
 
-            {/* Right Badge: Physical Evidence Tag with Brass Rivet */}
-            <div className="relative text-right flex flex-col items-center bg-[#fdfcf9] border-2 border-[#8c6d48] px-4 py-2.5 rounded-xl shadow-[0_3px_10px_rgba(0,0,0,0.08),inset_0_0_20px_rgba(139,94,60,0.1)] shrink-0 self-start sm:self-center">
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border border-[#8c6d48] bg-[#d9c5ab] shadow-xs flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-[#4a3421]" />
-              </div>
-              <div className="flex items-center gap-1.5 text-[#1a110a] font-mono font-black text-sm sm:text-base pt-0.5">
-                <Users className="w-4 h-4 text-[#8c6d48]" />
-                <span>
-                  {displayPlayers.length} / {maxSlots}
+            {/* Bottom Row: Status Line */}
+            <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 pl-2 sm:pl-3 text-xs text-[#5c422e] font-mono border-t border-[#bfa98e]/50 pt-2">
+              <span className="text-[10px] sm:text-[11px] text-[#6e533d] font-bold">Status:</span>
+              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-emerald-950 font-mono font-black px-2 py-0.5 rounded bg-emerald-100/90 border border-emerald-800 shadow-xs whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse" />
+                CASE ROOM OPEN
+              </span>
+              {room.settings?.isPublic !== false && (
+                <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] text-sky-950 font-mono font-bold px-2 py-0.5 rounded bg-sky-100/90 border border-sky-700 shadow-xs whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping" />
+                  🌐 POLICE WIRE ACTIVE
                 </span>
-              </div>
-              <div className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#6e533d] mt-0.5">
-                DETECTIVES
-              </div>
+              )}
             </div>
           </div>
 
           {/* PLAYERS LIST ROSTER (VINTAGE INVESTIGATION PHOTO MUGSHOT LEDGER) */}
           <div
-            className="relative text-[#221711] border-2 sm:border-3 border-[#8c6d48] rounded-2xl p-3.5 sm:p-4 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] space-y-2.5 select-none"
+            className="relative text-[#221711] border-2 sm:border-3 border-[#8c6d48] rounded-2xl p-3 sm:p-4 shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.15)] space-y-2 select-none"
             style={{
               background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
               backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
@@ -279,9 +283,9 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#6e533d] pb-1 border-b border-[#bfa98e]/70 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="text-red-900 font-black">★</span>
-                <span>ACTIVE DETECTIVE ROSTER • PERSONNEL LOG</span>
+                <span>ACTIVE DETECTIVE ROSTER</span>
               </span>
-              <span className="text-red-900 font-mono font-black text-[11px] bg-red-50 border border-red-800/40 px-2 py-0.2 rounded">
+              <span className="text-red-900 font-mono font-black text-[10px] sm:text-[11px] bg-red-50 border border-red-800/40 px-2 py-0.2 rounded">
                 {displayPlayers.length} ON DUTY
               </span>
             </div>
@@ -295,36 +299,31 @@ export const Lobby: React.FC<LobbyProps> = ({
                 return (
                   <div
                     key={p.id}
-                    className={`relative flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 transition-all ${
+                    className={`relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border-2 transition-all ${
                       isCurrent
                         ? 'bg-[#fffdf9] border-red-800 shadow-md ring-1 ring-red-800/50'
                         : 'bg-[#fffdf9]/95 border-[#b89e7c] hover:border-[#8c6d48] shadow-sm'
                     }`}
                   >
-                    {/* Corner subtle vignette pin */}
-                    <div className="absolute top-1 left-2 w-1.5 h-1.5 rounded-full bg-[#8c6d48]/40" />
-
-                    {/* Left: Vintage Photo Portrait Frame + Detective Dossier Name */}
-                    <div className="flex items-center gap-3">
+                    {/* Top / Left: Avatar + Nickname + Badges */}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       {/* Photo Print Frame */}
-                      <div className="relative p-1 bg-[#fdfcf9] border border-[#cfbeab] rounded shadow-sm">
+                      <div className="relative p-1 bg-[#fdfcf9] border border-[#cfbeab] rounded shadow-xs shrink-0">
                         <AvatarBadge avatar={p.avatar} size="sm" className="ring-1 ring-[#8c6d48]/50 contrast-105" />
-                        {/* Polaroid Bottom Border Margin */}
-                        <div className="h-1 bg-[#fdfcf9]" />
                       </div>
 
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-bold font-serif text-[#1a110a] tracking-tight">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs sm:text-sm font-bold font-serif text-[#1a110a] tracking-tight truncate max-w-[120px] sm:max-w-none">
                             {p.nickname}
                           </span>
                           {isCurrent && (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#ede1cf] text-[#543b27] border border-[#b89e7c]">
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#ede0ce] text-[#543b27] border border-[#b89e7c] shrink-0">
                               YOU
                             </span>
                           )}
                           {isPlayerHost && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 border border-amber-700 text-amber-950 shadow-xs">
+                            <div className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 border border-amber-700 text-amber-950 shadow-xs shrink-0">
                               <span className="text-amber-800 text-[10px]">★</span>
                               <span className="text-[9px] font-mono font-black tracking-wider">
                                 CHIEF
@@ -338,14 +337,14 @@ export const Lobby: React.FC<LobbyProps> = ({
                       </div>
                     </div>
 
-                    {/* Right: Authentic Stamped Ink Badge + Dossier Options */}
-                    <div className="flex items-center gap-2.5">
+                    {/* Bottom on Mobile / Right on Desktop: Status Badge + Options Menu */}
+                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 border-[#bfa98e]/40 pt-1.5 sm:pt-0">
                       {p.isReady ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-black text-emerald-950 bg-emerald-100 border-2 border-emerald-800 font-mono shadow-xs -rotate-1">
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-black text-emerald-950 bg-emerald-100 border-2 border-emerald-800 font-mono shadow-xs whitespace-nowrap -rotate-1">
                           ✓ READY ON DUTY
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold text-[#6e533d] bg-[#ede1cf] border border-[#bfa98e] font-mono shadow-xs">
+                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold text-[#6e533d] bg-[#ede1cf] border border-[#bfa98e] font-mono shadow-xs whitespace-nowrap">
                           ⏳ PREPARING
                         </span>
                       )}
@@ -401,26 +400,29 @@ export const Lobby: React.FC<LobbyProps> = ({
               {Array.from({ length: waitingSlotsCount }).map((_, i) => (
                 <div
                   key={`wait-${i}`}
-                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border-2 border-dashed border-[#bfa98e] text-[#7a5e45] text-xs font-mono bg-[#f4ede0]/60"
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border-2 border-dashed border-[#bfa98e] text-[#7a5e45] text-xs font-mono bg-[#f4ede0]/60 min-w-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-sm border-2 border-dashed border-[#8c6d48]/60 bg-[#ede1cf]/50 flex items-center justify-center text-xs text-[#7a5e45] font-bold">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-sm border-2 border-dashed border-[#8c6d48]/60 bg-[#ede1cf]/50 flex items-center justify-center text-xs text-[#7a5e45] font-bold shrink-0">
                       +
                     </div>
-                    <span className="text-[11px]">VACANT DESK • Awaiting detective...</span>
+                    <span className="text-[10px] sm:text-[11px] truncate">
+                      <span className="font-bold">VACANT DESK</span>
+                      <span className="hidden sm:inline"> • Awaiting detective...</span>
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {isHost && onAddBot && i === 0 && (
                       <button
                         onClick={onAddBot}
-                        className="px-2.5 py-1 rounded-lg border-2 border-red-800 bg-red-100 hover:bg-red-200 text-red-900 text-[10px] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                        className="px-2 py-1 rounded-lg border-2 border-red-800 bg-red-100 hover:bg-red-200 text-red-900 text-[10px] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer shadow-xs whitespace-nowrap active:scale-95"
                       >
-                        <span>+ Deploy Bot</span>
+                        + Bot
                       </button>
                     )}
                     <button
                       onClick={() => setIsInviteModalOpen(true)}
-                      className="px-3 py-1 rounded-lg border-2 border-[#b89e7c] bg-[#ede1cf] hover:bg-[#e4d3ba] text-[#3e2b1b] text-[11px] font-mono font-bold transition-colors cursor-pointer shadow-xs active:scale-95"
+                      className="px-2.5 sm:px-3 py-1 rounded-lg border-2 border-[#b89e7c] bg-[#ede1cf] hover:bg-[#e4d3ba] text-[#3e2b1b] text-[10px] sm:text-[11px] font-mono font-bold transition-colors cursor-pointer shadow-xs whitespace-nowrap active:scale-95"
                     >
                       Enlist
                     </button>

@@ -209,9 +209,9 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
       {/* MAIN 3-ZONE LAYOUT */}
       <main className="relative z-10 w-full max-w-[1440px] mx-auto px-2 sm:px-6 py-4 flex flex-col lg:flex-row gap-4 items-start">
         {/* ======================================================== */}
-        {/* ZONE 1: FAR LEFT VERTICAL TABS & NOTE (1.5 cols)          */}
+        {/* ZONE 1: VERTICAL ON DESKTOP, HORIZONTAL TABS ON MOBILE     */}
         {/* ======================================================== */}
-        <div className="w-full lg:w-44 flex flex-col gap-4 flex-shrink-0">
+        <div className="w-full lg:w-44 flex flex-row lg:flex-col gap-2 sm:gap-4 flex-shrink-0 items-center lg:items-stretch overflow-x-auto pb-1 lg:pb-0">
           {/* Back button above tabs */}
           <button
             onClick={() => {
@@ -222,26 +222,23 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
               }
             }}
             title={activeTab === 'Evidence' ? 'Exit to Headquarters' : 'Return to Evidence Board'}
-            className="p-2.5 w-10 h-10 rounded-xl bg-[#fbf7ee] border-2 border-[#8c6d48] text-[#3e2a1b] hover:text-red-800 flex items-center justify-center transition-colors shadow-md cursor-pointer hover:border-red-800"
+            className="p-2 sm:p-2.5 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#fbf7ee] border-2 border-[#8c6d48] text-[#3e2a1b] hover:text-red-800 flex items-center justify-center transition-colors shadow-md cursor-pointer hover:border-red-800 shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          {/* Vertical Tab Navigation (Aged Manila File Folder Index Tabs) */}
+          {/* Tab Navigation (Horizontal bar on mobile, vertical docket on desktop) */}
           <div
-            className="relative border-2 border-[#8c6d48] rounded-2xl p-2.5 shadow-xl space-y-1.5 text-[#221711] overflow-hidden"
+            className="relative border-2 border-[#8c6d48] rounded-2xl p-1.5 sm:p-2.5 shadow-xl flex flex-row lg:flex-col gap-1 sm:gap-1.5 text-[#221711] overflow-x-auto flex-1 lg:flex-none"
             style={parchmentStyle}
           >
-            <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/60 pointer-events-none" />
-            <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/60 pointer-events-none" />
-
-            <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#7a5839] border-b border-[#bfa98e]/70 mb-1">
+            <div className="hidden lg:block px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#7a5839] border-b border-[#bfa98e]/70 mb-1">
               FILE DOCKETS
             </div>
 
             <button
               onClick={() => setActiveTab('Evidence')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
                 activeTab === 'Evidence'
                   ? 'bg-red-800 text-white shadow-md border border-red-900'
                   : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
@@ -253,7 +250,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
             <button
               onClick={() => setActiveTab('Timeline')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
                 activeTab === 'Timeline'
                   ? 'bg-red-800 text-white shadow-md border border-red-900'
                   : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
@@ -265,7 +262,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
             <button
               onClick={() => setActiveTab('Connections')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
                 activeTab === 'Connections'
                   ? 'bg-red-800 text-white shadow-md border border-red-900'
                   : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
@@ -277,7 +274,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
             <button
               onClick={() => setActiveTab('Question')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
                 activeTab === 'Question'
                   ? 'bg-red-800 text-white shadow-md border border-red-900'
                   : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
@@ -289,7 +286,7 @@ export const InvestigationBoard: React.FC<InvestigationBoardProps> = ({
 
             <button
               onClick={() => setActiveTab('Notes')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
                 activeTab === 'Notes'
                   ? 'bg-red-800 text-white shadow-md border border-red-900'
                   : 'text-[#4e3725] hover:text-[#1a110a] hover:bg-[#ede0ce]'
