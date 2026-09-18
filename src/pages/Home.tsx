@@ -16,7 +16,6 @@ import {
   Search,
   Users,
   Eye,
-  Globe,
   Radio,
   Zap,
   Play,
@@ -267,64 +266,67 @@ export const Home: React.FC<HomeProps> = ({
             <div className="h-[1px] w-12 sm:w-20 bg-gradient-to-l from-transparent to-red-600/80" />
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-light leading-relaxed">
-            A drawing & guessing game with a mystery twist.
-            <br className="hidden sm:inline" />
-            <span className="text-amber-300 font-medium"> Sketch your secret clue, catch who is lying, and crack the case with friends!</span>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed font-sans">
+            Draw secret clues, spot the liar, and solve the mystery together.
           </p>
         </div>
 
         {/* ======================================================== */}
-        {/* GLOBAL ONLINE QUICK PLAY HERO BANNER                    */}
+        {/* QUICK MATCH DISPATCH DOCKET (VINTAGE PHYSICAL PARCHMENT) */}
         {/* ======================================================== */}
-        <div className="w-full mb-8 relative group">
-          {/* Subtle Ambient Radial Glow */}
-          <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-red-600/40 via-amber-500/30 to-red-600/40 blur-xl opacity-75 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
+        <div className="w-full mb-8 relative select-none">
+          <div
+            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl p-5 sm:p-6 shadow-[0_15px_45px_rgba(0,0,0,0.6),inset_0_0_50px_rgba(139,94,60,0.15)] overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Corner Decorative Accents */}
+            <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1.5 right-1.5 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 left-1.5 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1.5 right-1.5 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
 
-          <div className="relative rounded-3xl bg-gradient-to-b from-[#141a29]/95 via-[#0d121c]/95 to-[#090c14]/95 border-2 border-red-600/40 shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-5 sm:p-6 md:p-8 backdrop-blur-xl overflow-hidden">
-            {/* Vintage Grid & Scanline Atmosphere */}
-            <div className="absolute inset-0 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Vintage Brass Paperclip Accent */}
+            <div className="absolute -top-1.5 left-8 w-3.5 h-7 rounded-full border-2 border-[#8c6d48] -rotate-6 shadow-xs opacity-80 pointer-events-none bg-[#d8c3aa]/40" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              {/* Left Column: Dispatch Title & Info */}
-              <div className="space-y-3 text-center md:text-left flex-1">
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-red-950/80 text-red-300 border border-red-600/50 shadow-inner">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                    GLOBAL MULTIPLAYER QUEUE
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
+              {/* Left Column: Humanized Title & Genre Tabs */}
+              <div className="space-y-2.5 text-center md:text-left flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-mono font-black tracking-widest uppercase bg-red-800 text-white shadow-xs -rotate-1">
+                    ★ QUICK MATCH
                   </span>
 
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-medium bg-black/60 text-amber-300 border border-amber-600/30">
-                    <Globe className="w-3 h-3 text-amber-400" />
-                    <span>{onlineStats.onlineDetectives} Detectives Online</span>
-                    <span className="text-slate-500">•</span>
-                    <span>{onlineStats.activeRooms} Public Bureaus</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#ede0ce] text-[#543b27] border border-[#b89e7c]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    <span>{onlineStats.onlineDetectives} online</span>
+                    <span className="text-[#8c6d48]">•</span>
+                    <span>{onlineStats.activeRooms} public games</span>
                   </span>
                 </div>
 
                 <div className="space-y-1">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white font-serif tracking-tight flex items-center justify-center md:justify-start gap-3">
-                    <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400 fill-amber-400/30 shrink-0 animate-pulse" />
-                    <span>Instant Quick Play</span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-[#1a110a] font-serif tracking-tight flex items-center justify-center md:justify-start gap-2.5">
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-red-800 shrink-0" />
+                    <span>Jump into a Game</span>
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 max-w-xl font-light leading-relaxed">
-                    Skip private room codes! One click matches you into active global investigations with players worldwide.
+                  <p className="text-xs sm:text-sm text-[#5c422e] font-serif max-w-lg leading-relaxed">
+                    No code needed. Join an active game with other detectives right away.
                   </p>
                 </div>
 
-                {/* Case Theme Pill Filter */}
-                <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-2 text-[11px] font-mono">
-                  <span className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold mr-1">Case Genre:</span>
+                {/* Case Theme Filter as Vintage Tabs */}
+                <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-1.5 text-[11px] font-mono">
+                  <span className="text-[#7a5839] text-[10px] uppercase tracking-wider font-bold mr-1">Theme:</span>
                   {[
-                    { id: 'all', label: '⚡ All Mysteries (Fastest)' },
-                    { id: 'noir', label: '🕵️ Classic Noir' },
-                    { id: 'cyberpunk', label: '🤖 Cyberpunk' },
-                    { id: 'manor', label: '🕯️ Gothic Manor' },
-                    { id: 'heist', label: '💎 Museum Heist' },
+                    { id: 'all', label: 'Any Theme' },
+                    { id: 'noir', label: 'Classic Noir' },
+                    { id: 'cyberpunk', label: 'Cyberpunk' },
+                    { id: 'manor', label: 'Gothic Manor' },
+                    { id: 'heist', label: 'Museum Heist' },
                   ].map((genre) => (
                     <button
                       key={genre.id}
@@ -333,10 +335,10 @@ export const Home: React.FC<HomeProps> = ({
                         SoundService.playBadgeClick();
                         setSelectedGenre(genre.id);
                       }}
-                      className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
                         selectedGenre === genre.id
-                          ? 'bg-red-600/30 border-red-500 text-white font-bold shadow-md shadow-red-950/60 scale-105'
-                          : 'bg-black/40 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-500'
+                          ? 'bg-red-800 text-white border-red-900 font-bold shadow-xs scale-102'
+                          : 'bg-[#ede0ce] border-[#b89e7c] text-[#543b27] hover:bg-[#fffdf9] hover:border-[#8c6d48]'
                       }`}
                     >
                       {genre.label}
@@ -345,7 +347,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
               </div>
 
-              {/* Right Column: Prominent Play Button */}
+              {/* Right Column: Physical Paper Action Button */}
               <div className="flex flex-col items-center shrink-0 w-full sm:w-auto">
                 <button
                   type="button"
@@ -354,22 +356,22 @@ export const Home: React.FC<HomeProps> = ({
                     SoundService.playStamp();
                     onQuickPlay?.(selectedGenre);
                   }}
-                  className="w-full sm:w-72 md:w-80 py-4 px-8 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:via-rose-500 hover:to-amber-500 text-white font-serif font-black text-lg sm:text-xl tracking-wider uppercase flex items-center justify-center gap-3 cursor-pointer shadow-[0_10px_35px_rgba(220,38,38,0.6)] transform hover:scale-[1.03] active:scale-[0.98] transition-all border-2 border-red-400/50 disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                  className="w-full sm:w-64 py-3.5 px-6 rounded-xl bg-red-800 hover:bg-red-700 active:bg-red-900 text-white font-serif font-black text-base sm:text-lg tracking-wider uppercase flex items-center justify-center gap-2.5 cursor-pointer shadow-lg transition-all border border-red-950 disabled:opacity-60 disabled:cursor-not-allowed group/btn"
                 >
                   {isQuickPlaying ? (
                     <>
-                      <Loader2 className="w-6 h-6 animate-spin text-white" />
-                      <span>Matching Bureau...</span>
+                      <Loader2 className="w-5 h-5 animate-spin text-white" />
+                      <span className="font-mono text-sm">Finding Game...</span>
                     </>
                   ) : (
                     <>
-                      <Play className="w-6 h-6 text-white fill-white group-hover/btn:scale-110 transition-transform" />
-                      <span>PLAY ONLINE NOW</span>
+                      <Play className="w-5 h-5 text-white fill-white group-hover/btn:scale-110 transition-transform" />
+                      <span>Play Now</span>
                     </>
                   )}
                 </button>
-                <span className="mt-2 text-[10px] font-mono text-slate-400 tracking-wider">
-                  Aggregates players into the most populated room
+                <span className="mt-1.5 text-[10px] font-mono text-[#7a5839]">
+                  Instant match • 2–8 players
                 </span>
               </div>
             </div>

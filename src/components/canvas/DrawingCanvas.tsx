@@ -1201,32 +1201,33 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             )}
 
             {/* Recent Live Guesses Stream */}
-            <div className="pt-2 border-t border-[#bfa98e]/80">
-              <div className="text-[10px] font-mono text-[#6e533d] mb-1.5 flex items-center justify-between font-bold">
-                <span>Recent Telegraph Guesses:</span>
-                {isCurrentDrawer && <span className="text-[9px] text-red-900 font-black uppercase tracking-wider">DRAWER MONITORING</span>}
+            <div className="pt-2.5 border-t border-[#bfa98e]/80">
+              <div className="text-[10px] font-mono text-[#6e533d] mb-2 flex items-center justify-between font-bold">
+                <span className="uppercase tracking-wider">Recent Telegraph Guesses:</span>
+                {isCurrentDrawer && <span className="text-[9px] text-red-900 font-black uppercase tracking-wider bg-red-100 px-2 py-0.5 rounded border border-red-700">DRAWER MONITORING</span>}
               </div>
-              <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto pr-1">
+              <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
                 {guessFeed.length === 0 ? (
-                  <span className="text-[11px] text-[#8a725b] italic font-mono">
+                  <span className="text-xs text-[#8a725b] italic font-mono py-1">
                     {isCurrentDrawer ? 'Waiting for investigators to type guesses...' : 'No guesses recorded yet. Be the first to deduce!'}
                   </span>
                 ) : (
                   guessFeed.slice(-6).map((g, idx) => (
-                    <span
+                    <div
                       key={idx}
-                      className={`px-2 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1.5 border shadow-sm ${g.isCorrect
-                          ? 'bg-emerald-100 border-emerald-700 text-emerald-950 font-black animate-bounce'
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono flex items-center gap-1.5 border shadow-sm transition-all ${
+                        g.isCorrect
+                          ? 'bg-[#e8f5e9] border-[#2e7d32] text-[#1b5e20] font-black'
                           : g.isClose
-                            ? 'bg-amber-100 border-amber-600 text-amber-950 font-bold'
-                            : 'bg-[#f4ede0] border-[#b89e7c] text-[#1a110a]'
-                        }`}
+                          ? 'bg-[#fff8e1] border-[#f57f17] text-[#e65100] font-bold'
+                          : 'bg-[#fdfbf6] border-[#b89e7c] text-[#1a110a]'
+                      }`}
                     >
-                      <span className="font-black text-[#1a110a]">{g.playerName}:</span>
-                      <span>{g.text}</span>
-                      {g.isClose && <span className="text-amber-800 text-[9px] font-black">★ CLOSE</span>}
-                      {g.isCorrect && <span className="text-emerald-800 text-[9px] font-black">✓ SOLVED</span>}
-                    </span>
+                      <span className="font-bold text-[#1a110a]">{g.playerName}:</span>
+                      <span className="font-serif font-bold">{g.text}</span>
+                      {g.isClose && <span className="px-1.5 py-0.5 rounded bg-amber-200 border border-amber-600 text-amber-950 text-[9px] font-black uppercase tracking-wider">★ CLOSE</span>}
+                      {g.isCorrect && <span className="px-1.5 py-0.5 rounded bg-emerald-200 border border-emerald-800 text-emerald-950 text-[9px] font-black uppercase tracking-wider">✓ SOLVED</span>}
+                    </div>
                   ))
                 )}
               </div>

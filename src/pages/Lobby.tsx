@@ -20,6 +20,7 @@ import { AvatarBadge } from '../components/common/AvatarBadge';
 import { GameService } from '../services/gameService';
 import { buildInviteUrl } from '../utils/inviteCrypto';
 import { SoundService } from '../services/soundService';
+import { getStoryArtwork } from '../utils/storyArtwork';
 
 interface LobbyProps {
   room: Room;
@@ -87,6 +88,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   }, [room.settings?.rounds]);
 
   const activeGenre = GENRE_OPTIONS[selectedCase] || GENRE_OPTIONS.all;
+  const currentArtwork = getStoryArtwork(activeGenre.title, '', selectedCase);
   const isHost = currentUser.id === room.hostId || currentUser.isHost;
 
 
@@ -135,27 +137,31 @@ export const Lobby: React.FC<LobbyProps> = ({
         {/* ======================================================== */}
         {/* LEFT COLUMN: PINNED POLAROIDS & ROOM CHAT (3 cols)        */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 flex flex-col gap-4 order-3 lg:order-1">
+        <div className="lg:col-span-3 flex flex-col gap-4 order-3 lg:order-1 items-center lg:items-stretch">
           {/* Polaroid Crime Photo & Pinned Notes */}
-          <div className="relative hidden md:block">
+          <div className="relative flex flex-col items-center lg:items-start mb-1">
             {/* Handwritten Note Top */}
-            <div className="font-handwriting text-amber-200/85 text-sm -rotate-3 mb-2 px-2 drop-shadow">
-              "Different eyes. Different clues. One truth."
+            <div className="font-handwriting text-amber-200/90 text-xs sm:text-sm -rotate-2 mb-2 px-2 drop-shadow text-center lg:text-left max-w-xs">
+              {currentArtwork.quote}
             </div>
 
             {/* Vintage Polaroid Photo */}
-            <div className="relative w-48 bg-white p-2 pb-5 rounded shadow-2xl rotate-2 border border-slate-300/40">
+            <div className="relative w-52 sm:w-56 bg-[#fcfbfa] p-2.5 pb-6 rounded-md shadow-2xl rotate-1 hover:rotate-0 transition-all duration-300 border border-stone-300/70">
               {/* Red Pin */}
-              <div className="w-3.5 h-3.5 rounded-full bg-red-600 absolute -top-1.5 left-1/2 -translate-x-1/2 shadow-md border border-red-900" />
-              <div className="w-full aspect-[4/3] bg-slate-900 overflow-hidden rounded-xs">
+              <div className="w-4 h-4 rounded-full bg-red-700 absolute -top-2 left-1/2 -translate-x-1/2 shadow-md border-2 border-red-950 z-10" />
+              <div className="w-full aspect-[4/3] bg-stone-900 overflow-hidden rounded-xs relative">
                 <img
-                  src="/assets/museum_heist.jpg"
-                  alt="Crime Scene"
-                  className="w-full h-full object-cover filter contrast-125 sepia-[0.3]"
+                  key={currentArtwork.img}
+                  src={currentArtwork.img}
+                  alt={currentArtwork.caption}
+                  className="w-full h-full object-cover filter contrast-115 sepia-[0.2] transition-opacity duration-500 animate-fadeIn"
                 />
+                <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[9px] font-mono text-amber-200 font-bold uppercase tracking-wider border border-amber-400/30">
+                  {activeGenre.title.split(' ')[0]}
+                </div>
               </div>
-              <div className="mt-1.5 font-handwriting text-[13px] text-slate-800 text-center italic font-bold">
-                The truth is a puzzle.
+              <div className="mt-2 font-handwriting text-[13px] text-stone-800 text-center italic font-bold tracking-wide">
+                {currentArtwork.caption}
               </div>
             </div>
           </div>
@@ -820,27 +826,37 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {Object.values(GENRE_OPTIONS).map((g) => (
-                <div
-                  key={g.id}
-                  onClick={() => {
-                    setSelectedCase(g.id);
-                    onUpdateSettings({ ...room.settings, selectedCaseId: g.id });
-                    setIsCasePickerOpen(false);
-                  }}
-                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 shadow-sm ${
-                    selectedCase === g.id
-                      ? 'bg-[#fffdf9] border-red-800 ring-2 ring-red-800 shadow-md'
-                      : 'bg-[#ede1cf] border-[#b89e7c] hover:border-[#8c6d48] hover:bg-[#fffdf9]'
-                  }`}
-                >
-                  <span className="text-2xl">{g.icon}</span>
-                  <div>
-                    <div className="text-xs font-serif font-black text-[#1a110a]">{g.title}</div>
-                    <div className="text-[10px] text-[#5c422e] font-mono mt-0.5 leading-snug">{g.desc}</div>
+              {Object.values(GENRE_OPTIONS).map((g) => {
+                const artwork = getStoryArtwork(g.title, '', g.id);
+                return (
+                  <div
+                    key={g.id}
+                    onClick={() => {
+                      SoundService.playStamp();
+                      setSelectedCase(g.id);
+                      onUpdateSettings({ ...room.settings, selectedCaseId: g.id });
+                      setIsCasePickerOpen(false);
+                    }}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 shadow-sm ${
+                      selectedCase === g.id
+                        ? 'bg-[#fffdf9] border-red-800 ring-2 ring-red-800/80 shadow-md scale-[1.01]'
+                        : 'bg-[#ede1cf] border-[#b89e7c] hover:border-[#8c6d48] hover:bg-[#fffdf9]'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-[#b89e7c] shadow-xs">
+                      <img
+                        src={artwork.img}
+                        alt={g.title}
+                        className="w-full h-full object-cover filter contrast-110"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-serif font-black text-[#1a110a] truncate">{g.title}</div>
+                      <div className="text-[10px] text-[#5c422e] font-mono mt-0.5 line-clamp-2 leading-tight">{g.desc}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { GameHeader } from '../common/GameHeader';
 import { AvatarBadge } from '../common/AvatarBadge';
 import { SoundService } from '../../services/soundService';
 import { CaseManager } from '../../game/CaseManager';
+import { getStoryArtwork } from '../../utils/storyArtwork';
 
 interface CinematicRevealProps {
   gameState: AuthoritativeGameState;
@@ -55,16 +56,18 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
         { time: 'Phase 3', text: 'The true motive was hidden to mislead investigators.' },
       ];
 
+  const currentArtwork = getStoryArtwork(currentCase?.genre, currentCase?.title, currentCase?.id);
+
   return (
     <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
-        className="fixed inset-0 bg-cover bg-center opacity-35 mix-blend-screen pointer-events-none"
+        className="fixed inset-0 bg-cover bg-center opacity-40 mix-blend-screen pointer-events-none"
         style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
       />
-      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/80 via-[#08090d]/60 to-[#08090d]/95 pointer-events-none" />
 
-      {/* TOP UNIVERSAL HEADER */}
+      {/* UNIVERSAL HEADER */}
       <GameHeader
         currentUser={currentUser}
         roomCode={roomCode || gameState.roomId.substring(0, 6).toUpperCase()}
@@ -85,22 +88,22 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
             <div className="w-4 h-4 rounded-full bg-red-800 absolute -top-2 left-1/2 -translate-x-1/2 shadow-md border-2 border-[#541010] z-10" />
             <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-950 relative border border-[#cfbeab]">
               <img
-                src="/assets/museum_heist.jpg"
-                alt="Museum Crime Scene"
+                src={currentArtwork.img}
+                alt={currentArtwork.caption}
                 className="w-full h-full object-cover filter contrast-115 sepia-[0.25]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
               <div className="absolute bottom-2 left-3 right-3 text-[11px] font-mono text-amber-200 font-bold uppercase tracking-wider">
-                CRIME SCENE: {currentCase?.setting || 'Metropolitan Antiquities Museum Vault'}
+                CRIME SCENE: {currentCase?.setting || currentArtwork.caption}
               </div>
             </div>
             <div className="mt-2 text-center font-serif text-xs font-bold text-[#4a3525]">
-              EXHIBIT A: CRIME SCENE RECONSTRUCTION
+              EXHIBIT A: {currentArtwork.badge}
             </div>
           </div>
 
           <div className="bg-[#f5ebd7] p-4 rounded-xl shadow-xl -rotate-1 border-2 border-[#d6be96] text-[#2c1d10] font-handwriting text-base leading-snug">
-            "The truth was hiding in plain sight... in every single detective sketch."
+            {currentArtwork.quote}
           </div>
         </div>
 

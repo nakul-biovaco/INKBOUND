@@ -16,6 +16,7 @@ import { ClueDiscoveredCard } from '../components/common/ClueDiscoveredCard';
 import { TurnTransitionOverlay, TurnTransitionData } from '../components/common/TurnTransitionOverlay';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
 import { SoundService } from '../services/soundService';
+import { getStoryArtwork } from '../utils/storyArtwork';
 
 interface GameProps {
   room: Room;
@@ -780,60 +781,51 @@ export const Game: React.FC<GameProps> = ({
       />
       <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
 
-      {/* INTEGRATED HUD GAME ALERT BANNER (Non-intrusive top-right toast) */}
+      {/* INTEGRATED HUD GAME ALERT BANNER (VINTAGE TELEGRAPH DISPATCH) */}
       {gameBanner && (
-        <div className="fixed top-14 sm:top-16 right-3 sm:right-6 z-50 max-w-sm w-[calc(100vw-24px)] sm:w-[380px] animate-fadeIn select-none pointer-events-auto">
+        <div className="fixed top-14 sm:top-16 right-3 sm:right-6 z-50 max-w-sm w-[calc(100vw-24px)] sm:w-[400px] animate-fadeIn select-none pointer-events-auto">
           <div
             onClick={() => setGameBanner(null)}
-            className={`cursor-pointer rounded-2xl p-2.5 sm:p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${gameBanner.type === 'solved'
-                ? 'bg-emerald-950/95 border-emerald-500 text-emerald-100 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:bg-emerald-900/95'
-                : gameBanner.type === 'story'
-                  ? 'bg-amber-950/95 border-amber-500 text-amber-100 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:bg-amber-900/95'
-                  : gameBanner.type === 'reveal'
-                    ? 'bg-purple-950/95 border-purple-500 text-purple-100 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:bg-purple-900/95'
-                    : gameBanner.type === 'turn'
-                      ? 'bg-sky-950/95 border-sky-500 text-sky-100 shadow-[0_0_30px_rgba(14,165,233,0.3)] hover:bg-sky-900/95'
-                      : 'bg-slate-900/95 border-slate-600 text-slate-200 hover:bg-slate-800/95'
-              }`}
+            className="cursor-pointer rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3 border-2 border-[#8c6d48] text-[#221711] overflow-hidden relative transition-all hover:scale-[1.01]"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
           >
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border ${gameBanner.type === 'solved'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                    : gameBanner.type === 'story'
-                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                      : gameBanner.type === 'reveal'
-                        ? 'bg-purple-500/20 border-purple-400 text-purple-300'
-                        : 'bg-sky-500/20 border-sky-400 text-sky-300'
-                  }`}
-              >
+            {/* Corner Decorative Accents */}
+            <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 border-2 border-[#8c6d48] bg-[#ede0ce] text-red-800 shadow-inner">
                 {gameBanner.type === 'solved' ? (
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
+                  <CheckCircle className="w-5 h-5 text-emerald-800" />
                 ) : gameBanner.type === 'story' ? (
-                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+                  <Sparkles className="w-5 h-5 text-amber-800" />
                 ) : gameBanner.type === 'reveal' ? (
-                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <BookOpen className="w-5 h-5 text-red-800" />
                 ) : (
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  <Clock className="w-5 h-5 text-[#7a5839]" />
                 )}
               </div>
 
               <div className="min-w-0 text-left">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider opacity-90">
-                    {gameBanner.badge}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="px-1.5 py-0.2 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[9px] font-black uppercase tracking-wider">
+                    ★ {gameBanner.badge}
                   </span>
                   {gameBanner.pointsText && (
-                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-emerald-300">
-                      • {gameBanner.pointsText}
+                    <span className="text-[10px] font-mono font-bold text-emerald-900 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-700/60">
+                      {gameBanner.pointsText}
                     </span>
                   )}
                 </div>
-                <div className="text-xs sm:text-sm font-bold text-white truncate font-serif">
+                <div className="text-xs sm:text-sm font-black text-[#1a110a] truncate font-serif mt-0.5">
                   {gameBanner.title}
                 </div>
                 {gameBanner.subtitle && (
-                  <div className="text-[11px] sm:text-xs text-slate-300 truncate font-sans">
+                  <div className="text-[11px] sm:text-xs text-[#5c4028] truncate font-serif italic">
                     {gameBanner.subtitle}
                   </div>
                 )}
@@ -846,7 +838,7 @@ export const Game: React.FC<GameProps> = ({
                 e.stopPropagation();
                 setGameBanner(null);
               }}
-              className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/60 text-white/80 hover:text-white text-xs font-mono font-bold transition-colors shrink-0"
+              className="w-6 h-6 rounded-lg bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] text-xs font-mono font-bold transition-colors shrink-0 flex items-center justify-center cursor-pointer shadow-xs"
               title="Dismiss"
             >
               ×
@@ -855,25 +847,23 @@ export const Game: React.FC<GameProps> = ({
         </div>
       )}
 
-      {/* IN-GAME LIVE CHAT FLOATING POPUP TOASTS */}
+      {/* IN-GAME LIVE CHAT FLOATING POPUP TOASTS (VINTAGE DISPATCH SLIPS) */}
       {chatToasts.length > 0 && (
         <>
-          {/* MOBILE SLIM TOP TICKER (Non-intrusive, never covers canvas or bottom guess input) */}
+          {/* MOBILE SLIM TOP TICKER */}
           <div className="sm:hidden fixed top-14 left-2 right-2 z-50 pointer-events-none flex justify-center">
             {chatToasts.slice(-1).map((toast) => (
               <div
                 key={toast.id}
-                className={`pointer-events-none max-w-[94vw] px-3 py-1.5 rounded-full shadow-lg backdrop-blur-md border text-xs flex items-center gap-2 animate-fadeIn transition-all ${toast.isClose
-                    ? 'bg-amber-950/95 border-amber-500 text-amber-200 shadow-amber-900/40'
-                    : toast.isGuess
-                      ? 'bg-[#0e1626]/95 border-sky-500/80 text-sky-200'
-                      : 'bg-[#0f172a]/95 border-slate-700 text-slate-200'
-                  }`}
+                className="pointer-events-none max-w-[94vw] px-3.5 py-1.5 rounded-full shadow-lg border-2 border-[#8c6d48] text-xs flex items-center gap-2 animate-fadeIn transition-all text-[#221711] select-none"
+                style={{
+                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                }}
               >
                 <span className="text-xs shrink-0">{toast.senderAvatar || '🕵️‍♂️'}</span>
-                <span className="font-bold text-white shrink-0 truncate max-w-[70px]">{toast.senderName}:</span>
-                <span className="truncate text-slate-300 font-medium">{toast.text}</span>
-                {toast.isClose && <span className="text-[9px] font-bold text-amber-300 font-mono shrink-0">★ CLOSE</span>}
+                <span className="font-bold text-[#1a110a] shrink-0 truncate max-w-[80px] font-mono">{toast.senderName}:</span>
+                <span className="truncate text-[#3e2b1b] font-medium font-serif italic">{toast.text}</span>
+                {toast.isClose && <span className="text-[9px] font-black text-amber-900 bg-amber-200 border border-amber-600 px-1 rounded font-mono shrink-0">★ CLOSE</span>}
               </div>
             ))}
           </div>
@@ -883,47 +873,47 @@ export const Game: React.FC<GameProps> = ({
             {chatToasts.map((toast) => (
               <div
                 key={toast.id}
-                className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${toast.isClose
-                    ? 'bg-amber-950/95 border-amber-500/80 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)]'
-                    : toast.isGuess
-                      ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
-                      : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
-                  }`}
+                className="pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-xl border-2 border-[#8c6d48] animate-fadeIn transition-all duration-300 text-[#221711] select-none"
+                style={{
+                  background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                  backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                  backgroundSize: '16px 16px, 100% 100%',
+                }}
               >
-                <div className="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center text-lg shrink-0 shadow-inner">
                   {toast.senderAvatar || '🕵️‍♂️'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-bold text-xs truncate text-white">
+                      <span className="font-bold text-xs truncate text-[#1a110a] font-mono">
                         {toast.senderName}
                       </span>
                       {toast.isGuess ? (
                         <span
-                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
-                            }`}
+                          className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-black uppercase ${
+                            toast.isClose ? 'bg-amber-200 text-amber-950 border border-amber-600' : 'bg-red-100 text-red-900 border border-red-700'
+                          }`}
                         >
-                          {toast.isClose ? 'Almost' : 'Guess'}
+                          {toast.isClose ? '★ CLOSE' : 'GUESS'}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-medium">
-                          <MessageSquare className="w-2.5 h-2.5" /> Chat
+                        <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#ede0ce] text-[#5c4028] font-bold border border-[#bfa98e]">
+                          <MessageSquare className="w-2.5 h-2.5" /> Dispatch
                         </span>
                       )}
                     </div>
-                    <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                    <span className="text-[9px] font-mono text-[#7a5839] shrink-0 font-bold">
                       {toast.timestamp}
                     </span>
                   </div>
-                  <p className="text-xs break-words leading-relaxed font-medium">
-                    {toast.text}
+                  <p className="text-xs break-words leading-relaxed font-serif text-[#2e1f13] italic">
+                    "{toast.text}"
                   </p>
                 </div>
                 <button
-                  type="button"
                   onClick={() => setChatToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-                  className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0 cursor-pointer"
+                  className="text-[#8c6d48] hover:text-[#1a110a] p-0.5 rounded transition-colors shrink-0 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1087,9 +1077,35 @@ export const Game: React.FC<GameProps> = ({
                     <span className="text-[#5c422e] font-bold">CLASSIFIED DOSSIER</span>
                   </div>
 
-                  <div className="max-w-3xl mx-auto p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic text-left shadow-inner">
-                    "{selectedStoryBriefing.description}"
-                  </div>
+                  {(() => {
+                    const artwork = getStoryArtwork(selectedStoryBriefing.genre, selectedStoryBriefing.title);
+                    return (
+                      <div className="flex flex-col md:flex-row items-center gap-6 max-w-4xl mx-auto text-left">
+                        {/* Evidence Photo Polaroid */}
+                        <div className="relative w-64 shrink-0 bg-[#fdfcf9] p-3 pb-6 rounded-xl shadow-2xl border-2 border-[#b89e7c] rotate-1">
+                          <div className="w-4 h-4 rounded-full bg-red-800 absolute -top-2 left-1/2 -translate-x-1/2 shadow-md border-2 border-[#541010] z-10" />
+                          <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-950 border border-[#cfbeab]">
+                            <img
+                              src={artwork.img}
+                              alt={selectedStoryBriefing.title}
+                              className="w-full h-full object-cover filter contrast-115 sepia-[0.2]"
+                            />
+                          </div>
+                          <div className="mt-2 text-center font-mono text-[10px] font-bold text-[#4a3525] uppercase tracking-wider">
+                            {artwork.badge}
+                          </div>
+                        </div>
+
+                        {/* Briefing Text */}
+                        <div className="flex-1 p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic shadow-inner space-y-3">
+                          <p>"{selectedStoryBriefing.description}"</p>
+                          <div className="font-handwriting text-sm text-[#7a5839] not-italic border-t border-[#bfa98e]/50 pt-2">
+                            {artwork.quote}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-[#5c422e]">
                     <div className="flex items-center gap-2">
@@ -1137,40 +1153,59 @@ export const Game: React.FC<GameProps> = ({
 
                   {offeredStories.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-                      {offeredStories.map((st) => (
-                        <div
-                          key={st.storyId}
-                          onMouseEnter={() => SoundService.playCardFlip()}
-                          onClick={() => {
-                            SoundService.playStamp();
-                            handleChooseStory(st.storyId);
-                          }}
-                          className="group relative p-5 sm:p-6 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
-                        >
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-2">
-                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
-                                {st.genre}
-                              </span>
-                              <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border-2 bg-amber-100 text-amber-900 border-amber-700">
-                                {st.difficulty || 'NORMAL'}
-                              </span>
+                      {offeredStories.map((st) => {
+                        const artwork = getStoryArtwork(st.genre, st.title, st.storyId);
+                        return (
+                          <div
+                            key={st.storyId}
+                            onMouseEnter={() => SoundService.playCardFlip()}
+                            onClick={() => {
+                              SoundService.playStamp();
+                              handleChooseStory(st.storyId);
+                            }}
+                            className="group relative p-4 sm:p-5 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
+                          >
+                            <div className="space-y-3">
+                              {/* Thematic Artwork Photo */}
+                              <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-[#b89e7c] shadow-inner relative bg-stone-900">
+                                <img
+                                  src={artwork.img}
+                                  alt={st.title}
+                                  className="w-full h-full object-cover filter contrast-110 sepia-[0.15] group-hover:scale-105 transition-transform duration-500"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+                                <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[9px] font-mono text-amber-200 font-bold uppercase tracking-wider">
+                                  <span>{artwork.caption}</span>
+                                  <span className="px-1.5 py-0.5 rounded bg-black/60 text-amber-300 border border-amber-500/30">
+                                    {st.difficulty || 'NORMAL'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-1.5">
+                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
+                                  {st.genre}
+                                </span>
+                                <span className="text-[9px] font-mono text-[#7a5839]">
+                                  ★ DOSSIER
+                                </span>
+                              </div>
+
+                              <h3 className="text-base sm:text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
+                                {st.title}
+                              </h3>
+
+                              <p className="text-xs text-[#3e2c1e] line-clamp-3 leading-relaxed font-serif italic">
+                                "{st.description}"
+                              </p>
                             </div>
 
-                            <h3 className="text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
-                              {st.title}
-                            </h3>
-
-                            <p className="text-xs text-[#3e2c1e] line-clamp-5 leading-relaxed font-serif italic">
-                              "{st.description}"
-                            </p>
+                            <button className="mt-5 w-full py-2.5 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
+                              Open This Case File →
+                            </button>
                           </div>
-
-                          <button className="mt-6 w-full py-3 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
-                            Open This Case File →
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="py-16 text-center space-y-4">
