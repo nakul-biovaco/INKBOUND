@@ -5,6 +5,7 @@ import { Player } from '../../types/player';
 import { GameHeader } from '../common/GameHeader';
 import { AvatarBadge } from '../common/AvatarBadge';
 import { SoundService } from '../../services/soundService';
+import { CaseManager } from '../../game/CaseManager';
 
 interface CinematicRevealProps {
   gameState: AuthoritativeGameState;
@@ -13,14 +14,6 @@ interface CinematicRevealProps {
   onProceedToResults: () => void;
   onLeaveRoom?: () => void;
 }
-
-const DEFAULT_TIMELINE_EVENTS = [
-  { time: '11:39 PM', text: 'Security guard disables the cameras using a master override.' },
-  { time: '11:42 PM', text: 'Enters the 3rd floor vault chamber through the East door.' },
-  { time: '11:44 PM', text: 'Takes the 140-carat Eye of Osiris blue diamond and shatters dummy glass.' },
-  { time: '11:48 PM', text: 'Leaves through the east gate carrying the diamond in a red bag.' },
-  { time: '11:51 PM', text: 'Escapes in a waiting red sedan into the rainy night.' },
-];
 
 export const CinematicReveal: React.FC<CinematicRevealProps> = ({
   gameState,
@@ -33,15 +26,22 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
     SoundService.playDramaticSting();
   }, []);
 
-  const currentCase = gameState.currentCase;
-  const culpritName = currentCase?.culprit || 'Arthur Vance';
-  const culpritChar = currentCase?.characters?.find((c) => c.name === culpritName);
-  const motiveText = currentCase?.motive || 'Debts from underground gambling';
+  const currentCase = (gameState.currentCase?.culprit && gameState.currentCase.culprit !== '')
+    ? gameState.currentCase
+    : CaseManager.getCase(gameState.caseId || (gameState as any).storyId || gameState.currentCase?.id || 'story_01_the_midnight_museum');
+
+  const culpritName = currentCase?.culprit || 'Dominic Hart';
+  const culpritChar = currentCase?.characters?.find((c) => c.name === culpritName) || currentCase?.characters?.[0];
+  const motiveText = currentCase?.motive || 'Massive debts from underground gambling';
   const distorter = gameState.players.find((p) => p.id === gameState.distorterId);
 
   const timelineEvents = currentCase?.timeline?.length
     ? currentCase.timeline.map((t) => ({ time: t.time, text: t.event }))
-    : DEFAULT_TIMELINE_EVENTS;
+    : [
+        { time: 'Phase 1', text: `${culpritName} accessed the scene using an unauthorized key.` },
+        { time: 'Phase 2', text: 'Critical evidence was compromised during the commotion.' },
+        { time: 'Phase 3', text: 'The true motive was hidden to mislead investigators.' },
+      ];
 
   return (
     <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">

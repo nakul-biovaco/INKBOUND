@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CaseManager } from '../../game/CaseManager';
 import { Feather, CheckCircle2, Lock } from 'lucide-react';
 import { AuthoritativeGameState, TheorySubmission } from '../../types/game';
 import { Player } from '../../types/player';
@@ -28,7 +29,19 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
     SoundService.playDramaticSting();
   }, []);
 
-  const characters = gameState.currentCase?.characters || [];
+  // Dynamically resolve active case with all characters, methods, and motives
+  const activeCase = (gameState.currentCase?.characters && gameState.currentCase.characters.length > 0)
+    ? gameState.currentCase
+    : CaseManager.getCase(gameState.caseId || (gameState as any).storyId || gameState.currentCase?.id || 'story_01_the_midnight_museum');
+
+  const characters = (activeCase.characters && activeCase.characters.length > 0)
+    ? activeCase.characters
+    : CaseManager.getDefaultCase().characters;
+
+  const eventSequenceOptions = CaseManager.getEventOptions(activeCase);
+  const crimeMethodOptions = CaseManager.getMethodOptions(activeCase);
+  const suspectMotiveOptions = CaseManager.getMotiveOptions(activeCase);
+
   const existing = gameState.theories[currentUser.id];
 
   const [culprit, setCulprit] = useState<string>(
@@ -40,6 +53,13 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
   const [confidence, setConfidence] = useState<number>(existing?.confidence || 8);
   const [distorterGuess, setDistorterGuess] = useState<string>(existing?.distorterGuess || '');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(Boolean(existing));
+
+  // Sync default culprit if initially empty
+  React.useEffect(() => {
+    if (!culprit && characters.length > 0) {
+      setCulprit(characters[0].name);
+    }
+  }, [characters, culprit]);
 
   const isHost =
     currentUser.isHost ||
@@ -54,10 +74,10 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
       id: `theory-${gameState.id}-${currentUser.id}`,
       gameId: gameState.id,
       playerId: currentUser.id,
-      culprit,
-      motive,
-      keyEvent: whatHappened,
-      method,
+      culprit: culprit || characters[0]?.name || 'Unknown Suspect',
+      motive: motive || suspectMotiveOptions[0] || 'Unknown Motive',
+      keyEvent: whatHappened || eventSequenceOptions[0] || 'Unknown Event',
+      method: method || crimeMethodOptions[0] || 'Unknown Method',
       confidence,
       distorterGuess: distorterGuess || undefined,
       submittedAt: new Date().toISOString(),
@@ -67,10 +87,9 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
     setIsSubmitted(true);
 
     // Send authoritative deduction to game engine
-    const deductionAnswer = `Culprit: ${culprit}. Event: ${whatHappened}. Motive: ${motive}. Method: ${method}`;
+    const deductionAnswer = `Culprit: ${theory.culprit}. Event: ${theory.keyEvent}. Motive: ${theory.motive}. Method: ${theory.method}`;
     BackendClient.getInstance().submitTheory(deductionAnswer, confidence);
   };
-
 
   return (
     <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
@@ -88,7 +107,7 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
         playerCount={gameState.players.length}
         maxPlayers={8}
         currentPhase="FINAL_THEORY"
-        caseTitle={gameState.currentCase?.title || 'The Midnight Museum Heist'}
+        caseTitle={activeCase.title || gameState.currentCase?.title || 'Active Investigation'}
         roundText="Final Guess • Who Did It?"
         onLeaveRoom={onLeaveRoom}
       />
@@ -98,10 +117,15 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
         {/* LEFT CARD: FINAL THEORY FORM (7 cols) */}
         <div className="md:col-span-7 bg-[#0e131f]/95 border border-slate-700/70 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-4 backdrop-blur-md">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-            <h2 className="text-xl font-bold font-serif text-white tracking-wide">
-              Make Your Final Guess
-            </h2>
-            <span className="text-[11px] font-mono text-red-400 font-semibold uppercase">
+            <div>
+              <h2 className="text-xl font-bold font-serif text-white tracking-wide">
+                Make Your Final Guess
+              </h2>
+              <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                Case: <span className="text-amber-300 font-semibold">{activeCase.title}</span>
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-red-400 font-semibold uppercase px-2 py-0.5 rounded bg-red-950/60 border border-red-800/50">
               Secret Ballot
             </span>
           </div>
@@ -117,10 +141,12 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 value={culprit}
                 onChange={(e) => setCulprit(e.target.value)}
                 className="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500 disabled:opacity-75"
+                required
               >
+                <option value="">-- Select Chief Suspect --</option>
                 {characters.map((c) => (
                   <option key={c.name} value={c.name}>
-                    {c.name} ({c.role})
+                    {c.name} {c.role ? `(${c.role})` : ''}
                   </option>
                 ))}
               </select>
@@ -139,18 +165,11 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 required
               >
                 <option value="">-- Select Event Sequence --</option>
-                <option value="Security guard disables cameras and steals diamond">
-                  Security guard disables cameras and steals diamond
-                </option>
-                <option value="Cat burglar descended through the ceiling skylight">
-                  Cat burglar descended through the ceiling skylight
-                </option>
-                <option value="Janitor hid the jewel in the boiler room">
-                  Janitor hid the jewel in the boiler room
-                </option>
-                <option value="Collector switched the diamond for a glass replica">
-                  Collector switched the diamond for a glass replica
-                </option>
+                {eventSequenceOptions.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -167,18 +186,11 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 required
               >
                 <option value="">-- Select Crime Method --</option>
-                <option value="Used a brass master keycard and staged broken glass">
-                  Used a brass master keycard and staged broken glass
-                </option>
-                <option value="Cut display cables with wire cutter and climbed wall">
-                  Cut display cables with wire cutter and climbed wall
-                </option>
-                <option value="Slipped diamond into cleaning cart laundry basket">
-                  Slipped diamond into cleaning cart laundry basket
-                </option>
-                <option value="Carried out in handbag during evening gala exit">
-                  Carried out in handbag during evening gala exit
-                </option>
+                {crimeMethodOptions.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -195,18 +207,11 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 required
               >
                 <option value="">-- Select Suspect Motive --</option>
-                <option value="Massive debts from underground gambling">
-                  Massive debts from underground gambling
-                </option>
-                <option value="Obsession with acquiring the 140-carat blue diamond">
-                  Obsession with acquiring the 140-carat blue diamond
-                </option>
-                <option value="Revenge for terminated museum employment">
-                  Revenge for terminated museum employment
-                </option>
-                <option value="To sell on international black market">
-                  To sell on international black market
-                </option>
+                {suspectMotiveOptions.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -318,13 +323,18 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
 
         {/* RIGHT CARD: AGED PARCHMENT NOTE WITH FOUNTAIN PEN (5 cols) */}
         <div className="md:col-span-5 relative flex items-center justify-center p-4">
-          <div className="relative w-full max-w-sm bg-[#faeed1] border-2 border-[#d6be96] rounded-2xl p-8 shadow-2xl text-[#2a1d0f] font-serif transform rotate-1 flex flex-col items-center justify-center min-h-[380px]">
+          <div className="relative w-full max-w-sm bg-[#faeed1] border-2 border-[#d6be96] rounded-2xl p-7 shadow-2xl text-[#2a1d0f] font-serif transform rotate-1 flex flex-col items-center justify-between min-h-[400px]">
             {/* Red wax seal or stamp */}
             <div className="w-8 h-8 rounded-full bg-red-700/90 border border-red-900 absolute top-4 right-4 flex items-center justify-center shadow-md text-white font-bold text-[10px]">
               IB
             </div>
 
-            <div className="text-center space-y-4 my-auto">
+            {/* Case file tag */}
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#8c6d46] font-bold text-center pt-1">
+              CASE ARCHIVE • {activeCase.genre || 'MYSTERY'}
+            </div>
+
+            <div className="text-center space-y-3 my-auto py-2">
               <p className="text-2xl sm:text-3xl font-bold italic leading-relaxed text-[#2a1d0f] drop-shadow-sm font-handwriting">
                 "Look at everything.
                 <br />
@@ -342,6 +352,15 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
                 </span>
                 "
               </p>
+
+              <div className="text-xs font-serif font-bold text-[#442c16]">
+                {activeCase.title}
+              </div>
+            </div>
+
+            {/* Premise excerpt */}
+            <div className="pt-2.5 border-t border-[#d6be96]/90 text-[11px] font-serif text-[#5c4426] italic text-center max-w-[280px] leading-snug">
+              "{activeCase.description.length > 115 ? activeCase.description.slice(0, 115) + '...' : activeCase.description}"
             </div>
 
             {/* Fountain Pen Icon at bottom */}
