@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Send, Maximize2, FileText } from 'lucide-react';
 import { Player } from '../../types/player';
 import { RoomChannelManager } from '../../realtime/roomChannel';
+import { BackendClient } from '../../realtime/backendClient';
 import { AvatarBadge } from './AvatarBadge';
 
 export interface ChatMessage {
@@ -58,9 +59,20 @@ export const RoomChat: React.FC<RoomChatProps> = ({
     }
   }, [messages, gameLogs, activeTab]);
 
-  // Subscribe to realtime channel broadcasts
+  // Subscribe to realtime channel broadcasts & backend socket events
   useEffect(() => {
-    if (!channel) return;
+    const unsubBackend = BackendClient.getInstance().on('CHAT_MESSAGE', (payload: any) => {
+      if (payload) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === payload.id)) return prev;
+          return [...prev, payload as ChatMessage];
+        });
+      }
+    });
+
+    if (!channel) {
+      return () => unsubBackend();
+    }
 
     const unsubscribe = channel.subscribeMessages((msg) => {
       if (msg.type === 'CHAT_MESSAGE' && msg.payload) {
@@ -75,7 +87,10 @@ export const RoomChat: React.FC<RoomChatProps> = ({
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubBackend();
+      unsubscribe();
+    };
   }, [channel]);
 
   const handleSend = (e?: React.FormEvent) => {
@@ -104,6 +119,12 @@ export const RoomChat: React.FC<RoomChatProps> = ({
 
     if (channel) {
       channel.broadcast('CHAT_MESSAGE', currentUser.id, newMsg);
+    }
+
+    try {
+      BackendClient.getInstance().sendChatMessage(text);
+    } catch {
+      // ignore
     }
   };
 

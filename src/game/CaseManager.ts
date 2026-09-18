@@ -764,20 +764,35 @@ export class CaseManager {
       return CASES_CATALOG['story_01_the_midnight_museum'];
     }
 
-    const clean = caseId.toLowerCase().trim();
+    const clean = caseId.toLowerCase().trim().replace(/['"“”]/g, '');
     if (CASES_CATALOG[clean]) {
       return CASES_CATALOG[clean];
     }
 
-    // Fuzzy and prefix matching
+    // Direct key without prefix or with prefix
     for (const [key, val] of Object.entries(CASES_CATALOG)) {
       if (key === clean || clean.includes(key) || key.includes(clean)) {
         return val;
       }
-      const strippedKey = key.replace(/^story_\d+_/i, '');
-      const strippedInput = clean.replace(/^story_\d+_/i, '');
+      const strippedKey = key.replace(/^story_\d+_/i, '').replace(/_/g, ' ');
+      const strippedInput = clean.replace(/^story_\d+_/i, '').replace(/_/g, ' ');
       if (strippedKey === strippedInput || strippedKey.includes(strippedInput) || strippedInput.includes(strippedKey)) {
         return val;
+      }
+      const valTitleClean = val.title.toLowerCase().trim().replace(/['"“”]/g, '');
+      if (valTitleClean === clean || valTitleClean.includes(clean) || clean.includes(valTitleClean)) {
+        return val;
+      }
+    }
+
+    // Match by story number (e.g., '07', '7', 'story_07')
+    const numMatch = clean.match(/(\d+)/);
+    if (numMatch) {
+      const numStr = numMatch[1].padStart(2, '0');
+      for (const [key, val] of Object.entries(CASES_CATALOG)) {
+        if (key.startsWith(`story_${numStr}_`)) {
+          return val;
+        }
       }
     }
 

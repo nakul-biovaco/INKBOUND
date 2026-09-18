@@ -30,9 +30,22 @@ export const FinalTheoryModal: React.FC<FinalTheoryModalProps> = ({
   }, []);
 
   // Dynamically resolve active case with all characters, methods, and motives
-  const activeCase = (gameState.currentCase?.characters && gameState.currentCase.characters.length > 0)
-    ? gameState.currentCase
-    : CaseManager.getCase(gameState.caseId || (gameState as any).storyId || gameState.currentCase?.id || 'story_01_the_midnight_museum');
+  const resolvedStoryId =
+    (gameState as any)?.storyId ||
+    gameState.currentCase?.id ||
+    gameState.caseId ||
+    gameState.currentCase?.title ||
+    'story_01_the_midnight_museum';
+
+  const resolvedCase = CaseManager.getCase(resolvedStoryId);
+
+  const activeCase =
+    gameState.currentCase &&
+    gameState.currentCase.characters &&
+    gameState.currentCase.characters.length > 0 &&
+    gameState.currentCase.id === resolvedCase.id
+      ? gameState.currentCase
+      : resolvedCase;
 
   const characters = (activeCase.characters && activeCase.characters.length > 0)
     ? activeCase.characters

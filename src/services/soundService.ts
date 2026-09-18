@@ -717,6 +717,11 @@ class SoundEngine {
     } catch { }
   }
 
+  // POP: Subtle bubbly notification for in-game chat toasts
+  public playPop(): void {
+    this.playBadgeClick();
+  }
+
   // ALERT / POLICE RADIO DISPATCH BEEP
   public playAlert(): void {
     if (this.isMuted) return;

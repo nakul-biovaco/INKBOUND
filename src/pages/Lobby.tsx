@@ -485,13 +485,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
 
-              {/* 2. Number of Rounds Segmented */}
+              {/* 2. Number of Rounds with Quick Selection & Custom Input */}
               <div>
-                <label className="block text-slate-400 text-xs font-mono mb-1.5">
-                  Number of Rounds
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3].map((r) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-400 text-xs font-mono">
+                    Number of Rounds
+                  </label>
+                  <span className="text-[11px] font-mono text-red-400 font-bold">
+                    {rounds} {rounds === 1 ? 'Round' : 'Rounds'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5 mb-2">
+                  {[1, 2, 3, 5, 8].map((r) => (
                     <button
                       key={r}
                       onClick={() => {
@@ -507,6 +512,23 @@ export const Lobby: React.FC<LobbyProps> = ({
                       {r}
                     </button>
                   ))}
+                </div>
+                <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5">
+                  <span className="text-[11px] font-mono text-slate-400 shrink-0">Custom:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="25"
+                    value={rounds}
+                    onChange={(e) => {
+                      const val = Math.max(1, Math.min(25, Number(e.target.value) || 1));
+                      setRounds(val);
+                      onUpdateSettings({ ...room.settings, rounds: val });
+                    }}
+                    className="w-full bg-transparent text-white font-mono text-xs outline-none"
+                    placeholder="Enter rounds (1-25)"
+                  />
+                  <span className="text-[10px] font-mono text-slate-500 shrink-0">(1–25)</span>
                 </div>
               </div>
 

@@ -26,9 +26,21 @@ export const CinematicReveal: React.FC<CinematicRevealProps> = ({
     SoundService.playDramaticSting();
   }, []);
 
-  const currentCase = (gameState.currentCase?.culprit && gameState.currentCase.culprit !== '')
-    ? gameState.currentCase
-    : CaseManager.getCase(gameState.caseId || (gameState as any).storyId || gameState.currentCase?.id || 'story_01_the_midnight_museum');
+  const resolvedStoryId =
+    (gameState as any)?.storyId ||
+    gameState.currentCase?.id ||
+    gameState.caseId ||
+    gameState.currentCase?.title ||
+    'story_01_the_midnight_museum';
+
+  const resolvedCase = CaseManager.getCase(resolvedStoryId);
+
+  const currentCase =
+    gameState.currentCase &&
+    gameState.currentCase.culprit &&
+    gameState.currentCase.id === resolvedCase.id
+      ? gameState.currentCase
+      : resolvedCase;
 
   const culpritName = currentCase?.culprit || 'Dominic Hart';
   const culpritChar = currentCase?.characters?.find((c) => c.name === culpritName) || currentCase?.characters?.[0];

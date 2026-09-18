@@ -333,6 +333,7 @@ export class GameEngine {
       category,
       wordLengths,
       firstLetters,
+      storyId: this.session.storyId,
     });
 
     // Unicast 3 secret options ONLY to the active drawer
@@ -450,6 +451,7 @@ export class GameEngine {
       wordLengths,
       firstLetters,
       category,
+      storyId: this.session.storyId,
     });
   }
 
@@ -691,9 +693,9 @@ export class GameEngine {
 
     const room = RoomManager.getRoomOrThrow(this.roomId);
 
-    // Check if max rounds reached (roundsPerGame * playerCount) or all 5 events solved
+    // Check if max rounds reached (roundsPerGame * playerCount)
     const totalRequiredTurns = Math.max(1, room.settings.roundsPerGame || 1) * Math.max(1, room.players.length);
-    if (this.session.solvedEvents.length >= 5 || this.session.turnIndex >= totalRequiredTurns - 1) {
+    if (this.session.turnIndex >= totalRequiredTurns - 1) {
       return this.startFinalInvestigation();
     }
 
@@ -720,6 +722,8 @@ export class GameEngine {
     });
 
     this.emit('FINAL_INVESTIGATION', {
+      storyId: this.session.storyId,
+      storyTitle: this.storyEngine?.getStory()?.title || this.session.storyId,
       solvedEvents: this.session.solvedEvents,
       storyVariables: this.session.storyVariables,
       timeLimitSeconds: investigationSeconds,
@@ -733,16 +737,21 @@ export class GameEngine {
       throw err;
     }
 
+    const room = RoomManager.getRoomOrThrow(this.roomId);
+    const player = room.players.find((p) => p.playerId === playerId);
+    if (!player) throw new Error('Player not in room');
+
     this.session.finalTheories[playerId] = {
-      answer: answer.trim(),
+      answer,
       confidence,
       submittedAt: Date.now(),
     };
 
-    const room = RoomManager.getRoomOrThrow(this.roomId);
-    const allSubmitted = room.players.every((p) => Boolean(this.session.finalTheories[p.playerId]));
+    logger.info(`Final theory submitted by ${player.displayName}`, { answer, confidence });
 
-    if (allSubmitted) {
+    // If all online players submitted, resolve ending early
+    const onlinePlayers = room.players.filter((p) => p.isConnected);
+    if (Object.keys(this.session.finalTheories).length >= onlinePlayers.length) {
       this.timerManager.cancelTimer();
       this.resolveEnding();
     }
@@ -756,6 +765,8 @@ export class GameEngine {
     this.session.ending = ending;
 
     this.emit('GAME_END', {
+      storyId: this.session.storyId,
+      storyTitle: this.storyEngine?.getStory()?.title || this.session.storyId,
       ending,
       storyVariables: this.session.storyVariables,
       solvedEvents: this.session.solvedEvents,

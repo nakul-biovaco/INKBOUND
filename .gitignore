@@ -1,7 +1,10 @@
 node_modules/
 dist/
+server/dist/
+server/STORY/
 .env
 .env.*
 !.env.example
 .DS_Store
 *.log
+

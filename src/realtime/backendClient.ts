@@ -373,8 +373,8 @@ export class BackendClient {
     this.send('SUBMIT_THEORY', { answer, confidence });
   }
 
-  public startGame(storyId?: string): void {
-    this.send('START_GAME', { storyId });
+  public startGame(storyId?: string, settings?: any): void {
+    this.send('START_GAME', { storyId, settings });
   }
 
   public chooseStory(storyId: string): void {
@@ -387,5 +387,9 @@ export class BackendClient {
 
   public updateSettings(settings: any): void {
     this.send('UPDATE_SETTINGS', { settings });
+  }
+
+  public sendChatMessage(text: string): void {
+    this.send('CHAT_MESSAGE', { text });
   }
 }

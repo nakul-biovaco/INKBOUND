@@ -269,6 +269,7 @@ export const WSClientEvent = {
   USE_HINT: 'USE_HINT',
   SUBMIT_THEORY: 'SUBMIT_THEORY',
   UPDATE_SETTINGS: 'UPDATE_SETTINGS',
+  CHAT_MESSAGE: 'CHAT_MESSAGE',
   RECONNECT: 'RECONNECT',
   PING: 'PING',
 } as const;
@@ -278,6 +279,7 @@ export const WSServerEvent = {
   PLAYER_JOINED: 'PLAYER_JOINED',
   PLAYER_LEFT: 'PLAYER_LEFT',
   PLAYER_RECONNECTED: 'PLAYER_RECONNECTED',
+  CHAT_MESSAGE: 'CHAT_MESSAGE',
   GAME_STARTING: 'GAME_STARTING',
   STORY_CHOOSER_SELECTED: 'STORY_CHOOSER_SELECTED',
   STORY_OPTIONS: 'STORY_OPTIONS',
@@ -316,7 +318,7 @@ export const CreateRoomSchema = z.object({
       maxPlayers: z.number().min(2).max(12).optional(),
       drawingTimeLimit: z.number().min(30).max(180).optional(),
       promptSelectionTimeLimit: z.number().min(10).max(30).optional(),
-      roundsPerGame: z.number().min(3).max(20).optional(),
+      roundsPerGame: z.number().min(1).max(30).optional(),
       storyId: z.string().optional(),
     })
     .optional(),

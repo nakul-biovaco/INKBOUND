@@ -19,6 +19,10 @@ export class StoryLibrary {
     const candidates = [
       path.resolve(process.cwd(), '..', 'STORY'),
       path.resolve(process.cwd(), 'STORY'),
+      path.resolve(process.cwd(), 'dist', 'STORY'),
+      path.resolve(__dirname, '..', '..', 'STORY'),
+      path.resolve(__dirname, '..', '..', 'dist', 'STORY'),
+      path.resolve(__dirname, '..', '..', '..', 'STORY'),
       path.resolve(__dirname, '..', '..', '..', '..', 'STORY'),
     ];
 

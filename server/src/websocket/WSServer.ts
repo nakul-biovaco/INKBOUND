@@ -316,6 +316,15 @@ export class WSServer {
         if (storyId && storyId !== 'all') {
           room.settings.storyId = storyId;
         }
+        if (payload?.settings) {
+          const s = payload.settings;
+          RoomManager.updateRoomSettings(ws.roomId!, ws.playerId!, {
+            storyId: s.selectedCaseId || s.storyId,
+            drawingTimeLimit: s.turnDuration || s.drawingTimeLimit,
+            roundsPerGame: s.rounds || s.roundsPerGame,
+            maxPlayers: s.maxPlayers,
+          });
+        }
 
         let engine = GameEngine.getEngine(room.roomId);
         if (!engine) {
@@ -395,6 +404,25 @@ export class WSServer {
         const engine = GameEngine.getEngine(ws.roomId!);
         if (!engine) throw new Error('No active game session');
         engine.submitFinalTheory(ws.playerId!, valid.answer, valid.confidence);
+        break;
+      }
+
+      case WSClientEvent.CHAT_MESSAGE: {
+        this.assertSocketAuthenticated(ws);
+        const text = String(payload?.text || '').trim();
+        if (!text) break;
+        const room = RoomManager.getRoom(ws.roomId!);
+        const player = room?.players.find((p) => p.playerId === ws.playerId!);
+        if (player) {
+          this.broadcastToRoom(ws.roomId!, WSServerEvent.CHAT_MESSAGE, {
+            id: payload?.id || `chat-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+            senderId: player.playerId,
+            senderName: player.displayName,
+            senderAvatar: player.avatar,
+            timestamp: payload?.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            text,
+          });
+        }
         break;
       }
 

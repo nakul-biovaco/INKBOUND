@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Clock, Sparkles, CheckCircle } from 'lucide-react';
+import { BookOpen, Clock, Sparkles, CheckCircle, X, MessageSquare } from 'lucide-react';
 import { AuthoritativeGameState, TheorySubmission } from '../types/game';
 import { Player } from '../types/player';
 import { Room } from '../types/room';
 import { GameService } from '../services/gameService';
+import { CaseManager } from '../game/CaseManager';
 import { BackendClient } from '../realtime/backendClient';
 import { GameHeader } from '../components/common/GameHeader';
 import { DrawingCanvas } from '../components/canvas/DrawingCanvas';
@@ -67,7 +68,16 @@ export const Game: React.FC<GameProps> = ({
   onReturnToLobby,
   onGameStateChange,
 }) => {
-  const [gameState, setGameState] = useState<AuthoritativeGameState>(initialState);
+  const initialStoryId = (initialState as any)?.storyId || initialState?.caseId || room.settings?.selectedCaseId || 'story_01_the_midnight_museum';
+  const initialCase = (initialState.currentCase?.characters && initialState.currentCase.characters.length > 0)
+    ? initialState.currentCase
+    : CaseManager.getCase(initialStoryId);
+
+  const [gameState, setGameState] = useState<AuthoritativeGameState>(() => ({
+    ...initialState,
+    caseId: initialCase.id,
+    currentCase: initialCase,
+  }));
   const channel = GameService.getChannel(room.id);
   const backend = BackendClient.getInstance();
 
@@ -111,6 +121,29 @@ export const Game: React.FC<GameProps> = ({
   // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
   const [gameBanner, setGameBanner] = useState<GameBanner | null>(null);
   const bannerTimerRef = useRef<any>(null);
+
+  // In-game Live Chat Floating Popup Toasts (User request: game chat me koi kuch likhta toh uska popyup aaye)
+  interface ChatToast {
+    id: string;
+    senderName: string;
+    senderAvatar: string;
+    text: string;
+    isGuess?: boolean;
+    isClose?: boolean;
+    timestamp: string;
+  }
+  const [chatToasts, setChatToasts] = useState<ChatToast[]>([]);
+
+  const addChatToast = (toast: ChatToast) => {
+    SoundService.playPop();
+    setChatToasts((prev) => {
+      if (prev.some((t) => t.id === toast.id)) return prev;
+      return [...prev.slice(-3), toast];
+    });
+    setTimeout(() => {
+      setChatToasts((prev) => prev.filter((t) => t.id !== toast.id));
+    }, 4500);
+  };
 
   // Big Parchment Clue Discovered Card modal (15s reading grace period with cross close button)
   const [clueCardData, setClueCardData] = useState<{
@@ -179,25 +212,15 @@ export const Game: React.FC<GameProps> = ({
         title: `"${payload.title}"`,
         subtitle: payload.genre || 'Mystery Investigation',
       }, 5000);
+
+      const targetStoryId = payload.storyId || payload.title;
+      const resolvedCase = CaseManager.getCase(targetStoryId);
+
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
-        currentCase: {
-          id: payload.storyId,
-          title: payload.title,
-          genre: payload.genre,
-          setting: payload.setting || 'Crime Scene',
-          description: payload.description,
-          characters: payload.characters || [],
-          truth: payload.truth || '',
-          culprit: payload.culprit || '',
-          motive: payload.motive || '',
-          timeline: payload.timeline || [],
-          evidence: payload.evidence || [],
-          clues: payload.clues || [],
-          distorterObjective: payload.distorter_objective || 'Mislead investigators regarding the timeline sequence.',
-          difficulty: payload.difficulty || 'NORMAL',
-        },
+        caseId: resolvedCase.id,
+        currentCase: resolvedCase,
       }));
     });
 
@@ -233,6 +256,8 @@ export const Game: React.FC<GameProps> = ({
         setDrawerPromptOptions([]);
       }
 
+      const targetStory = payload?.storyId ? CaseManager.getCase(payload.storyId) : null;
+
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
@@ -240,6 +265,7 @@ export const Game: React.FC<GameProps> = ({
         turnIndex: newTurn,
         turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
         turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
+        ...(targetStory ? { caseId: targetStory.id, currentCase: targetStory } : {}),
       }));
     });
 
@@ -263,6 +289,8 @@ export const Game: React.FC<GameProps> = ({
         setDrawerPromptOptions([]);
       }
 
+      const targetStory = payload?.storyId ? CaseManager.getCase(payload.storyId) : null;
+
       setGameState((prev) => ({
         ...prev,
         status: 'PLAYER_DRAWING',
@@ -270,6 +298,7 @@ export const Game: React.FC<GameProps> = ({
         turnIndex: newTurn,
         turnStartedAt: payload.roundStartedAt ? new Date(payload.roundStartedAt).toISOString() : null,
         turnEndsAt: payload.roundEndsAt ? new Date(payload.roundEndsAt).toISOString() : null,
+        ...(targetStory ? { caseId: targetStory.id, currentCase: targetStory } : {}),
       }));
     });
 
@@ -399,8 +428,11 @@ export const Game: React.FC<GameProps> = ({
         setPublicHint(payload.gameState.category || payload.gameState.hint);
       }
 
+      const reconnectedCase = payload?.gameState?.storyId ? CaseManager.getCase(payload.gameState.storyId) : null;
+
       setGameState((prev) => ({
         ...prev,
+        ...(reconnectedCase ? { caseId: reconnectedCase.id, currentCase: reconnectedCase } : {}),
         ...(payload?.gameState
           ? {
               status:
@@ -442,14 +474,64 @@ export const Game: React.FC<GameProps> = ({
       }
     });
 
-    const unsubFinalInvestigation = backend.on('FINAL_INVESTIGATION', () => {
+    const unsubFinalInvestigation = backend.on('FINAL_INVESTIGATION', (payload: any) => {
       SoundService.playDramaticSting();
-      setGameState((prev) => ({ ...prev, status: 'FINAL_THEORY' }));
+      const targetStoryId = payload?.storyId || payload?.storyTitle;
+      const targetCase = targetStoryId ? CaseManager.getCase(targetStoryId) : null;
+      setGameState((prev) => ({
+        ...prev,
+        status: 'FINAL_THEORY',
+        ...(targetCase ? { caseId: targetCase.id, currentCase: targetCase } : {}),
+      }));
     });
 
-    const unsubGameEnd = backend.on('GAME_END', (_payload: any) => {
+    const unsubGameEnd = backend.on('GAME_END', (payload: any) => {
       SoundService.playSuccess();
-      setGameState((prev) => ({ ...prev, status: 'RESULTS' }));
+      const targetStoryId = payload?.storyId || payload?.storyTitle;
+      const targetCase = targetStoryId ? CaseManager.getCase(targetStoryId) : null;
+      setGameState((prev) => ({
+        ...prev,
+        status: 'RESULTS',
+        ...(targetCase ? { caseId: targetCase.id, currentCase: targetCase } : {}),
+      }));
+    });
+
+    const unsubChatMessage = backend.on('CHAT_MESSAGE', (payload: any) => {
+      if (!payload?.text) return;
+      addChatToast({
+        id: payload.id || `chat-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        senderName: payload.senderName || 'Detective',
+        senderAvatar: payload.senderAvatar || '💬',
+        text: payload.text,
+        timestamp: payload.timestamp || 'just now',
+      });
+    });
+
+    const unsubPublicGuess = backend.on('PUBLIC_GUESS', (payload: any) => {
+      if (!payload?.guess) return;
+      addChatToast({
+        id: `guess-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        senderName: payload.playerName || 'Detective',
+        senderAvatar: '🔍',
+        text: payload.guess,
+        isGuess: true,
+        isClose: payload.isClose,
+        timestamp: 'just now',
+      });
+    });
+
+    const unsubChannelMessage = channel.subscribeMessages((msg) => {
+      if (msg.type === 'CHAT_MESSAGE' && msg.payload) {
+        const p = msg.payload as any;
+        if (!p?.text) return;
+        addChatToast({
+          id: p.id || `chat-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+          senderName: p.senderName || 'Detective',
+          senderAvatar: p.senderAvatar || '💬',
+          text: p.text,
+          timestamp: p.timestamp || 'just now',
+        });
+      }
     });
 
     return () => {
@@ -467,6 +549,9 @@ export const Game: React.FC<GameProps> = ({
       unsubPlayerReconnected();
       unsubFinalInvestigation();
       unsubGameEnd();
+      unsubChatMessage();
+      unsubPublicGuess();
+      unsubChannelMessage();
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     };
   }, [backend, gameState.players, gameState.turnIndex, room.id]);
@@ -561,6 +646,12 @@ export const Game: React.FC<GameProps> = ({
   const handleChooseStory = (storyId: string) => {
     backend.chooseStory(storyId);
     setIsStorySelection(false);
+    const resolvedCase = CaseManager.getCase(storyId);
+    setGameState((prev) => ({
+      ...prev,
+      caseId: resolvedCase.id,
+      currentCase: resolvedCase,
+    }));
   };
 
   const handleSelectPrompt = (optionIndex: number, chosenText?: string) => {
@@ -656,6 +747,63 @@ export const Game: React.FC<GameProps> = ({
               ×
             </button>
           </div>
+        </div>
+      )}
+
+      {/* IN-GAME LIVE CHAT FLOATING POPUP TOASTS (User requested: game chat me koi kuch likhta toh uska popup aaye) */}
+      {chatToasts.length > 0 && (
+        <div className="fixed bottom-24 left-4 sm:left-6 z-50 pointer-events-none flex flex-col gap-2 max-w-sm w-[88vw] sm:w-[360px]">
+          {chatToasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto flex items-start gap-2.5 p-3 rounded-2xl shadow-2xl backdrop-blur-md border animate-fadeIn transition-all duration-300 ${
+                toast.isClose
+                  ? 'bg-amber-950/95 border-amber-500/80 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)]'
+                  : toast.isGuess
+                  ? 'bg-[#0e1626]/95 border-sky-500/70 text-sky-200 shadow-[0_4px_20px_rgba(56,189,248,0.25)]'
+                  : 'bg-[#0f172a]/95 border-slate-700/80 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.6)]'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-lg shrink-0">
+                {toast.senderAvatar || '🕵️‍♂️'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-bold text-xs truncate text-white">
+                      {toast.senderName}
+                    </span>
+                    {toast.isGuess ? (
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
+                          toast.isClose ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                        }`}
+                      >
+                        {toast.isClose ? 'Almost' : 'Guess'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-medium">
+                        <MessageSquare className="w-2.5 h-2.5" /> Chat
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                    {toast.timestamp}
+                  </span>
+                </div>
+                <p className="text-xs break-words leading-relaxed font-medium">
+                  {toast.text}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChatToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

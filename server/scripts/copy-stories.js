@@ -15,7 +15,23 @@ try {
     for (const file of files) {
       fs.copyFileSync(path.join(srcDir, file), path.join(distDir, file));
     }
-    console.log(`[copy-stories] Copied ${files.length} story files to ${distDir}`);
+    console.log(`[copy-stories] Copied ${files.length} story json files to ${distDir}`);
+  }
+
+  // Copy root STORY markdown directory
+  const rootStoryDir = path.resolve(__dirname, '../../STORY');
+  const distStoryDir = path.resolve(__dirname, '../dist/STORY');
+  const localStoryDir = path.resolve(__dirname, '../STORY');
+
+  if (fs.existsSync(rootStoryDir)) {
+    fs.mkdirSync(distStoryDir, { recursive: true });
+    fs.mkdirSync(localStoryDir, { recursive: true });
+    const storyFiles = fs.readdirSync(rootStoryDir);
+    for (const sf of storyFiles) {
+      fs.copyFileSync(path.join(rootStoryDir, sf), path.join(distStoryDir, sf));
+      fs.copyFileSync(path.join(rootStoryDir, sf), path.join(localStoryDir, sf));
+    }
+    console.log(`[copy-stories] Copied ${storyFiles.length} markdown story files to dist/STORY and server/STORY`);
   }
 } catch (err) {
   console.warn('[copy-stories] Failed to copy stories directory:', err);
