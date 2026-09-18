@@ -18,6 +18,18 @@ try {
     console.log(`[copy-stories] Copied ${files.length} story json files to ${distDir}`);
   }
 
+  // Copy story data catalog
+  const dataSrcDir = path.resolve(__dirname, '../src/story/data');
+  const dataDistDir = path.resolve(__dirname, '../dist/story/data');
+  if (fs.existsSync(dataSrcDir)) {
+    fs.mkdirSync(dataDistDir, { recursive: true });
+    const dataFiles = fs.readdirSync(dataSrcDir);
+    for (const file of dataFiles) {
+      fs.copyFileSync(path.join(dataSrcDir, file), path.join(dataDistDir, file));
+    }
+    console.log(`[copy-stories] Copied ${dataFiles.length} catalog files to ${dataDistDir}`);
+  }
+
   // Copy root STORY markdown directory
   const rootStoryDir = path.resolve(__dirname, '../../STORY');
   const distStoryDir = path.resolve(__dirname, '../dist/STORY');

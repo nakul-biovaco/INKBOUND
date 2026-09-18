@@ -387,8 +387,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = 1000;
-    canvas.height = 620;
+    canvas.width = 1280;
+    canvas.height = 800;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -714,7 +714,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       />
 
       {/* GAME HUD */}
-      <div className="relative z-20 w-full max-w-[1440px] mx-auto px-3 sm:px-6 pt-2 pb-1">
+      <div className="relative z-20 w-full max-w-[1720px] mx-auto px-3 sm:px-6 pt-2 pb-1">
         <div className="rounded-2xl border border-slate-700/70 bg-[#10131c]/95 shadow-[0_10px_35px_rgba(0,0,0,0.35)] px-3 sm:px-5 py-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <div className={`w-8 h-8 rounded-xl grid place-items-center border ${isCurrentDrawer ? 'bg-red-500/15 border-red-500/60 text-red-400' : 'bg-sky-500/10 border-sky-500/40 text-sky-300'}`}>
@@ -735,12 +735,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
       </div>
 
-      {/* MAIN GAMEPLAY GRID: 3 COLUMNS */}
-      <main className="relative z-10 w-full max-w-[1440px] mx-auto px-3 sm:px-6 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
+      {/* MAIN GAMEPLAY GRID: 3 COLUMNS (Canvas emphasized) */}
+      <main className="relative z-10 w-full max-w-[1720px] mx-auto px-3 sm:px-6 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
         {/* ======================================================== */}
-        {/* LEFT COLUMN: DESKTOP BRIEFING & TIPS (3 cols)            */}
+        {/* LEFT COLUMN: DESKTOP BRIEFING & TIPS (2-3 cols)          */}
         {/* ======================================================== */}
-        <div className="hidden lg:flex lg:col-span-3 flex-col gap-3">
+        <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3">
           {/* TAPED PARCHMENT CLUE CARD OR SECRET OBJECTIVE */}
           <div className={`relative rounded-2xl p-4 shadow-xl border select-text overflow-hidden ${isCurrentDrawer ? 'bg-gradient-to-br from-red-950/70 to-[#11141e] border-red-500/45' : 'bg-[#11141e]/95 border-slate-700/70'}`}>
             <div className="absolute right-0 top-0 w-28 h-28 bg-red-500/10 blur-3xl rounded-full" />
@@ -793,9 +793,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
 
         {/* ======================================================== */}
-        {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6 cols)        */}
+        {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6-8 cols)      */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 flex flex-col gap-2.5">
+        <div className="lg:col-span-6 xl:col-span-8 flex flex-col gap-2.5">
           {/* 1. TOP CLUE / HINT BANNER */}
           {isCurrentDrawer ? (
             <div className="w-full bg-gradient-to-r from-red-950/90 via-[#181116] to-red-950/90 border-2 border-red-500/60 rounded-2xl p-3 shadow-[0_0_25px_rgba(220,38,38,0.25)]">
@@ -951,9 +951,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           )}
 
-          {/* 3. PARCHMENT DRAWING CANVAS (100% unobstructed, gesture lock) */}
+          {/* 3. PARCHMENT DRAWING CANVAS (Enlarged, 100% unobstructed, gesture lock) */}
           <div
-            className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center"
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[460px] sm:min-h-[540px] md:min-h-[600px] lg:min-h-[660px] xl:min-h-[720px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center"
             style={{ touchAction: 'none' }}
           >
             <div className="absolute inset-x-0 top-0 z-20 h-7 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 pointer-events-none">
@@ -1120,9 +1120,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT COLUMN: PLAYERS ROSTER & ROOM CHAT (3 cols)        */}
+        {/* RIGHT COLUMN: PLAYERS ROSTER & ROOM CHAT (2-3 cols)      */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 flex flex-col gap-3">
+        <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-3">
           {/* PLAYERS LIST ROSTER */}
           <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md space-y-2">
             <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
@@ -1182,7 +1182,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-2 text-center text-[11px] font-mono text-slate-500">
+      <footer className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 py-2 text-center text-[11px] font-mono text-slate-500">
         INKBOUND • Round 1 Turn {gameState.turnIndex + 1} of {rosterPlayers.length} • Case: {gameState.currentCase?.title || 'Active Investigation'}
       </footer>
     </div>

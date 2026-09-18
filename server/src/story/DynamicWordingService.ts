@@ -1,5 +1,5 @@
 import { StoryCatalog } from './StoryCatalog.js';
-import { GeneratedStory } from '../../../scripts/story-blueprints/types.js';
+import { GeneratedStory } from '../types/storyCatalog.js';
 
 export class DynamicWordingService {
   /**

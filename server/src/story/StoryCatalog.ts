@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { StoryDefinition, StoryEvent, StoryEnding } from '../types/index.js';
-import { GeneratedStory } from '../../../scripts/story-blueprints/types.js';
+import { GeneratedStory } from '../types/storyCatalog.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('StoryCatalog');
@@ -131,6 +131,14 @@ export class StoryCatalog {
         consequenceReveal: ev.what_to_discover,
         basePoints: 100,
         timeLimitSeconds: 60,
+        choices: [
+          { text: ev.clue, isCanon: true },
+          ...ev.wrong_answers.map((w) => ({ text: w, isCanon: false })),
+        ],
+        setVariables: {
+          [`clue_${ev.order_index}_solved`]: true,
+          discoveredClues: idx + 1,
+        },
       };
     });
 
