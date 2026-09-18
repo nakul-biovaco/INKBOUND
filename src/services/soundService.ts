@@ -722,6 +722,14 @@ class SoundEngine {
     this.playBadgeClick();
   }
 
+  public playJoin(): void {
+    this.playPop();
+  }
+
+  public playLeave(): void {
+    this.playThud();
+  }
+
   // ALERT / POLICE RADIO DISPATCH BEEP
   public playAlert(): void {
     if (this.isMuted) return;

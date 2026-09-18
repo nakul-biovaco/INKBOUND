@@ -409,17 +409,87 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubPlayerLeft = backend.on('PLAYER_LEFT', (payload: any) => {
       if (!payload?.playerId) return;
-      const player = gameState.players.find((p) => p.id === payload.playerId);
+      const leftPlayer = gameState.players.find((p) => p.id === payload.playerId);
+      const name = leftPlayer?.nickname || 'A detective';
       showGameBanner({
-        id: 'player-left',
+        id: `player-left-${Date.now()}`,
         type: 'status',
-        badge: 'STATUS UPDATE',
-        title: `${player?.nickname || 'A detective'} left the room.`,
+        badge: 'DETECTIVE DEPARTED',
+        title: `${name} left the room.`,
       }, 3000);
+      SoundService.playLeave();
       setGameState((prev) => ({
         ...prev,
-        players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: false } : p),
+        players: prev.players.filter((p) => p.id !== payload.playerId),
       }));
+    });
+
+    const unsubPlayerJoined = backend.on('PLAYER_JOINED', (payload: any) => {
+      if (!payload?.playerId) return;
+      const name = payload.displayName || 'A detective';
+      showGameBanner({
+        id: `player-joined-${Date.now()}`,
+        type: 'status',
+        badge: 'NEW DETECTIVE',
+        title: `${name} joined the case!`,
+      }, 3000);
+      SoundService.playJoin();
+      setGameState((prev) => {
+        if (prev.players.some((p) => p.id === payload.playerId)) {
+          return {
+            ...prev,
+            players: prev.players.map((p) => p.id === payload.playerId ? { ...p, isOnline: true } : p),
+          };
+        }
+        const newPlayer: Player = {
+          id: payload.playerId,
+          nickname: payload.displayName || 'Detective',
+          avatar: payload.avatar || '🕵️‍♂️',
+          isHost: Boolean(payload.isHost),
+          isReady: true,
+          score: payload.score || 0,
+          isOnline: true,
+          joinedAt: new Date().toISOString(),
+          lastSeenAt: new Date().toISOString(),
+        };
+        return {
+          ...prev,
+          players: [...prev.players, newPlayer],
+        };
+      });
+    });
+
+    const unsubPlayersUpdated = backend.on('ROOM_PLAYERS_UPDATED', (payload: any) => {
+      if (payload?.players && Array.isArray(payload.players)) {
+        setGameState((prev) => ({
+          ...prev,
+          players: payload.players.map((p: any) => ({
+            id: p.playerId || p.id,
+            nickname: p.displayName || p.nickname || 'Detective',
+            avatar: p.avatar || '🕵️‍♂️',
+            isHost: Boolean(p.isHost),
+            isReady: p.isReady !== false,
+            score: p.score || 0,
+            isOnline: p.isConnected !== false,
+            joinedAt: p.joinedAt || new Date().toISOString(),
+            lastSeenAt: new Date().toISOString(),
+          })),
+        }));
+      }
+    });
+
+    const unsubPresence = channel.subscribePresence((presences) => {
+      if (!presences || presences.length === 0) return;
+      const activeIds = new Set(presences.map((p) => p.playerId));
+      setGameState((prev) => {
+        if (activeIds.size > 0 && prev.players.length > 1) {
+          const filtered = prev.players.filter((p) => p.id === currentUser.id || activeIds.has(p.id));
+          if (filtered.length !== prev.players.length) {
+            return { ...prev, players: filtered };
+          }
+        }
+        return prev;
+      });
     });
 
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
@@ -580,6 +650,9 @@ export const Game: React.FC<GameProps> = ({
       unsubNextTurn();
       unsubDrawingEnded();
       unsubPlayerLeft();
+      unsubPlayerJoined();
+      unsubPlayersUpdated();
+      unsubPresence();
       unsubPlayerReconnected();
       unsubFinalInvestigation();
       unsubGameEnd();

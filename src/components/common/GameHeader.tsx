@@ -149,81 +149,173 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
   return (
     <header className="w-full relative z-40 bg-[#07080c]/90 border-b border-slate-800/80 backdrop-blur-md select-none">
-      {/* 1. TOP GLOBAL NAVIGATION BAR */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-8 py-2.5 flex items-center justify-between gap-3 border-b border-slate-800/50">
-        {/* Left: Official INKBOUND Logo */}
-        <div
-          onClick={() => handleNavClick('Home')}
-          className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shrink-0"
-          title="Return to INKBOUND Home"
-        >
-          <img
-            src="/assets/logo.png"
-            alt="INKBOUND"
-            className="h-6 sm:h-7 object-contain filter drop-shadow"
-          />
-        </div>
+      {/* IN-GAME SINGLE STREAMLINED TOPBAR */}
+      {currentPhase !== 'LOBBY' ? (
+        <div className="max-w-[1720px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+          {/* Left: INKBOUND Logo & Case Information */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              onClick={() => {
+                SoundService.playClick();
+                setIsConfirmLeaveOpen(true);
+              }}
+              className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shrink-0"
+              title="INKBOUND Game"
+            >
+              <img
+                src="/assets/logo.png"
+                alt="INKBOUND"
+                className="h-6 sm:h-7 object-contain filter drop-shadow"
+              />
+            </div>
 
-        {currentPhase !== 'LOBBY' ? (
-          <>
-            {/* Center: Nav links */}
-            <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300 flex-1 justify-center">
-              {navItems.map((item, idx) => (
-                <button
-                  key={item}
-                  onClick={() => handleNavClick(item)}
-                  className={`hover:text-white cursor-pointer transition-colors ${
-                    idx === 0 ? 'text-white font-semibold' : 'text-slate-400'
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
-            </nav>
+            <div className="hidden sm:block h-6 w-px bg-slate-800 shrink-0" />
 
-            {/* Right: Audio Control, Player Profile Badge & Leave Button */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <AudioControl />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-bold text-white font-serif tracking-wide truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px]">
+                  {caseTitle}
+                </span>
+                <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-md bg-red-950/80 border border-red-800/60 text-[9px] font-mono text-red-300 font-bold uppercase tracking-wider">
+                  ACTIVE CASE
+                </span>
+              </div>
+              <div className="text-[10px] font-mono text-slate-400 truncate">
+                {roundText}
+              </div>
+            </div>
+          </div>
 
-              {/* User Badge with Dropdown */}
+          {/* Center: Phase Progression Pills */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {steps.map((step, idx) => {
+              const isActive = activeStep === idx;
+              const isPast = activeStep > idx;
+
+              return (
+                <div key={step.label} className="flex items-center gap-1.5">
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase transition-all ${
+                      isActive
+                        ? 'bg-red-600/95 text-white shadow-[0_0_15px_rgba(220,38,38,0.8)] border border-red-400 ring-1 ring-red-400/50'
+                        : isPast
+                        ? 'bg-slate-900 text-emerald-400 border border-emerald-500/40'
+                        : 'bg-slate-950/80 text-slate-500 border border-slate-800'
+                    }`}
+                  >
+                    <span className="w-3.5 h-3.5 flex items-center justify-center">
+                      {step.icon}
+                    </span>
+                    <span>{step.label}</span>
+                  </div>
+                  {idx < steps.length - 1 && (
+                    <div
+                      className={`w-2.5 h-0.5 ${
+                        isPast ? 'bg-emerald-600' : 'bg-slate-800'
+                      }`}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right: Room Code, Live Player Counter, Audio, Profile, Exit */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Room Code with 1-click copy */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono">
+              <span className="text-slate-400 text-[10px]">ROOM:</span>
+              <span className="font-bold text-white tracking-widest text-xs">{roomCode}</span>
+              <button
+                onClick={handleCopy}
+                title="Copy Invite Link"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-0.5"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Live Reactive Player Count badge with pulsating green dot */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-200">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <Users className="w-3.5 h-3.5 text-sky-400" />
+              <span className="font-bold tabular-nums">
+                {playerCount}/{maxPlayers}
+              </span>
+            </div>
+
+            <AudioControl />
+
+            {/* Detective Profile Badge */}
+            <button
+              onClick={() => {
+                SoundService.playClick();
+                if (onOpenProfile) {
+                  onOpenProfile();
+                } else {
+                  setNicknameInput(currentUser.nickname);
+                  setSelectedAvatar(currentUser.avatar);
+                  setIsProfileModalOpen(true);
+                }
+              }}
+              title="Edit Detective Identity"
+              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
+            >
+              <AvatarBadge avatar={currentUser.avatar} size="xs" />
+              <span className="font-medium text-white truncate max-w-[70px]">
+                {currentUser.nickname}
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+            </button>
+
+            {/* Leave Room Button */}
+            {onLeaveRoom && (
               <button
                 onClick={() => {
                   SoundService.playClick();
-                  if (onOpenProfile) {
-                    onOpenProfile();
-                  } else {
-                    setNicknameInput(currentUser.nickname);
-                    setSelectedAvatar(currentUser.avatar);
-                    setIsProfileModalOpen(true);
-                  }
+                  setIsConfirmLeaveOpen(true);
                 }}
-                title="Edit Detective Identity"
-                className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-slate-500 text-[11px] sm:text-xs text-slate-200 transition-all cursor-pointer max-w-[180px]"
+                className="px-2.5 py-1.5 rounded-xl border border-red-700/60 bg-red-950/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
               >
-                <AvatarBadge avatar={currentUser.avatar} size="xs" />
-                <span className="font-medium text-white max-w-[80px] truncate">
-                  {currentUser.nickname}
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Exit</span>
               </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* LOBBY GLOBAL NAVIGATION BAR */
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-8 py-2.5 flex items-center justify-between gap-3">
+          <div
+            onClick={() => handleNavClick('Home')}
+            className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shrink-0"
+            title="Return to INKBOUND Home"
+          >
+            <img
+              src="/assets/logo.png"
+              alt="INKBOUND"
+              className="h-6 sm:h-7 object-contain filter drop-shadow"
+            />
+          </div>
 
-              {/* Red Outline Leave Button */}
-              {onLeaveRoom && (
-                <button
-                  onClick={() => {
-                    SoundService.playClick();
-                    setIsConfirmLeaveOpen(true);
-                  }}
-                  className="px-3 py-1 rounded-lg border border-red-700/60 bg-red-950/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <LogOut className="w-3 h-3" />
-                  <span>Leave</span>
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-300 flex-1 justify-center">
+            {navItems.map((item, idx) => (
+              <button
+                key={item}
+                onClick={() => handleNavClick(item)}
+                className={`hover:text-white cursor-pointer transition-colors ${
+                  idx === 0 ? 'text-white font-semibold' : 'text-slate-400'
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <AudioControl />
             {onLeaveRoom && (
               <button
@@ -237,88 +329,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 <span>Leave</span>
               </button>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* 2. SUB-HEADER: CASE TITLE, STEPPER & ROOM CODE */}
-      {currentPhase !== 'LOBBY' && (
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-8 py-2.5 flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center justify-between gap-3 sm:gap-4">
-          {/* Left: Case Title & Round */}
-          <div className="w-full lg:w-auto">
-            <h2 className="text-sm sm:text-base font-bold text-white font-serif tracking-wide">
-              {caseTitle}
-            </h2>
-            <div className="text-[11px] font-mono text-slate-400">{roundText}</div>
-          </div>
-
-          {/* Center: Phase Stepper */}
-          <div className="hidden lg:flex items-center gap-4 xl:gap-6 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
-            {steps.map((step, idx) => {
-              const isActive = activeStep === idx;
-              const isPast = activeStep > idx;
-
-              return (
-                <div key={step.label} className="flex items-center gap-2">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                        isActive
-                          ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.9)] ring-2 ring-red-500'
-                          : isPast
-                          ? 'bg-slate-800 text-emerald-400 border border-slate-700'
-                          : 'bg-slate-900/80 text-slate-500 border border-slate-800'
-                      }`}
-                    >
-                      {step.icon}
-                    </div>
-                    <span
-                      className={`text-[10px] font-mono uppercase mt-0.5 tracking-wider ${
-                        isActive
-                          ? 'text-red-400 font-bold'
-                          : isPast
-                          ? 'text-slate-300'
-                          : 'text-slate-500'
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-
-                  {idx < steps.length - 1 && (
-                    <div
-                      className={`w-4 xl:w-6 h-[1px] -mt-3.5 ${
-                        isPast ? 'bg-red-700' : 'bg-slate-800'
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Right: Room Code & Player Count */}
-          <div className="flex items-center gap-3">
-            {/* Room Code Card */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
-              <span className="text-slate-400 text-[10px]">Room Code:</span>
-              <span className="font-bold text-white tracking-widest">{roomCode}</span>
-              <button
-                onClick={handleCopy}
-                title="Copy Room Code"
-                className="text-slate-400 hover:text-white cursor-pointer"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-
-            {/* Players count */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300">
-              <Users className="w-3.5 h-3.5 text-slate-400" />
-              <span>
-                {playerCount}/{maxPlayers} Players
-              </span>
-            </div>
           </div>
         </div>
       )}

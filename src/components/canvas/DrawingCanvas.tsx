@@ -7,8 +7,6 @@ import {
   Trash2,
   Lightbulb,
   Crosshair,
-  Eye,
-  Radio,
   Users,
   Sparkles,
   PaintBucket,
@@ -213,20 +211,35 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     );
   };
 
-  // Authoritative server timer calculation
+  // Robust authoritative timer with automatic local countdown fallback so it never freezes
+  const turnDuration = gameState.turnDuration || 80;
+  const turnStartedAtRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    turnStartedAtRef.current = Date.now();
+  }, [gameState.turnIndex, gameState.currentTurnPlayerId]);
+
   useEffect(() => {
     const updateTimer = () => {
-      const remaining = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
-      setRemainingSeconds(remaining);
-      if (remaining > 0 && remaining <= 10) {
-        SoundService.playTick(remaining <= 5);
+      let rem = 0;
+      if (gameState.turnEndsAt) {
+        rem = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
+      }
+      if (rem <= 0) {
+        const elapsed = Math.floor((Date.now() - turnStartedAtRef.current) / 1000);
+        rem = Math.max(0, turnDuration - elapsed);
+      }
+
+      setRemainingSeconds(rem);
+      if (rem > 0 && rem <= 10) {
+        SoundService.playTick(rem <= 5);
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [gameState.turnEndsAt]);
+  }, [gameState.turnEndsAt, gameState.turnIndex, turnDuration]);
 
   // Subscribe to backend authoritative drawing and guess events
   useEffect(() => {
@@ -724,166 +737,206 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     });
   };
 
-  const formattedTimer = `00:${remainingSeconds.toString().padStart(2, '0')}`;
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+  const formattedTimer = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  // Render real dynamic players roster matching current game
+  // Active online players with real-time reactive filtering
+  const activePlayers = gameState.players.filter((p) => p.isOnline !== false);
   const rosterPlayers: Player[] =
-    gameState.players.length > 0 ? gameState.players : [currentUser];
+    activePlayers.length > 0 ? activePlayers : (gameState.players.length > 0 ? gameState.players : [currentUser]);
+
+  const totalTurns = Math.max(rosterPlayers.length, gameState.evidenceCards?.length || 4, gameState.turnIndex + 1);
+  const roundDisplay = `Turn ${gameState.turnIndex + 1} of ${totalTurns}`;
 
   return (
     <div className="relative min-h-screen w-full bg-[#07080d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
-        className="fixed inset-0 bg-cover bg-center opacity-35 mix-blend-screen pointer-events-none"
+        className="fixed inset-0 bg-cover bg-center opacity-30 mix-blend-screen pointer-events-none"
         style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
       />
-      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/90 via-[#08090d]/80 to-[#08090d]/95 pointer-events-none" />
 
-      {/* TOP HEADER WITH STEPPER & ROOM CODE */}
+      {/* 1. UNIFIED IN-GAME TOPBAR */}
       <GameHeader
         currentUser={currentUser}
         roomCode={roomCode || gameState.roomId.substring(0, 6).toUpperCase()}
         playerCount={rosterPlayers.length}
         maxPlayers={8}
         currentPhase={gameState.status}
-        caseTitle={gameState.currentCase?.title || 'The Midnight Museum Heist'}
-        roundText={`Turn ${gameState.turnIndex + 1} of ${rosterPlayers.length} • Drawing Round`}
+        caseTitle={gameState.currentCase?.title || 'Active Investigation'}
+        roundText={`${roundDisplay} • Drawing Round`}
         onLeaveRoom={onLeaveRoom}
       />
 
-      {/* GAME HUD */}
-      <div className="relative z-20 w-full max-w-[1720px] mx-auto px-3 sm:px-6 pt-2 pb-1">
-        <div className="rounded-2xl border border-slate-700/70 bg-[#10131c]/95 shadow-[0_10px_35px_rgba(0,0,0,0.35)] px-3 sm:px-5 py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className={`w-8 h-8 rounded-xl grid place-items-center border ${isCurrentDrawer ? 'bg-red-500/15 border-red-500/60 text-red-400' : 'bg-sky-500/10 border-sky-500/40 text-sky-300'}`}>
-              {isCurrentDrawer ? <Crosshair className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      {/* 2. MAIN 3-COLUMN INVESTIGATION WORKSPACE */}
+      <main className="relative z-10 w-full max-w-[1720px] mx-auto px-3 sm:px-5 py-3 grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        {/* ======================================================== */}
+        {/* LEFT COLUMN: ACTIVE DETECTIVES ROSTER & CASE DOSSIER     */}
+        {/* ======================================================== */}
+        <div className="lg:col-span-3 xl:col-span-3 flex flex-col gap-3">
+          {/* DETECTIVES ROSTER (UPDATES IN REAL TIME) */}
+          <div className="bg-[#0e1320]/95 border border-slate-700/80 rounded-2xl p-3.5 shadow-xl backdrop-blur-md space-y-2.5">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+                  Detectives ({rosterPlayers.length}/8)
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+              </span>
             </div>
-            <div className="min-w-0">
-              <div className="text-[9px] uppercase tracking-[0.18em] font-mono text-slate-500">Live round · Turn {gameState.turnIndex + 1}</div>
-              <div className="text-xs sm:text-sm font-bold text-white truncate">{isCurrentDrawer ? "It's your turn to draw!" : `${currentDrawer?.nickname || 'A player'} is drawing`}</div>
+
+            {/* Players list */}
+            <div className="space-y-1.5">
+              {rosterPlayers.map((p) => {
+                const isDrawing = p.id === gameState.currentTurnPlayerId;
+                const hasSolved = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
+                const isMe = p.id === currentUser.id;
+
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
+                      isDrawing
+                        ? 'bg-red-950/40 border-red-500/70 shadow-[0_0_12px_rgba(220,38,38,0.25)]'
+                        : hasSolved
+                        ? 'bg-emerald-950/30 border-emerald-500/60'
+                        : 'bg-slate-900/60 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
+                        <AvatarBadge avatar={p.avatar} size="xs" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className={`text-xs font-bold truncate ${isMe ? 'text-amber-300' : 'text-white'}`}>
+                            {p.nickname} {isMe && '(You)'}
+                          </span>
+                          {p.isHost && <span className="text-amber-400 text-xs" title="Room Host">👑</span>}
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {p.score || 0} pts
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {isDrawing ? (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-600 text-white shadow flex items-center gap-1">
+                          <Pencil className="w-2.5 h-2.5 animate-bounce" /> Drawing
+                        </span>
+                      ) : hasSolved ? (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-emerald-500/20 border border-emerald-500/60 text-emerald-300">
+                          ✓ Solved
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-slate-400 bg-slate-950 border border-slate-800">
+                          Guessing
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-emerald-300"><Radio className="w-3.5 h-3.5" /> LIVE</div>
-            <div className="text-right">
-              <div className="text-[9px] uppercase tracking-widest font-mono text-slate-500">Time left</div>
-              <div className="text-xl sm:text-2xl font-mono font-black text-red-400 tabular-nums">{formattedTimer}</div>
+
+          {/* CASE DOSSIER & QUICK RULES (COMPACT NOIR CARD) */}
+          <div className="bg-[#0e1320]/90 border border-slate-800 rounded-2xl p-3.5 shadow-lg backdrop-blur-md space-y-2">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-amber-400">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Case File Dossier</span>
+            </div>
+            <div className="text-sm font-serif font-bold text-white leading-snug">
+              {gameState.currentCase?.title || 'The Midnight Museum Heist'}
+            </div>
+            <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-slate-800/80">
+              🎯 <strong>Golden Rule:</strong> Guessing any 2 matching words in the secret clue scores points for both you and the sketch artist!
             </div>
           </div>
         </div>
-      </div>
-
-      {/* MAIN GAMEPLAY GRID: 3 COLUMNS (Canvas emphasized) */}
-      <main className="relative z-10 w-full max-w-[1720px] mx-auto px-3 sm:px-6 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
-        {/* ======================================================== */}
-        {/* LEFT COLUMN: DESKTOP BRIEFING & TIPS (2-3 cols)          */}
-        {/* ======================================================== */}
-        <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3">
-          {/* TAPED PARCHMENT CLUE CARD OR SECRET OBJECTIVE */}
-          <div className={`relative rounded-2xl p-4 shadow-xl border select-text overflow-hidden ${isCurrentDrawer ? 'bg-gradient-to-br from-red-950/70 to-[#11141e] border-red-500/45' : 'bg-[#11141e]/95 border-slate-700/70'}`}>
-            <div className="absolute right-0 top-0 w-28 h-28 bg-red-500/10 blur-3xl rounded-full" />
-            <div className="relative flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-300 mb-2">
-              <Crosshair className="w-3.5 h-3.5" />
-              <span>{isCurrentDrawer ? 'Your Secret Drawing Clue' : 'Mystery Case Clue'}</span>
-            </div>
-
-            <div className="relative text-base font-semibold leading-relaxed text-white mb-2">
-              {isCurrentDrawer ? (
-                <span className="text-amber-300 font-serif text-lg font-bold">
-                  {cleanTarget || 'Mystery Clue'}
-                </span>
-              ) : (
-                <span className="text-slate-300 text-sm font-sans leading-relaxed">
-                  Watch the live sketch! Type your guess in the chat box to score points.
-                </span>
-              )}
-            </div>
-
-            <div className="relative pt-2.5 border-t border-slate-700/70 text-[11px] font-mono text-slate-400">
-              {isCurrentDrawer
-                ? 'Draw this object or clue clearly so detectives can guess it!'
-                : 'Any close guess earns detective points!'}
-            </div>
-          </div>
-
-          {/* TIPS CARD */}
-          <div className="bg-[#10131c]/90 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-              <span>Quick Tips</span>
-            </div>
-
-            <ul className="space-y-1.5 text-xs text-slate-300 font-sans">
-              <li className="flex items-start gap-2">
-                <span className="text-red-500 font-bold">•</span>
-                <span>Draw objects, actions or locations</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-400 font-bold">•</span>
-                <span>Matching any 2 words wins points</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-sky-400 font-bold">•</span>
-                <span>Use the hint above the canvas</span>
-              </li>
-            </ul>
-          </div>
-        </div>
 
         {/* ======================================================== */}
-        {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6-8 cols)      */}
+        {/* CENTER COLUMN: DRAWING CANVAS & CONTROLS (6 cols)         */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 xl:col-span-8 flex flex-col gap-2.5">
-          {/* 1. TOP CLUE / HINT BANNER */}
+        <div className="lg:col-span-6 xl:col-span-6 flex flex-col gap-2.5">
+          {/* 1. UNIFIED CLUE & ACTIVE TIMER RIBBON */}
           {isCurrentDrawer ? (
-            <div className="w-full bg-gradient-to-r from-red-950/90 via-[#181116] to-red-950/90 border-2 border-red-500/60 rounded-2xl p-3 shadow-[0_0_25px_rgba(220,38,38,0.25)]">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+            <div className="w-full bg-gradient-to-r from-red-950/90 via-[#191118] to-red-950/90 border-2 border-red-500/70 rounded-2xl p-3 shadow-[0_0_30px_rgba(220,38,38,0.25)] flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
                   <span className="px-2 py-0.5 rounded-md bg-red-600 text-white text-[10px] font-mono font-black uppercase tracking-wider">
-                    ✏️ YOUR TURN TO DRAW
+                    ✏️ YOUR SECRET CLUE
                   </span>
-                  <span className="text-xs font-mono text-red-300">Case Clue</span>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {roundDisplay}
+                  </span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400">Turn {gameState.turnIndex + 1}</span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-xs uppercase font-mono tracking-widest text-slate-400">CLUE:</span>
-                <span className="text-xl sm:text-2xl font-black text-amber-300 tracking-wide font-serif">
+                <div className="text-xl sm:text-2xl font-black text-amber-300 font-serif tracking-wide uppercase truncate">
                   {cleanTarget || 'Mystery Clue'}
-                </span>
+                </div>
+                <div className="text-[11px] text-slate-300 font-sans">
+                  Draw this clue on the parchment below so other detectives can identify it!
+                </div>
               </div>
-              <div className="mt-1.5 text-xs text-slate-300 font-sans">
-                Draw this clue on the parchment canvas below so other players can guess it!
+
+              {/* Glowing Timer Capsule */}
+              <div className="text-right shrink-0 flex flex-col items-end">
+                <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Time Left</span>
+                <div className={`px-3 py-1 rounded-xl border font-mono text-xl sm:text-2xl font-black tabular-nums transition-all ${
+                  remainingSeconds <= 10
+                    ? 'bg-red-950/90 border-red-500 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]'
+                    : remainingSeconds <= 25
+                    ? 'bg-amber-950/70 border-amber-500/70 text-amber-300'
+                    : 'bg-slate-900/90 border-slate-700 text-emerald-400'
+                }`}>
+                  {formattedTimer}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="w-full bg-gradient-to-r from-amber-950/40 via-[#111624] to-sky-950/50 border-2 border-amber-500/40 rounded-2xl p-3 shadow-xl">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+            <div className="w-full bg-gradient-to-r from-amber-950/50 via-[#111624] to-sky-950/60 border-2 border-amber-500/50 rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
                   <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/60 text-amber-300 text-[10px] font-mono font-black uppercase tracking-wider">
                     🔍 GUESS THE CLUE
                   </span>
-                  <span className="text-xs text-slate-300 font-semibold">
-                    <strong>{currentDrawer?.nickname || 'Player'}</strong> is drawing
+                  <span className="text-xs text-slate-300 font-semibold truncate">
+                    <strong>{currentDrawer?.nickname || 'Detective'}</strong> is drawing
                   </span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400">Turn {gameState.turnIndex + 1}</span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">HINT:</span>
-                  <span className="text-xs sm:text-sm font-bold text-amber-200">
-                    {guesserHintMessage}
-                  </span>
-                </div>
-                <div className="flex items-center">
+
+                <div className="flex items-center gap-3 my-1">
                   {renderLetterPattern()}
+                </div>
+
+                <div className="text-[11px] font-mono text-amber-200">
+                  {guesserHintMessage}
+                </div>
+              </div>
+
+              {/* Glowing Timer Capsule */}
+              <div className="text-right shrink-0 flex flex-col items-end">
+                <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Time Left</span>
+                <div className={`px-3 py-1 rounded-xl border font-mono text-xl sm:text-2xl font-black tabular-nums transition-all ${
+                  remainingSeconds <= 10
+                    ? 'bg-red-950/90 border-red-500 text-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]'
+                    : remainingSeconds <= 25
+                    ? 'bg-amber-950/70 border-amber-500/70 text-amber-300'
+                    : 'bg-slate-900/90 border-slate-700 text-emerald-400'
+                }`}>
+                  {formattedTimer}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 2. DEDICATED DRAWER TOOLBAR (Cleanly outside canvas, no overlap with canvas pixels or clear button) */}
+          {/* 2. DEDICATED DRAWER TOOLBAR */}
           {isCurrentDrawer && (
             <div className="w-full bg-[#0d121e]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2">
               {/* Tool switch: Pencil vs Fill vs Eraser */}
@@ -894,8 +947,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('pencil');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
+                    currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   <span className="text-xs">Draw</span>
@@ -906,8 +960,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('fill');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'fill' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
+                    currentTool === 'fill' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <PaintBucket className="w-3.5 h-3.5" />
                   <span className="text-xs">Fill</span>
@@ -915,8 +970,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentTool('eraser')}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
+                    currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <Eraser className="w-3.5 h-3.5" />
                   <span className="text-xs">Eraser</span>
@@ -936,8 +992,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         if (currentTool === 'eraser') setCurrentTool('pencil');
                       }}
                       style={{ backgroundColor: color }}
-                      className={`w-6 h-6 rounded-full border transition-all ${isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
-                        }`}
+                      className={`w-6 h-6 rounded-full border transition-all ${
+                        isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
+                      }`}
                     />
                   );
                 })}
@@ -989,7 +1046,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           )}
 
-          {/* 3. PARCHMENT DRAWING CANVAS (100% Edge-to-Edge, Mobile-Friendly, Zero Dead-Zone) */}
+          {/* 3. PARCHMENT DRAWING CANVAS */}
           <div
             className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[64vh] min-h-[290px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-[520px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex flex-col"
             style={{ touchAction: 'none' }}
@@ -1002,7 +1059,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </span>
             </div>
 
-            {/* Drawing Canvas Area (Full 100% usable drawing surface) */}
+            {/* Drawing Canvas Area */}
             <div
               ref={canvasContainerRef}
               className="flex-1 w-full min-h-0 relative overflow-hidden bg-[#fbf8f1]"
@@ -1032,7 +1089,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           </div>
 
-          {/* 4. GUESSER CONSOLE & LIVE GUESS STREAM (VISIBLE TO BOTH DRAWER AND GUESSERS) */}
+          {/* 4. GUESSER CONSOLE & LIVE GUESS STREAM */}
           <div className="w-full rounded-2xl border border-sky-500/50 bg-[#0d1322]/95 backdrop-blur-md p-3 shadow-2xl space-y-2">
             {!isCurrentDrawer ? (
               <>
@@ -1051,7 +1108,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     type="text"
                     value={guessInput}
                     onChange={(e) => setGuessInput(e.target.value)}
-                    placeholder="Type 2-3 words (e.g. guard sleeping, ticket desk)..."
+                    placeholder="Type 2-3 words (e.g. tunnel map, guard sleeping)..."
                     className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-600 focus:border-sky-400 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans shadow-inner"
                   />
                   <button
@@ -1067,7 +1124,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-                  <span className="font-bold">You are Sketching! Live investigator guesses appear below:</span>
+                  <span className="font-bold">You are Sketching! Detective guesses appear live below:</span>
                 </div>
               </div>
             )}
@@ -1081,13 +1138,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
             )}
 
-            {/* Recent Live Guesses Stream (Visible to Drawer and Guessers) */}
+            {/* Recent Live Guesses Stream */}
             <div className="pt-1 border-t border-slate-800/80">
               <div className="text-[10px] font-mono text-slate-400 mb-1.5 flex items-center justify-between">
                 <span>Recent Live Guesses:</span>
                 {isCurrentDrawer && <span className="text-[9px] text-amber-400 font-bold uppercase">Drawer Monitoring</span>}
               </div>
-              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
+              <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto pr-1">
                 {guessFeed.length === 0 ? (
                   <span className="text-[11px] text-slate-500 italic">
                     {isCurrentDrawer ? 'Waiting for investigators to type guesses...' : 'No guesses yet. Be the first to guess!'}
@@ -1096,12 +1153,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   guessFeed.slice(-6).map((g, idx) => (
                     <span
                       key={idx}
-                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${g.isCorrect
-                        ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
-                        : g.isClose
+                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
+                        g.isCorrect
+                          ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
+                          : g.isClose
                           ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
                           : 'bg-slate-900 border border-slate-700 text-slate-300'
-                        }`}
+                      }`}
                     >
                       <span className="font-bold text-white">{g.playerName}:</span>
                       <span>{g.text}</span>
@@ -1113,119 +1171,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               </div>
             </div>
           </div>
-
-          {/* 5. COMPACT ROUND ROSTER (NO EMPTY BOXES PUSHING PAGE DOWN!) */}
-          <div className="space-y-1.5 pt-1">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-sky-400" /> Active Detectives ({rosterPlayers.length}/8)
-              </span>
-              {8 - rosterPlayers.length > 0 && (
-                <span className="text-[10px] text-slate-500 font-normal">
-                  +{8 - rosterPlayers.length} open slots
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {rosterPlayers.map((p) => {
-                const isDrawing = p.id === gameState.currentTurnPlayerId;
-                const hasSubmitted = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
-
-                if (isDrawing) {
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex-1 min-w-[130px] bg-red-950/40 border-2 border-red-600 rounded-xl px-3 py-2 flex items-center gap-2 shadow-[0_0_12px_rgba(220,38,38,0.4)]"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-red-400 animate-bounce" />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-white truncate">
-                          {p.id === currentUser.id ? 'Your Turn' : p.nickname}
-                        </div>
-                        <div className="text-[9px] font-mono text-red-400">Drawing Clue...</div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={p.id}
-                    className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 flex items-center gap-2 border ${hasSubmitted ? 'bg-emerald-950/30 border-emerald-600/60 text-emerald-200' : 'bg-slate-900/60 border-slate-800 text-slate-300'
-                      }`}
-                  >
-                    <AvatarBadge avatar={p.avatar} size="sm" />
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-white truncate">{p.nickname}</div>
-                      <div className="text-[9px] font-mono text-slate-400">
-                        {hasSubmitted ? '✓ Submitted' : 'Investigating'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT COLUMN: PLAYERS ROSTER & ROOM CHAT (2-3 cols)      */}
+        {/* RIGHT COLUMN: ROOM CHAT & GAME LOG                       */}
         {/* ======================================================== */}
-        <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-3">
-          {/* PLAYERS LIST ROSTER */}
-          <div className="bg-[#0e131f]/90 border border-slate-700/60 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md space-y-2">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
-              <span>| Players ({rosterPlayers.length}/8)</span>
-              <span className="text-[10px] text-slate-500 font-normal">Room: {roomCode || gameState.roomId.substring(0, 6)}</span>
-            </div>
-
-            <div className="space-y-1.5">
-              {rosterPlayers.map((p) => {
-                const isDrawing = p.id === gameState.currentTurnPlayerId;
-                const hasSubmitted = gameState.evidenceCards.some((e) => e.sourcePlayerId === p.id);
-                return (
-                  <div
-                    key={p.id}
-                    className={`flex items-center justify-between p-2 rounded-xl border transition-all ${isDrawing
-                      ? 'bg-red-950/30 border-red-600/80 shadow-[0_0_10px_rgba(220,38,38,0.2)]'
-                      : 'bg-slate-900/40 border-slate-800'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
-                        <AvatarBadge avatar={p.avatar} size="sm" />
-                      </div>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="text-xs font-semibold text-white truncate">{p.nickname}</span>
-                        {p.isHost && <span className="text-amber-400 text-xs">👑</span>}
-                      </div>
-                    </div>
-
-                    <div
-                      className={`text-[10px] font-mono shrink-0 ${isDrawing
-                        ? 'text-red-400 font-bold'
-                        : hasSubmitted
-                          ? 'text-emerald-400 font-semibold'
-                          : 'text-slate-400'
-                        }`}
-                    >
-                      {isDrawing ? 'Drawing...' : hasSubmitted ? '✓ Submitted' : 'Waiting...'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ROOM CHAT WITH TABS (Room Chat / Game Log) */}
+        <div className="lg:col-span-3 xl:col-span-3 flex flex-col gap-3">
           <div className="w-full">
             <RoomChat
               currentUser={currentUser}
               channel={channel}
               showTabs={true}
               defaultTab="Room Chat"
-              className="min-h-[260px]"
+              className="min-h-[480px]"
             />
           </div>
         </div>
@@ -1233,7 +1191,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
       {/* FOOTER */}
       <footer className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-6 py-2 text-center text-[11px] font-mono text-slate-500">
-        INKBOUND • Round 1 Turn {gameState.turnIndex + 1} of {rosterPlayers.length} • Case: {gameState.currentCase?.title || 'Active Investigation'}
+        INKBOUND • {roundDisplay} • Case: {gameState.currentCase?.title || 'Active Investigation'}
       </footer>
     </div>
   );
