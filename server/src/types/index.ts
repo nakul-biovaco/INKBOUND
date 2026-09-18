@@ -169,6 +169,7 @@ export interface RoomSettings {
   promptSelectionTimeLimit: number;
   roundsPerGame: number;
   storyId: string;
+  isPublic?: boolean;
 }
 
 export interface Room {
@@ -180,6 +181,7 @@ export interface Room {
   status: 'LOBBY' | 'IN_GAME' | 'COMPLETED' | 'ABANDONED';
   createdAt: number;
   settings: RoomSettings;
+  isPublic?: boolean;
 }
 
 // ==========================================
@@ -256,6 +258,7 @@ export interface PrivateDrawerState {
 export const WSClientEvent = {
   CREATE_ROOM: 'CREATE_ROOM',
   JOIN_ROOM: 'JOIN_ROOM',
+  QUICK_PLAY: 'QUICK_PLAY',
   LEAVE_ROOM: 'LEAVE_ROOM',
   READY: 'READY',
   START_GAME: 'START_GAME',
@@ -320,8 +323,15 @@ export const CreateRoomSchema = z.object({
       promptSelectionTimeLimit: z.number().min(10).max(30).optional(),
       roundsPerGame: z.number().min(1).max(30).optional(),
       storyId: z.string().optional(),
+      isPublic: z.boolean().optional(),
     })
     .optional(),
+});
+
+export const QuickPlaySchema = z.object({
+  displayName: z.string().min(1).max(30),
+  avatar: z.string().default('detective-1'),
+  genre: z.string().optional(),
 });
 
 export const JoinRoomSchema = z.object({

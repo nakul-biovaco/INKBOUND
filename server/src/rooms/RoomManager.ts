@@ -53,6 +53,7 @@ export class RoomManager {
       promptSelectionTimeLimit: customSettings?.promptSelectionTimeLimit || config.gameplay.defaultPromptSelectionSeconds,
       roundsPerGame: customSettings?.roundsPerGame || 6,
       storyId: customSettings?.storyId || 'all',
+      isPublic: customSettings?.isPublic !== false,
     };
 
     const room: Room = {
@@ -64,6 +65,7 @@ export class RoomManager {
       status: 'LOBBY',
       createdAt: Date.now(),
       settings,
+      isPublic: settings.isPublic,
     };
 
     this.rooms.set(roomId, room);
@@ -189,6 +191,109 @@ export class RoomManager {
 
     logger.info('Player joined room', { roomId, playerId, displayName });
     return { room, player, token };
+  }
+
+  /**
+   * Finds an available public room for quick matchmaking, or automatically creates a new one.
+   * Aggregates players into the fullest open lobby first so games fill up quickly!
+   */
+  public static async quickMatch(
+    displayName: string,
+    avatar: string = 'detective-1',
+    options?: { genre?: string }
+  ): Promise<{ room: Room; player: Player; token: string; isNewRoom: boolean }> {
+    const cleanName = displayName.trim() || 'Detective';
+
+    // 1. Find all eligible open public rooms in LOBBY state
+    const eligibleLobbies = Array.from(this.rooms.values()).filter((r) => {
+      if (r.isPublic === false) return false;
+      if (r.status !== 'LOBBY') return false;
+      const activeCount = r.players.filter((p) => p.isConnected).length;
+      if (activeCount >= r.maxPlayers || activeCount === 0) return false;
+      if (options?.genre && options.genre !== 'all' && r.settings.storyId !== 'all') {
+        if (!r.settings.storyId.toLowerCase().includes(options.genre.toLowerCase())) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // 2. Sort by player count descending -> fill the room closest to capacity first!
+    eligibleLobbies.sort((a, b) => {
+      const aCount = a.players.filter((p) => p.isConnected).length;
+      const bCount = b.players.filter((p) => p.isConnected).length;
+      return bCount - aCount;
+    });
+
+    if (eligibleLobbies.length > 0) {
+      const targetRoom = eligibleLobbies[0];
+      logger.info('QuickMatch matched into existing public room', {
+        joinCode: targetRoom.joinCode,
+        currentPlayers: targetRoom.players.length,
+        candidateName: cleanName,
+      });
+      const joined = await this.joinRoom(targetRoom.joinCode, cleanName, avatar);
+      return { ...joined, isNewRoom: false };
+    }
+
+    // 3. If no open lobbies, check for ongoing games that still have open slots (< maxPlayers)
+    const eligibleOngoing = Array.from(this.rooms.values()).filter((r) => {
+      if (r.isPublic === false) return false;
+      if (r.status !== 'IN_GAME') return false;
+      const activeCount = r.players.filter((p) => p.isConnected).length;
+      return activeCount < r.maxPlayers && activeCount > 0;
+    });
+
+    if (eligibleOngoing.length > 0) {
+      eligibleOngoing.sort((a, b) => {
+        const aCount = a.players.filter((p) => p.isConnected).length;
+        const bCount = b.players.filter((p) => p.isConnected).length;
+        return bCount - aCount;
+      });
+      const targetRoom = eligibleOngoing[0];
+      logger.info('QuickMatch matched into ongoing game with open slots', {
+        joinCode: targetRoom.joinCode,
+        currentPlayers: targetRoom.players.length,
+        candidateName: cleanName,
+      });
+      const joined = await this.joinRoom(targetRoom.joinCode, cleanName, avatar);
+      return { ...joined, isNewRoom: false };
+    }
+
+    // 4. No room available -> create a new public room and host it!
+    logger.info('QuickMatch creating new public matchmaking bureau', { candidateName: cleanName });
+    const created = await this.createRoom(cleanName, avatar, {
+      maxPlayers: 8,
+      drawingTimeLimit: 40,
+      roundsPerGame: 3,
+      storyId: options?.genre || 'all',
+      isPublic: true,
+    });
+
+    return {
+      room: created.room,
+      player: created.hostPlayer,
+      token: created.token,
+      isNewRoom: true,
+    };
+  }
+
+  /**
+   * Returns live stats of online players and active rooms for HUD display
+   */
+  public static getGlobalStats(): { activeRooms: number; onlineDetectives: number } {
+    let activeRooms = 0;
+    let onlineDetectives = 0;
+    for (const r of this.rooms.values()) {
+      if (r.status !== 'COMPLETED' && r.status !== 'ABANDONED') {
+        activeRooms++;
+        onlineDetectives += r.players.filter((p) => p.isConnected).length;
+      }
+    }
+    return {
+      activeRooms: Math.max(1, activeRooms),
+      onlineDetectives: Math.max(onlineDetectives, 1),
+    };
   }
 
   /**

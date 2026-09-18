@@ -16,6 +16,10 @@ import {
   Search,
   Users,
   Eye,
+  Globe,
+  Radio,
+  Zap,
+  Play,
 } from 'lucide-react';
 import { Player } from '../types/player';
 import { AuthService } from '../services/authService';
@@ -23,14 +27,17 @@ import { AvatarBadge, AvatarPicker, AvatarId } from '../components/common/Avatar
 import { decodeInviteCode } from '../utils/inviteCrypto';
 import { AudioControl } from '../components/common/AudioControl';
 import { SoundService } from '../services/soundService';
+import { BackendClient } from '../realtime/backendClient';
 
 interface HomeProps {
   currentUser: Player;
   onUpdateProfile: (updated: Player) => void;
   onCreateRoom: () => void;
   onJoinRoom: (code: string) => void;
+  onQuickPlay?: (genrePreference?: string) => void;
   isCreating?: boolean;
   isJoining?: boolean;
+  isQuickPlaying?: boolean;
 }
 
 const AVATAR_LIST: AvatarId[] = [
@@ -49,8 +56,10 @@ export const Home: React.FC<HomeProps> = ({
   onUpdateProfile,
   onCreateRoom,
   onJoinRoom,
+  onQuickPlay,
   isCreating = false,
   isJoining = false,
+  isQuickPlaying = false,
 }) => {
   const [isCasesModalOpen, setIsCasesModalOpen] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
@@ -122,8 +131,34 @@ export const Home: React.FC<HomeProps> = ({
     { rank: number; name: string; avatar: string; score: number; rate: string }[]
   >([]);
 
+  const [selectedGenre, setSelectedGenre] = useState('all');
+  const [onlineStats, setOnlineStats] = useState<{ activeRooms: number; onlineDetectives: number }>({
+    activeRooms: 1,
+    onlineDetectives: 1,
+  });
+
   useEffect(() => {
     AuthService.getLeaderboard().then(setLeaderboardList);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const updateStats = async () => {
+      try {
+        const stats = await BackendClient.getInstance().getOnlineStats();
+        if (isMounted && stats) {
+          setOnlineStats(stats);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    updateStats();
+    const interval = setInterval(updateStats, 8000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -237,6 +272,108 @@ export const Home: React.FC<HomeProps> = ({
             <br className="hidden sm:inline" />
             <span className="text-amber-300 font-medium"> Sketch your secret clue, catch who is lying, and crack the case with friends!</span>
           </p>
+        </div>
+
+        {/* ======================================================== */}
+        {/* GLOBAL ONLINE QUICK PLAY HERO BANNER                    */}
+        {/* ======================================================== */}
+        <div className="w-full mb-8 relative group">
+          {/* Subtle Ambient Radial Glow */}
+          <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-red-600/40 via-amber-500/30 to-red-600/40 blur-xl opacity-75 group-hover:opacity-100 transition-opacity -z-10 pointer-events-none" />
+
+          <div className="relative rounded-3xl bg-gradient-to-b from-[#141a29]/95 via-[#0d121c]/95 to-[#090c14]/95 border-2 border-red-600/40 shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-5 sm:p-6 md:p-8 backdrop-blur-xl overflow-hidden">
+            {/* Vintage Grid & Scanline Atmosphere */}
+            <div className="absolute inset-0 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* Left Column: Dispatch Title & Info */}
+              <div className="space-y-3 text-center md:text-left flex-1">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-red-950/80 text-red-300 border border-red-600/50 shadow-inner">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    GLOBAL MULTIPLAYER QUEUE
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-medium bg-black/60 text-amber-300 border border-amber-600/30">
+                    <Globe className="w-3 h-3 text-amber-400" />
+                    <span>{onlineStats.onlineDetectives} Detectives Online</span>
+                    <span className="text-slate-500">•</span>
+                    <span>{onlineStats.activeRooms} Public Bureaus</span>
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white font-serif tracking-tight flex items-center justify-center md:justify-start gap-3">
+                    <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400 fill-amber-400/30 shrink-0 animate-pulse" />
+                    <span>Instant Quick Play</span>
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-xl font-light leading-relaxed">
+                    Skip private room codes! One click matches you into active global investigations with players worldwide.
+                  </p>
+                </div>
+
+                {/* Case Theme Pill Filter */}
+                <div className="pt-1 flex flex-wrap items-center justify-center md:justify-start gap-2 text-[11px] font-mono">
+                  <span className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold mr-1">Case Genre:</span>
+                  {[
+                    { id: 'all', label: '⚡ All Mysteries (Fastest)' },
+                    { id: 'noir', label: '🕵️ Classic Noir' },
+                    { id: 'cyberpunk', label: '🤖 Cyberpunk' },
+                    { id: 'manor', label: '🕯️ Gothic Manor' },
+                    { id: 'heist', label: '💎 Museum Heist' },
+                  ].map((genre) => (
+                    <button
+                      key={genre.id}
+                      type="button"
+                      onClick={() => {
+                        SoundService.playBadgeClick();
+                        setSelectedGenre(genre.id);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        selectedGenre === genre.id
+                          ? 'bg-red-600/30 border-red-500 text-white font-bold shadow-md shadow-red-950/60 scale-105'
+                          : 'bg-black/40 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-500'
+                      }`}
+                    >
+                      {genre.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Prominent Play Button */}
+              <div className="flex flex-col items-center shrink-0 w-full sm:w-auto">
+                <button
+                  type="button"
+                  disabled={isQuickPlaying}
+                  onClick={() => {
+                    SoundService.playStamp();
+                    onQuickPlay?.(selectedGenre);
+                  }}
+                  className="w-full sm:w-72 md:w-80 py-4 px-8 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:via-rose-500 hover:to-amber-500 text-white font-serif font-black text-lg sm:text-xl tracking-wider uppercase flex items-center justify-center gap-3 cursor-pointer shadow-[0_10px_35px_rgba(220,38,38,0.6)] transform hover:scale-[1.03] active:scale-[0.98] transition-all border-2 border-red-400/50 disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                >
+                  {isQuickPlaying ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      <span>Matching Bureau...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-6 h-6 text-white fill-white group-hover/btn:scale-110 transition-transform" />
+                      <span>PLAY ONLINE NOW</span>
+                    </>
+                  )}
+                </button>
+                <span className="mt-2 text-[10px] font-mono text-slate-400 tracking-wider">
+                  Aggregates players into the most populated room
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 5. THE THREE INVESTIGATION PROPS ON THE DESK */}
@@ -826,6 +963,48 @@ export const Home: React.FC<HomeProps> = ({
                   setIsAvatarPickerOpen(false);
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL 5: QUICK PLAY RADAR SCANNER OVERLAY                */}
+      {/* ======================================================== */}
+      {isQuickPlaying && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative w-full max-w-md bg-[#0e131f] border-2 border-red-600/70 rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] text-center space-y-6 overflow-hidden">
+            {/* Background radar grid */}
+            <div className="absolute inset-0 bg-[radial-gradient(#ef4444_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
+
+            {/* Concentric pulsing circles with sweeping radar hand */}
+            <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-red-600/30 animate-ping" />
+              <div className="absolute inset-2 rounded-full border border-red-500/40" />
+              <div className="absolute inset-6 rounded-full border border-red-500/60" />
+              <div className="absolute inset-10 rounded-full border border-amber-500/70" />
+              {/* Radar sweep arm */}
+              <div className="absolute inset-0 rounded-full overflow-hidden animate-spin [animation-duration:3s]">
+                <div className="w-1/2 h-1/2 bg-gradient-to-br from-red-500/40 to-transparent origin-bottom-right" />
+              </div>
+              <Radio className="w-10 h-10 text-red-400 z-10 animate-pulse" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] font-mono tracking-widest text-red-400 font-bold uppercase">
+                POLICE RADIO FREQUENCY • SCANNING
+              </div>
+              <h3 className="text-xl font-bold text-white font-serif">
+                Searching Global Bureaus...
+              </h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                Scanning public investigations for open detective desks. Merging you into the highest-density room...
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-xs font-mono text-amber-300">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+              <span>Optimizing Matchmaking...</span>
             </div>
           </div>
         </div>

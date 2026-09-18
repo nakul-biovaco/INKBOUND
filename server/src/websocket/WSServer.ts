@@ -6,6 +6,7 @@ import {
   DrawStrokeSchema,
   ErrorCode,
   JoinRoomSchema,
+  QuickPlaySchema,
   Player,
   ReconnectSchema,
   SelectPromptSchema,
@@ -271,6 +272,69 @@ export class WSServer {
         // If game is in progress, also restore live game state to the player immediately
         const engine = GameEngine.getEngine(room.roomId);
         if (engine) {
+          engine.handlePlayerReconnect(player);
+          const publicState = Serializer.serializePublicState(engine.getSession(), room);
+          const strokes = await DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex);
+
+          this.sendToSocket(ws, WSServerEvent.PLAYER_RECONNECTED, {
+            gameState: publicState,
+            strokeHistory: strokes,
+            isDrawer: engine.getSession().currentDrawerId === player.playerId,
+            drawerPrivateState:
+              engine.getSession().currentDrawerId === player.playerId
+                ? Serializer.serializePrivateDrawerState(engine.getSession())
+                : null,
+          });
+        }
+        break;
+      }
+
+      case WSClientEvent.QUICK_PLAY: {
+        const valid = QuickPlaySchema.parse(payload || {});
+        const { room, player, token, isNewRoom } = await RoomManager.quickMatch(
+          valid.displayName,
+          valid.avatar,
+          { genre: valid.genre }
+        );
+
+        this.associateSocket(
+          ws,
+          {
+            playerId: player.playerId,
+            displayName: player.displayName,
+            roomId: room.roomId,
+            isHost: player.isHost,
+            reconnectToken: player.reconnectToken,
+            issuedAt: Date.now(),
+          },
+          true
+        );
+
+        if (!isNewRoom) {
+          // Broadcast to existing room players that a new quick-match detective arrived
+          this.broadcastToRoom(room.roomId, WSServerEvent.PLAYER_JOINED, {
+            player: {
+              playerId: player.playerId,
+              displayName: player.displayName,
+              avatar: player.avatar,
+              score: player.score,
+              isHost: player.isHost,
+              isReady: player.isReady,
+            },
+          });
+        }
+
+        // Send full room state to joiner
+        this.sendToSocket(ws, WSServerEvent.ROOM_STATE, {
+          room: Serializer.serializeRoom(room),
+          token,
+          playerId: player.playerId,
+          isNewRoom,
+        });
+
+        // If matched into an ongoing game, restore live state immediately
+        const engine = GameEngine.getEngine(room.roomId);
+        if (engine && !isNewRoom) {
           engine.handlePlayerReconnect(player);
           const publicState = Serializer.serializePublicState(engine.getSession(), room);
           const strokes = await DrawingManager.getTurnStrokes(room.roomId, engine.getSession().turnIndex);

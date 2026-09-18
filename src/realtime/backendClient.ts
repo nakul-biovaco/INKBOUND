@@ -349,6 +349,39 @@ export class BackendClient {
     return data;
   }
 
+  public async quickMatch(
+    displayName: string,
+    avatar: string = 'detective-1',
+    genre?: string
+  ): Promise<{ room: any; player: any; hostPlayer?: any; token: string; isNewRoom: boolean }> {
+    const res = await this.fetchWithTimeout(`${DEFAULT_CONFIG.httpUrl}/api/rooms/quick-play`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, avatar, genre }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to match into room');
+    }
+    const data = await res.json();
+    const effectivePlayer = data.player || data.hostPlayer;
+    this.setTokens(data.token, effectivePlayer.playerId, data.room.roomId, effectivePlayer.reconnectToken);
+    await this.connect();
+    return data;
+  }
+
+  public async getOnlineStats(): Promise<{ activeRooms: number; onlineDetectives: number }> {
+    try {
+      const res = await this.fetchWithTimeout(`${DEFAULT_CONFIG.httpUrl}/api/stats/online`, { method: 'GET' }, 3000);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+    return { activeRooms: 1, onlineDetectives: 1 };
+  }
+
   public selectPrompt(optionIndex: number): void {
     this.send('SELECT_PROMPT', { optionIndex });
   }

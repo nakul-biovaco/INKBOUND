@@ -203,6 +203,45 @@ export class RoomService {
   }
 
   /**
+   * Quick Matchmaking: finds an available room with open slots or creates a new public one.
+   */
+  public static async quickMatchRoom(
+    player: Player
+  ): Promise<{ room: Room; players: Player[]; isNewRoom: boolean } | { error: string }> {
+    if (isSupabaseConfigured) {
+      try {
+        const { data: roomsData } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('status', 'WAITING')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (roomsData && roomsData.length > 0) {
+          for (const rd of roomsData) {
+            const { data: rps } = await supabase
+              .from('room_players')
+              .select('*')
+              .eq('room_id', rd.id);
+            if (rps && rps.length < (rd.max_players || 8) && rps.length > 0) {
+              const joined = await this.joinRoom(rd.code, player);
+              if (!('error' in joined)) {
+                return { ...joined, isNewRoom: false };
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[RoomService] Supabase quick match query error:', err);
+      }
+    }
+
+    // Fallback: create fresh room
+    const created = await this.createRoom(player, { distorterEnabled: false });
+    return { ...created, isNewRoom: true };
+  }
+
+  /**
    * Toggles ready state for a player and broadcasts live update.
    */
   public static toggleReady(roomId: string, playerId: string): Player[] {

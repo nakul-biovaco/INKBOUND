@@ -222,6 +222,7 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [isQuickPlaying, setIsQuickPlaying] = useState(false);
 
   // Auto-dismiss transient alert banner after 4.5 seconds
   useEffect(() => {
@@ -765,6 +766,74 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleQuickPlay = async (genrePreference?: string) => {
+    if (isQuickPlaying) return;
+    setIsQuickPlaying(true);
+    setErrorMessage('');
+    try {
+      const backend = BackendClient.getInstance();
+      const res = await backend.quickMatch(currentUser.nickname, currentUser.avatar, genrePreference);
+      const serverRoom = res.room;
+      const mappedRoom: Room = {
+        id: serverRoom.roomId,
+        code: serverRoom.joinCode,
+        hostId: serverRoom.hostPlayerId,
+        maxPlayers: serverRoom.maxPlayers || 8,
+        status: serverRoom.status === 'IN_GAME' ? 'IN_GAME' : 'WAITING',
+        settings: {
+          turnDuration: serverRoom.settings?.drawingTimeLimit || 120,
+          distorterEnabled: false,
+          selectedCaseId:
+            serverRoom.settings?.storyId && serverRoom.settings.storyId !== 'midnight_museum'
+              ? serverRoom.settings.storyId
+              : (genrePreference || 'all'),
+          allowQuestioning: true,
+          isPublic: serverRoom.isPublic !== false,
+        },
+        createdAt: new Date().toISOString(),
+        isPublic: serverRoom.isPublic !== false,
+      };
+      setCurrentRoom(mappedRoom);
+
+      const mappedPlayers: Player[] = serverRoom.players.map((p: any) => ({
+        id: p.playerId,
+        nickname: p.displayName,
+        avatar: p.avatar,
+        isHost: p.isHost,
+        isReady: p.isReady,
+        score: p.score || 0,
+        isOnline: p.isConnected !== false,
+        joinedAt: new Date(p.joinedAt || Date.now()).toISOString(),
+        lastSeenAt: new Date().toISOString(),
+      }));
+      setPlayers(mappedPlayers);
+      const me = mappedPlayers.find((p) => p.id === res.player.playerId);
+      if (me) setCurrentUser(me);
+
+      const targetView = serverRoom.status === 'IN_GAME' ? 'GAME' : 'LOBBY';
+      saveCachedSession(mappedRoom, mappedPlayers, null, targetView);
+      setView(targetView);
+    } catch (err: any) {
+      // Fallback to roomService quick match
+      try {
+        const res = await RoomService.quickMatchRoom(currentUser);
+        if ('error' in res) {
+          throw new Error(res.error);
+        }
+        setCurrentRoom(res.room);
+        setPlayers(res.players);
+        saveCachedSession(res.room, res.players, null, 'LOBBY');
+        setView('LOBBY');
+      } catch {
+        SoundService.playAlert();
+        setErrorMessage('Global queue busy. Establishing a new Bureau case file for you!');
+        handleCreateRoom();
+      }
+    } finally {
+      setIsQuickPlaying(false);
+    }
+  };
+
   const handleToggleReady = () => {
     if (!currentRoom) return;
     const nextReady = !currentUser.isReady;
@@ -876,8 +945,10 @@ export const App: React.FC = () => {
           onUpdateProfile={setCurrentUser}
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
+          onQuickPlay={handleQuickPlay}
           isCreating={isCreatingRoom}
           isJoining={isJoiningRoom}
+          isQuickPlaying={isQuickPlaying}
         />
       )}
 

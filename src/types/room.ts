@@ -8,6 +8,7 @@ export interface RoomSettings {
   rounds?: number;
   showHints?: boolean;
   matureContent?: boolean;
+  isPublic?: boolean;
 }
 
 export interface Room {
@@ -18,4 +19,5 @@ export interface Room {
   status: RoomStatus;
   settings: RoomSettings;
   createdAt: string;
+  isPublic?: boolean;
 }

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { CreateRoomSchema, JoinRoomSchema } from '../types/index.js';
+import { CreateRoomSchema, JoinRoomSchema, QuickPlaySchema } from '../types/index.js';
 import { RoomManager } from '../rooms/RoomManager.js';
 import { StoryLoader } from '../story/StoryLoader.js';
 import { Serializer } from '../websocket/Serializer.js';
@@ -61,6 +61,31 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     } catch (err: any) {
       return reply.code(400).send({ error: err.message });
     }
+  });
+
+  // Global Multiplayer Quick Matchmaking
+  app.post('/api/rooms/quick-play', async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = QuickPlaySchema.parse(req.body || {});
+      const { room, player, token, isNewRoom } = await RoomManager.quickMatch(
+        body.displayName,
+        body.avatar,
+        { genre: body.genre }
+      );
+      return reply.send({
+        room: Serializer.serializeRoom(room),
+        player,
+        token,
+        isNewRoom,
+      });
+    } catch (err: any) {
+      return reply.code(400).send({ error: err.message });
+    }
+  });
+
+  // Global Active Player and Room Statistics
+  app.get('/api/stats/online', async () => {
+    return RoomManager.getGlobalStats();
   });
 
   // Query Room

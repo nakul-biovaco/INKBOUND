@@ -201,12 +201,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                   {hasCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+              <div className="flex items-center flex-wrap gap-2 mt-1.5 text-xs text-slate-400">
                 <span>Share this code with your friends</span>
                 <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Room Open
                 </span>
+                {room.settings?.isPublic !== false && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-sky-300 font-mono font-semibold px-2 py-0.5 rounded bg-sky-950/70 border border-sky-500/40">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                    🌐 Global Matchmaking Active
+                  </span>
+                )}
               </div>
             </div>
 
