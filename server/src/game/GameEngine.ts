@@ -75,6 +75,10 @@ export class GameEngine {
       drawingStrokes: [],
       finalTheories: {},
       ending: null,
+      retiredEventIds: [],
+      usedWordObjectives: [],
+      offeredPromptHistory: [],
+      lastRoundOutcome: null,
     };
 
     GameEngine.sessions.set(this.roomId, this);
@@ -270,9 +274,19 @@ export class GameEngine {
       this.session.storyVariables = this.storyEngine.getVariables();
     }
 
-    // Solve check: do we have eligible events left in the story?
+    // Deduplication check: exclude solved, retired/attempted, and previously used/offered words
     const solvedSet = new Set(this.session.solvedEvents.map((e) => e.eventId));
-    const promptChoices = this.storyEngine.generateThreePromptChoices(this.session.currentAct, solvedSet);
+    const retiredSet = new Set(this.session.retiredEventIds || []);
+    const usedWordSet = new Set((this.session.usedWordObjectives || []).map((w) => w.toLowerCase().trim()));
+    const offeredWordSet = new Set((this.session.offeredPromptHistory || []).map((w) => w.toLowerCase().trim()));
+
+    const promptChoices = this.storyEngine.generateThreePromptChoices(
+      this.session.currentAct,
+      solvedSet,
+      retiredSet,
+      usedWordSet,
+      offeredWordSet
+    );
 
     if (!promptChoices) {
       // If no events in current act, check if there's a next act
@@ -378,6 +392,22 @@ export class GameEngine {
           ])
         ),
       };
+
+      // Authoritative deduplication: permanently retire chosen clue and event for this entire match
+      const cleanObj = chosenOption.previewText.toLowerCase().trim();
+      if (!this.session.usedWordObjectives.includes(cleanObj)) {
+        this.session.usedWordObjectives.push(cleanObj);
+      }
+      if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
+        this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
+      }
+      // Record all 3 offered options so they don't immediately repeat as distractors for next drawer
+      for (const opt of this.session.activePromptOptions) {
+        const optClean = opt.previewText.toLowerCase().trim();
+        if (!this.session.offeredPromptHistory.includes(optClean)) {
+          this.session.offeredPromptHistory.push(optClean);
+        }
+      }
     }
 
     this.emit('PROMPT_SELECTED', {
@@ -392,6 +422,22 @@ export class GameEngine {
   private autoSelectPrompt(): void {
     if (this.session.state === GameStatus.PROMPT_SELECTION) {
       logger.info('Auto-selecting prompt for drawer due to timeout');
+      const firstOpt = this.session.activePromptOptions?.[0];
+      if (firstOpt && this.session.selectedEvent) {
+        const cleanObj = firstOpt.previewText.toLowerCase().trim();
+        if (!this.session.usedWordObjectives.includes(cleanObj)) {
+          this.session.usedWordObjectives.push(cleanObj);
+        }
+        if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
+          this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
+        }
+        for (const opt of this.session.activePromptOptions || []) {
+          const optClean = opt.previewText.toLowerCase().trim();
+          if (!this.session.offeredPromptHistory.includes(optClean)) {
+            this.session.offeredPromptHistory.push(optClean);
+          }
+        }
+      }
       this.startDrawingPhase();
     }
   }
@@ -641,14 +687,36 @@ export class GameEngine {
     });
 
     this.timerManager.startTimer('story_reveal', revealSeconds, () => {
-      this.advanceToNextTurn();
+      const cleanWord = this.session.selectedEvent?.drawingObjective
+        ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+        : 'Mystery Clue';
+      this.advanceToNextTurn(
+        true,
+        cleanWord,
+        record.solverPlayerId,
+        solver?.displayName,
+        { solverPoints: record.pointsAwardedSolver, drawerPoints: record.pointsAwardedDrawer }
+      );
     });
   }
 
   private handleRoundTimeout(): void {
     logger.info('Round timed out without solve', { turnIndex: this.session.turnIndex });
-    this.emit('DRAWING_ENDED', { turnIndex: this.session.turnIndex, reason: 'TIMEOUT' });
-    this.advanceToNextTurn();
+    if (this.session.selectedEvent) {
+      const cleanWord = MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective);
+      if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
+        this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
+      }
+      if (!this.session.usedWordObjectives.includes(cleanWord.toLowerCase().trim())) {
+        this.session.usedWordObjectives.push(cleanWord.toLowerCase().trim());
+      }
+    }
+    const cleanWord = this.session.selectedEvent?.drawingObjective
+      ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+      : 'Secret Clue';
+
+    this.emit('DRAWING_ENDED', { turnIndex: this.session.turnIndex, reason: 'TIMEOUT', revealedObjective: cleanWord });
+    this.advanceToNextTurn(false, cleanWord);
   }
 
   /** Allows only the active drawer to finish early and advances the shared turn. */
@@ -661,11 +729,30 @@ export class GameEngine {
     }
 
     this.timerManager.cancelTimer();
-    this.emit('DRAWING_ENDED', { turnIndex: this.session.turnIndex, reason: 'DRAWER_FINISHED' });
-    this.advanceToNextTurn();
+    if (this.session.selectedEvent) {
+      const cleanWord = MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective);
+      if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
+        this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
+      }
+      if (!this.session.usedWordObjectives.includes(cleanWord.toLowerCase().trim())) {
+        this.session.usedWordObjectives.push(cleanWord.toLowerCase().trim());
+      }
+    }
+    const cleanWord = this.session.selectedEvent?.drawingObjective
+      ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+      : 'Secret Clue';
+
+    this.emit('DRAWING_ENDED', { turnIndex: this.session.turnIndex, reason: 'DRAWER_FINISHED', revealedObjective: cleanWord });
+    this.advanceToNextTurn(false, cleanWord);
   }
 
-  private advanceToNextTurn(): void {
+  private advanceToNextTurn(
+    wasSolved = false,
+    revealedWord?: string,
+    solverId?: string,
+    solverName?: string,
+    scoreAward?: any
+  ): void {
     if (
       this.session.state === GameStatus.NEXT_TURN ||
       this.session.state === GameStatus.FINAL_INVESTIGATION ||
@@ -699,12 +786,34 @@ export class GameEngine {
       return this.startFinalInvestigation();
     }
 
-    this.emit('NEXT_TURN', {
-      completedTurnIndex: this.session.turnIndex,
-      nextTurnInSeconds: 3,
-    });
+    const prevDrawer = room.players.find((p) => p.playerId === this.session.currentDrawerId);
+    const nextDrawer = this.turnManager.peekNextDrawer(room.players);
+    const finalRevealedWord =
+      revealedWord ||
+      (this.session.selectedEvent
+        ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+        : 'Secret Clue');
 
-    this.timerManager.startTimer('next_turn_delay', 3, () => {
+    const transitionSeconds = 4;
+    const recap = {
+      completedTurnIndex: this.session.turnIndex,
+      previousDrawerId: prevDrawer?.playerId || this.session.currentDrawerId || '',
+      previousDrawerName: prevDrawer?.displayName || 'The Artist',
+      revealedObjective: finalRevealedWord,
+      solved: Boolean(wasSolved),
+      solverPlayerId: solverId,
+      solverName: solverName,
+      scoreAward,
+      nextDrawerPlayerId: nextDrawer?.playerId || '',
+      nextDrawerName: nextDrawer?.displayName || 'Next Detective',
+      nextTurnInSeconds: transitionSeconds,
+    };
+
+    this.session.lastRoundOutcome = recap;
+
+    this.emit('NEXT_TURN', recap);
+
+    this.timerManager.startTimer('next_turn_delay', transitionSeconds, () => {
       this.beginTurn();
     });
   }

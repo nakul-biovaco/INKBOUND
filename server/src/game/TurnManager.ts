@@ -80,6 +80,26 @@ export class TurnManager {
     return { drawerId: candidateId || this.turnOrder[0], turnIndex: this.currentTurnIndex };
   }
 
+  /**
+   * Peeks the next drawer without advancing state, for smooth handoff announcements.
+   */
+  public peekNextDrawer(players: Player[]): Player | null {
+    if (this.turnOrder.length === 0) return null;
+    const playerMap = new Map(players.map((p) => [p.playerId, p]));
+    const nextIdx = (this.drawerIndex + 1) % this.turnOrder.length;
+    let candidateId = this.turnOrder[nextIdx];
+    let player = playerMap.get(candidateId);
+    let attempts = 0;
+    let idx = nextIdx;
+    while (!player && attempts < this.turnOrder.length) {
+      idx = (idx + 1) % this.turnOrder.length;
+      candidateId = this.turnOrder[idx];
+      player = playerMap.get(candidateId);
+      attempts++;
+    }
+    return player || null;
+  }
+
   public getCurrentDrawerId(): string | null {
     if (this.drawerIndex === -1 || this.turnOrder.length === 0) return null;
     return this.turnOrder[this.drawerIndex];

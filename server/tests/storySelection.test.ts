@@ -9,7 +9,7 @@ import { GameStatus, Player } from '../src/types/index.js';
 test('StoryLibrary: loads all 17 markdown stories from /STORY', () => {
   StoryLibrary.init();
   const stories = StoryLibrary.getAllStories();
-  assert.equal(stories.length, 17, 'All 17 stories must be loaded from markdown files');
+  assert.ok(stories.length >= 120, 'All 120 catalog stories plus legacy markdown stories must be loaded');
 
   // Verify key stories exist
   const museum = StoryLibrary.getStory('story_01_the_midnight_museum');

@@ -13,6 +13,7 @@ import { FinalTheoryModal } from '../components/accusation/FinalTheoryModal';
 import { CinematicReveal } from '../components/reveal/CinematicReveal';
 import { ResultsScreen } from '../components/results/ResultsScreen';
 import { ClueDiscoveredCard } from '../components/common/ClueDiscoveredCard';
+import { TurnTransitionOverlay, TurnTransitionData } from '../components/common/TurnTransitionOverlay';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
 import { SoundService } from '../services/soundService';
 
@@ -96,6 +97,7 @@ export const Game: React.FC<GameProps> = ({
   const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(
     initialStoredClue?.objective || null
   );
+  const [turnTransitionData, setTurnTransitionData] = useState<TurnTransitionData | null>(null);
   const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
   const [publicHint, setPublicHint] = useState<string | null>(null);
   const [publicWordLengths, setPublicWordLengths] = useState<number[] | null>(null);
@@ -362,16 +364,47 @@ export const Game: React.FC<GameProps> = ({
       });
     });
 
-    const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
+    const unsubNextTurn = backend.on('NEXT_TURN', (payload: any) => {
       SoundService.playTurnStart();
       setClueCardData((prev) => ({ ...prev, isOpen: false }));
-      showGameBanner({
-        id: 'next-turn',
-        type: 'turn',
-        badge: 'ROUND COMPLETE',
-        title: "Next detective's turn to draw!",
-        subtitle: 'Preparing secret clues for the next turn...',
-      }, 3500);
+
+      // Purge cached clue for prior turn so it never leaks
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem(getClueStorageKey(room.id, gameState.turnIndex));
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(getClueStorageKey(room.id, gameState.turnIndex));
+        }
+      } catch {}
+
+      if (payload) {
+        setTurnTransitionData({
+          completedTurnIndex: payload.completedTurnIndex ?? gameState.turnIndex,
+          previousDrawerId: payload.previousDrawerId || gameState.currentTurnPlayerId || '',
+          previousDrawerName: payload.previousDrawerName || 'The Artist',
+          revealedObjective: payload.revealedObjective || 'Mystery Clue',
+          solved: Boolean(payload.solved),
+          solverPlayerId: payload.solverPlayerId,
+          solverName: payload.solverName,
+          scoreAward: payload.scoreAward,
+          nextDrawerPlayerId: payload.nextDrawerPlayerId || '',
+          nextDrawerName: payload.nextDrawerName || 'Next Detective',
+          nextTurnInSeconds: payload.nextTurnInSeconds || 4,
+        });
+      }
+    });
+
+    const unsubDrawingEnded = backend.on('DRAWING_ENDED', (payload: any) => {
+      if (payload?.reason === 'TIMEOUT' && payload?.revealedObjective) {
+        showGameBanner({
+          id: 'timeout-reveal',
+          type: 'status',
+          badge: "TIME'S UP",
+          title: `Nobody solved the clue!`,
+          subtitle: `The secret word was: "${payload.revealedObjective}"`,
+        }, 4000);
+      }
     });
 
     const unsubPlayerLeft = backend.on('PLAYER_LEFT', (payload: any) => {
@@ -545,6 +578,7 @@ export const Game: React.FC<GameProps> = ({
       unsubClueSolved();
       unsubStoryReveal();
       unsubNextTurn();
+      unsubDrawingEnded();
       unsubPlayerLeft();
       unsubPlayerReconnected();
       unsubFinalInvestigation();
@@ -807,8 +841,18 @@ export const Game: React.FC<GameProps> = ({
         </div>
       )}
 
-      {/* SKRIBBL-STYLE CLUE PICKER (Only shown to active drawer if clue hasn't been chosen yet) */}
-      {drawerPromptOptions.length > 0 && isDrawer && !secretDrawObjective && (
+      {/* SMOOTH PLAYER-TO-PLAYER TURN HANDOVER OVERLAY */}
+      {turnTransitionData && (
+        <TurnTransitionOverlay
+          transitionData={turnTransitionData}
+          currentUser={currentUser}
+          players={gameState.players}
+          onComplete={() => setTurnTransitionData(null)}
+        />
+      )}
+
+      {/* SKRIBBL-STYLE CLUE PICKER (Only shown to active drawer if clue hasn't been chosen yet and not during handover transition) */}
+      {drawerPromptOptions.length > 0 && isDrawer && !secretDrawObjective && !turnTransitionData && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none">
           <div className="max-w-2xl w-full bg-[#0e1320] border-2 border-red-500/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(220,38,38,0.35)] text-center animate-fadeIn relative">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/40 text-red-300 font-mono text-xs uppercase tracking-widest font-bold mb-2">

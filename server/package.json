@@ -9,7 +9,7 @@
     "dev:watch": "tsx watch src/index.ts",
     "build": "tsc && node scripts/copy-stories.js",
     "start": "node dist/index.js",
-    "test": "tsx --test tests/stateMachine.test.ts tests/guessEngine.test.ts tests/roomAndAuth.test.ts tests/storySelection.test.ts tests/phase3Gameplay.test.ts tests/quickMatch.test.ts",
+    "test": "tsx --test tests/stateMachine.test.ts tests/guessEngine.test.ts tests/roomAndAuth.test.ts tests/storySelection.test.ts tests/phase3Gameplay.test.ts tests/quickMatch.test.ts tests/wordDeduplication.test.ts",
     "test:sim": "tsx tests/simulation.test.ts",
     "test:sim4p": "tsx tests/simulation4p.test.ts",
     "validate:stories": "tsx src/story/StoryValidator.ts"

@@ -219,6 +219,22 @@ export interface AuthoritativeGameSession {
   drawingStrokes: StrokeChunk[];
   finalTheories: Record<string, { answer: string; confidence: number; submittedAt: number }>;
   ending: StoryEnding | null;
+  retiredEventIds: string[]; // All events attempted/played so they never repeat
+  usedWordObjectives: string[]; // All clue words drawn in this session so they never repeat
+  offeredPromptHistory: string[]; // All distractor and clue words previously offered
+  lastRoundOutcome: {
+    completedTurnIndex: number;
+    previousDrawerId: string;
+    previousDrawerName: string;
+    revealedObjective: string;
+    solved: boolean;
+    solverPlayerId?: string;
+    solverName?: string;
+    scoreAward?: any;
+    nextDrawerPlayerId: string;
+    nextDrawerName: string;
+    nextTurnInSeconds: number;
+  } | null;
 }
 
 // ==========================================

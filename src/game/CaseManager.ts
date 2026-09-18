@@ -1,7 +1,47 @@
 import { MysteryCase, PlayerSecretClue } from '../types/game';
 import { Player } from '../types/player';
+import { ClientInfiniteClueEngine } from './InfiniteClueEngine';
+import storiesCatalogJson from './data/stories_catalog.json';
 
-export const CASES_CATALOG: Record<string, MysteryCase> = {
+// Build 120 complete cases from JSON catalog
+const CATALOG_120_CASES: Record<string, MysteryCase> = {};
+for (const s of (storiesCatalogJson as any[])) {
+  CATALOG_120_CASES[s.id] = {
+    id: s.id,
+    title: s.title,
+    genre: s.genre,
+    setting: s.setting,
+    description: s.description,
+    characters: (s.characters || []).map((c: any) => ({
+      name: c.name,
+      role: c.role_description,
+      alibi: c.alibi,
+      avatar: c.avatar || '👤',
+    })),
+    truth: s.truth,
+    culprit: s.culprit,
+    motive: s.motive,
+    timeline: (s.timeline || []).map((t: any) => ({
+      time: t.time,
+      event: t.event,
+    })),
+    evidence: (s.evidence || []).map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      detail: e.detail,
+    })),
+    clues: (s.clues || []).map((c: any) => ({
+      order: c.order,
+      title: c.title,
+      text: c.text,
+    })),
+    misleadingInformation: (s.red_herrings || []).map((h: any) => `${h.lead}: ${h.explanation}`).join('; '),
+    distorterObjective: s.distorter_objective,
+    difficulty: s.difficulty,
+  };
+}
+
+const LEGACY_CASES_CATALOG: Record<string, MysteryCase> = {
   // ============================================================
   // STORY 01 — THE MIDNIGHT MUSEUM
   // ============================================================
@@ -754,6 +794,11 @@ export const CASES_CATALOG: Record<string, MysteryCase> = {
   },
 };
 
+export const CASES_CATALOG: Record<string, MysteryCase> = {
+  ...CATALOG_120_CASES,
+  ...LEGACY_CASES_CATALOG,
+};
+
 export class CaseManager {
   public static getAllCases(): MysteryCase[] {
     return Object.values(CASES_CATALOG);
@@ -761,7 +806,7 @@ export class CaseManager {
 
   public static getCase(caseId?: string): MysteryCase {
     if (!caseId) {
-      return CASES_CATALOG['story_01_the_midnight_museum'];
+      return CASES_CATALOG['story_001'] || CASES_CATALOG['story_01_the_midnight_museum'];
     }
 
     const clean = caseId.toLowerCase().trim().replace(/['"“”]/g, '');
@@ -785,22 +830,26 @@ export class CaseManager {
       }
     }
 
-    // Match by story number (e.g., '07', '7', 'story_07')
+    // Match by story number (e.g., '001', '073', '7', 'story_007', 'story_7')
     const numMatch = clean.match(/(\d+)/);
     if (numMatch) {
-      const numStr = numMatch[1].padStart(2, '0');
+      const numStr3 = numMatch[1].padStart(3, '0');
+      if (CASES_CATALOG[`story_${numStr3}`]) {
+        return CASES_CATALOG[`story_${numStr3}`];
+      }
+      const numStr2 = numMatch[1].padStart(2, '0');
       for (const [key, val] of Object.entries(CASES_CATALOG)) {
-        if (key.startsWith(`story_${numStr}_`)) {
+        if (key.startsWith(`story_${numStr2}_`)) {
           return val;
         }
       }
     }
 
-    return CASES_CATALOG['story_01_the_midnight_museum'];
+    return CASES_CATALOG['story_001'] || CASES_CATALOG['story_01_the_midnight_museum'];
   }
 
   public static getDefaultCase(): MysteryCase {
-    return CASES_CATALOG['story_01_the_midnight_museum'];
+    return CASES_CATALOG['story_001'] || CASES_CATALOG['story_01_the_midnight_museum'];
   }
 
   /**
@@ -947,12 +996,25 @@ export class CaseManager {
     players: Player[],
     gameId: string
   ): PlayerSecretClue[] {
-    const clues = mysteryCase.clues && mysteryCase.clues.length > 0
+    const baseClues = mysteryCase.clues && mysteryCase.clues.length > 0
       ? mysteryCase.clues
       : CASES_CATALOG['story_01_the_midnight_museum'].clues;
 
+    const usedTitles = new Set(baseClues.map((c) => c.title.toLowerCase().trim()));
+    const neededExtra = Math.max(0, players.length - baseClues.length);
+    const extraClues = neededExtra > 0 ? ClientInfiniteClueEngine.getRandomClues(neededExtra, Array.from(usedTitles)) : [];
+
+    const fullClueList = [
+      ...baseClues,
+      ...extraClues.map((c, i) => ({
+        order: baseClues.length + i + 1,
+        title: c.text,
+        text: `${c.hint} Key details: ${c.visualElements.slice(0, 2).join(', ')}.`,
+      })),
+    ];
+
     return players.map((player, idx) => {
-      const clueItem = clues[idx % clues.length];
+      const clueItem = fullClueList[idx % fullClueList.length];
       return {
         id: `clue-${gameId}-${player.id}`,
         gameId,

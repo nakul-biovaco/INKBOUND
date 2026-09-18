@@ -5,6 +5,8 @@ import { StoryDefinition } from '../types/index.js';
 import { MarkdownStoryParser } from './MarkdownStoryParser.js';
 import { createLogger } from '../utils/logger.js';
 
+import { StoryCatalog } from './StoryCatalog.js';
+
 const logger = createLogger('StoryLibrary');
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,32 +32,47 @@ export class StoryLibrary {
   }
 
   /**
-   * Scans the STORY directory, parses all .md files, and loads them into memory.
+   * Loads all 120 stories from StoryCatalog and any legacy markdown files into memory.
    */
   public static init(): void {
     this.storiesMap.clear();
 
-    const storyDir = this.getStoryDirectory();
-    if (!storyDir) {
-      logger.warn(`Story directory not found. Checked deployment-relative STORY paths.`);
-      return;
+    // 1. Load all 120 stories from StoryCatalog JSON
+    try {
+      StoryCatalog.ensureInitialized();
+      const catalogStories = StoryCatalog.getAllStories();
+      for (const catStory of catalogStories) {
+        const storyDef = StoryCatalog.toStoryDefinition(catStory);
+        this.storiesMap.set(storyDef.id, storyDef);
+      }
+      logger.info(`Loaded ${catalogStories.length} stories from StoryCatalog.`);
+    } catch (catalogErr) {
+      logger.error('Failed to load stories from StoryCatalog', catalogErr);
     }
 
-    const files = fs.readdirSync(storyDir).filter((f) => f.endsWith('.md') && !f.startsWith('00_'));
-    logger.info(`Found ${files.length} story markdown files in ${storyDir}`);
-
-    for (const file of files) {
+    // 2. Also check for any custom markdown story files in STORY dir
+    const storyDir = this.getStoryDirectory();
+    if (storyDir) {
       try {
-        const filePath = path.join(storyDir, file);
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const parsedStories = MarkdownStoryParser.parseFile(content, file);
+        const files = fs.readdirSync(storyDir).filter((f) => f.endsWith('.md') && !f.startsWith('00_'));
+        logger.info(`Found ${files.length} story markdown files in ${storyDir}`);
 
-        for (const story of parsedStories) {
-          this.storiesMap.set(story.id, story);
-          logger.info(`Loaded story [${story.id}]: "${story.title}" (${story.events.length} events)`);
+        for (const file of files) {
+          try {
+            const filePath = path.join(storyDir, file);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const parsedStories = MarkdownStoryParser.parseFile(content, file);
+
+            for (const story of parsedStories) {
+              this.storiesMap.set(story.id, story);
+              logger.info(`Loaded markdown story [${story.id}]: "${story.title}" (${story.events.length} events)`);
+            }
+          } catch (err) {
+            logger.error(`Failed to parse story file ${file}`, err);
+          }
         }
       } catch (err) {
-        logger.error(`Failed to parse story file ${file}`, err);
+        logger.error(`Failed reading story directory: ${storyDir}`, err);
       }
     }
 
