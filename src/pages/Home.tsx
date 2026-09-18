@@ -63,6 +63,7 @@ export const Home: React.FC<HomeProps> = ({
   const [isCasesModalOpen, setIsCasesModalOpen] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
 
   // In-card states
@@ -212,9 +213,9 @@ export const Home: React.FC<HomeProps> = ({
           />
           <div className="flex flex-col">
             <span className="text-[10px] font-mono tracking-widest text-red-400 font-bold uppercase">
-              VISUAL DEDUCTION GAME
+              MYSTERY PARTY GAME
             </span>
-            <span className="text-[9px] font-mono text-slate-400">CASE DIVISION // ACTIVE</span>
+            <span className="text-[9px] font-mono text-slate-400">ONLINE • READY TO PLAY</span>
           </div>
         </div>
 
@@ -240,6 +241,17 @@ export const Home: React.FC<HomeProps> = ({
           >
             <Trophy className="w-3.5 h-3.5 text-yellow-400" />
             <span>Leaderboard</span>
+          </button>
+
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsAboutModalOpen(true);
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
+          >
+            <Shield className="w-3.5 h-3.5 text-red-400" />
+            <span>About</span>
           </button>
 
           <AudioControl />
@@ -777,13 +789,45 @@ export const Home: React.FC<HomeProps> = ({
       </main>
 
       {/* 7. BOTTOM DESK FOOTER */}
-      <footer className="relative z-20 w-full max-w-7xl mx-auto px-6 py-3.5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-mono gap-2 border-t border-slate-800/80">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-slate-400 font-serif">INKBOUND</span>
-          <span>• Bureau of Visual Investigation</span>
+      <footer className="relative z-20 w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs font-mono gap-3 border-t border-[#8c6d48]/40">
+        <div className="flex items-center gap-2 text-slate-300">
+          <span className="font-bold text-amber-200 font-serif">INKBOUND</span>
+          <span className="text-slate-500">•</span>
+          <span className="font-semibold text-slate-200">Game developed by Nakul Mundhada</span>
+          <span className="hidden md:inline px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 text-[10px]">
+            v1.0
+          </span>
         </div>
-        <div className="text-slate-400 text-[11px] italic">
-          "Observe the lines. Connect the clues. Question everyone."
+        <div className="flex items-center gap-4 text-[11px] text-slate-400">
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsRulesModalOpen(true);
+            }}
+            className="hover:text-amber-200 transition-colors cursor-pointer"
+          >
+            Rules
+          </button>
+          <span>•</span>
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsAboutModalOpen(true);
+            }}
+            className="hover:text-amber-200 transition-colors cursor-pointer text-amber-300 font-semibold"
+          >
+            About Game
+          </button>
+          <span>•</span>
+          <button
+            onClick={() => {
+              SoundService.playCardFlip();
+              setIsLeaderboardModalOpen(true);
+            }}
+            className="hover:text-amber-200 transition-colors cursor-pointer"
+          >
+            Leaderboard
+          </button>
         </div>
       </footer>
 
@@ -793,7 +837,7 @@ export const Home: React.FC<HomeProps> = ({
       {isRulesModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
           <div
-            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden"
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden my-auto"
             style={{
               background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
               backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
@@ -817,10 +861,10 @@ export const Home: React.FC<HomeProps> = ({
 
             <div className="text-left space-y-1">
               <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
-                FORENSIC MANUAL // DIRECTIVES
+                DETECTIVE HANDBOOK // RULES
               </span>
               <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-wide pt-1">How to Play INKBOUND</h3>
-              <p className="text-xs text-[#5c4028] font-mono">4 essential directives for every detective on duty:</p>
+              <p className="text-xs text-[#5c4028] font-mono">4 simple steps to play and solve mysteries with your friends:</p>
             </div>
 
             <div className="space-y-3 pt-2 text-xs">
@@ -829,7 +873,7 @@ export const Home: React.FC<HomeProps> = ({
                   1
                 </span>
                 <div>
-                  <div className="font-bold text-[#1a110a] font-serif">Sketch Your Confidential Clue</div>
+                  <div className="font-bold text-[#1a110a] font-serif">Sketch Your Secret Clue</div>
                   <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
                     When it is your turn, you receive a secret piece of the crime story. Sketch it on the canvas before time runs out!
                   </div>
@@ -853,9 +897,9 @@ export const Home: React.FC<HomeProps> = ({
                   3
                 </span>
                 <div>
-                  <div className="font-bold text-[#1a110a] font-serif">Unmask the Covert Impostor</div>
+                  <div className="font-bold text-[#1a110a] font-serif">Spot the Secret Imposter</div>
                   <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
-                    One detective was fed a fabricated clue. Spot contradictions in their sketch before they misdirect the investigation!
+                    One detective was fed a fabricated clue. Spot contradictions in their sketch before they fool the squad!
                   </div>
                 </div>
               </div>
@@ -865,12 +909,86 @@ export const Home: React.FC<HomeProps> = ({
                   4
                 </span>
                 <div>
-                  <div className="font-bold text-[#1a110a] font-serif">Reconstruct & Vote Final Theory</div>
+                  <div className="font-bold text-[#1a110a] font-serif">Vote, Accuse & Solve the Mystery</div>
                   <div className="text-[#5c4028] text-[11px] mt-0.5 font-mono">
                     Assemble the chronological timeline, accuse the culprit, and reveal the truth for maximum case merits!
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABOUT INKBOUND MODAL */}
+      {isAboutModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            className="relative border-4 border-[#8c6d48] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9)] space-y-4 text-[#221711] select-none overflow-hidden my-auto"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+            <button
+              onClick={() => {
+                SoundService.playClick();
+                setIsAboutModalOpen(false);
+              }}
+              className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[#ede0ce] hover:bg-[#ded0bc] border border-[#bfa98e] text-[#1a110a] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="text-left space-y-1">
+              <span className="px-2 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                PRODUCT DOSSIER // ABOUT
+              </span>
+              <h3 className="text-xl font-black text-[#1a110a] font-serif tracking-wide pt-1">INKBOUND</h3>
+              <p className="text-xs text-[#5c4028] font-mono">Visual Mystery Deduction Party Game</p>
+            </div>
+
+            <div className="p-3.5 bg-[#fdfbf6] border-2 border-red-800/60 rounded-2xl space-y-2 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-red-800 text-white font-mono font-bold text-[10px]">
+                  CREATOR
+                </span>
+                <span className="text-sm font-black font-serif text-[#1a110a]">
+                  Game developed by Nakul Mundhada
+                </span>
+              </div>
+              <p className="text-xs text-[#5c4028] font-mono leading-relaxed">
+                INKBOUND combines the joy of fast sketching games like Pictionary with deep social deduction and detective storytelling.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs font-mono">
+              <div className="p-2.5 bg-[#ede0ce]/60 border border-[#bfa98e] rounded-xl">
+                <div className="text-[10px] text-[#7a5839] font-bold uppercase">VERSION</div>
+                <div className="text-xs font-bold text-[#1a110a] mt-0.5">v1.0 Production</div>
+              </div>
+              <div className="p-2.5 bg-[#ede0ce]/60 border border-[#bfa98e] rounded-xl">
+                <div className="text-[10px] text-[#7a5839] font-bold uppercase">MYSTERY CASES</div>
+                <div className="text-xs font-bold text-[#1a110a] mt-0.5">120 Complete Stories</div>
+              </div>
+              <div className="p-2.5 bg-[#ede0ce]/60 border border-[#bfa98e] rounded-xl">
+                <div className="text-[10px] text-[#7a5839] font-bold uppercase">SQUAD SIZE</div>
+                <div className="text-xs font-bold text-[#1a110a] mt-0.5">2 – 8 Detectives</div>
+              </div>
+              <div className="p-2.5 bg-[#ede0ce]/60 border border-[#bfa98e] rounded-xl">
+                <div className="text-[10px] text-[#7a5839] font-bold uppercase">ENGINE</div>
+                <div className="text-xs font-bold text-[#1a110a] mt-0.5">Realtime WebSockets</div>
+              </div>
+            </div>
+
+            <div className="text-center pt-2 text-[11px] text-[#7a5839] font-mono">
+              ★ Craft your case • Catch the imposter • Share the victory ★
             </div>
           </div>
         </div>
@@ -1090,19 +1208,19 @@ export const Home: React.FC<HomeProps> = ({
 
             <div className="space-y-2">
               <div className="text-[11px] font-mono tracking-widest text-red-800 font-black uppercase">
-                POLICE TELEGRAPH DISPATCH • ACTIVE
+                LOOKING FOR A GAME
               </div>
               <h3 className="text-xl font-black text-[#1a110a] font-serif">
-                Scanning Active Bureaus...
+                Finding an open room for you...
               </h3>
               <p className="text-xs text-[#5c4028] max-w-xs mx-auto leading-relaxed font-mono">
-                Locating open detective desks. Merging you into the highest-density room...
+                Matching you with active detectives. You'll jump in as soon as a room is ready.
               </p>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-xs font-mono text-red-800 font-bold">
               <Loader2 className="w-4 h-4 animate-spin text-red-800" />
-              <span>Matching Case Squad...</span>
+              <span>Joining Room...</span>
             </div>
           </div>
         </div>

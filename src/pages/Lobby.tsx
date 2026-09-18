@@ -537,10 +537,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                   </div>
                   <div>
                     <span className="font-serif font-black text-[#1a110a] text-sm sm:text-base tracking-tight block">
-                      Case Directives (Chief Only)
+                      Case Settings (Host Only)
                     </span>
                     <span className="text-[9px] font-mono text-[#7a5e45] uppercase tracking-widest block -mt-0.5">
-                      BUREAU PROTOCOL ORDER
+                      ROUND RULES & TIMER
                     </span>
                   </div>
                 </div>
@@ -677,13 +677,13 @@ export const Lobby: React.FC<LobbyProps> = ({
               }}
             >
               <div className="text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a] border-b border-[#bfa98e]/80 pb-2 flex items-center justify-between">
-                <span>Investigation Directives</span>
+                <span>Room Settings</span>
                 <span className="text-red-900 text-[10px] font-mono font-bold border border-red-800 bg-red-100 px-2 py-0.5 rounded">
-                  Lead Controlled
+                  Host Controlled
                 </span>
               </div>
               <p className="text-xs text-[#5c422e] leading-relaxed font-mono">
-                The Lead Detective is preparing the case docket. When launched, a mystery dossier will be unsealed for the squad!
+                The room host is setting up the case. When started, everyone will receive secret clues to draw!
               </p>
               <div className="p-3 bg-[#fffdf9] rounded-xl border-2 border-[#b89e7c] flex items-center gap-3 shadow-sm">
                 <div className="w-9 h-9 rounded-xl bg-[#ede1cf] border border-[#b89e7c] flex items-center justify-center text-red-800 shrink-0">
