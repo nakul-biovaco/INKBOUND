@@ -11,6 +11,7 @@ import {
   Eye,
   Radio,
   Users,
+  Sparkles,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -502,7 +503,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const canvas = canvasRef.current;
     const previewDataUrl = canvas ? canvas.toDataURL('image/png') : '';
     onSubmitDrawing(previewDataUrl, strokes);
+
+    // Auto-safety fallback: never keep drawer stuck on "Submitting..."
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 3000);
   };
+
+  useEffect(() => {
+    setIsSubmitting(false);
+  }, [gameState.turnIndex, gameState.currentTurnPlayerId, gameState.status]);
 
   const formattedTimer = `00:${remainingSeconds.toString().padStart(2, '0')}`;
 
@@ -782,74 +792,88 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             />
           </div>
 
-          {/* 4. GUESSER CONSOLE DIRECTLY UNDER CANVAS (NO SCROLLING ON MOBILE!) */}
-          {!isCurrentDrawer && (
-            <div className="w-full rounded-2xl border border-sky-500/50 bg-[#0d1322]/95 backdrop-blur-md p-3 shadow-2xl space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-sky-300">
-                  <Crosshair className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Type Your Guess</span>
-                </div>
-                <span className="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full">
-                  Any 2 matching words = Right Answer!
-                </span>
-              </div>
-
-              <form onSubmit={handleGuessSubmit} className="flex gap-2">
-                <input
-                  type="text"
-                  value={guessInput}
-                  onChange={(e) => setGuessInput(e.target.value)}
-                  placeholder="Type 2-3 words (e.g. guard sleeping, ticket desk)..."
-                  className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-600 focus:border-sky-400 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans shadow-inner"
-                />
-                <button
-                  type="submit"
-                  disabled={!guessInput.trim()}
-                  className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
-                >
-                  Guess
-                </button>
-              </form>
-
-              {guessFeedback && (
-                <div className="p-2 rounded-xl text-xs font-bold text-amber-200 bg-amber-950/80 border border-amber-500/80 flex items-center justify-between animate-fadeIn">
-                  <div className="flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>{guessFeedback}</span>
+          {/* 4. GUESSER CONSOLE & LIVE GUESS STREAM (VISIBLE TO BOTH DRAWER AND GUESSERS) */}
+          <div className="w-full rounded-2xl border border-sky-500/50 bg-[#0d1322]/95 backdrop-blur-md p-3 shadow-2xl space-y-2">
+            {!isCurrentDrawer ? (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-sky-300">
+                    <Crosshair className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Type Your Guess</span>
                   </div>
+                  <span className="text-[10px] text-amber-300 font-semibold bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                    Any 2 matching words = Right Answer!
+                  </span>
                 </div>
-              )}
 
-              {/* Recent Live Guesses Stream */}
-              <div className="pt-1 border-t border-slate-800/80">
-                <div className="text-[10px] font-mono text-slate-400 mb-1.5">Recent Guesses:</div>
-                <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
-                  {guessFeed.length === 0 ? (
-                    <span className="text-[11px] text-slate-500 italic">No guesses yet. Be the first to guess!</span>
-                  ) : (
-                    guessFeed.slice(-6).map((g, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
-                          g.isCorrect
-                            ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold'
-                            : g.isClose
-                            ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
-                            : 'bg-slate-900 border border-slate-700 text-slate-300'
-                        }`}
-                      >
-                        <span className="font-bold text-white">{g.playerName}:</span>
-                        <span>{g.text}</span>
-                        {g.isClose && <span className="text-amber-400 text-[9px] font-bold">★ CLOSE</span>}
-                        {g.isCorrect && <span className="text-emerald-400 text-[9px] font-bold">✓ SOLVED</span>}
-                      </span>
-                    ))
-                  )}
+                <form onSubmit={handleGuessSubmit} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={guessInput}
+                    onChange={(e) => setGuessInput(e.target.value)}
+                    placeholder="Type 2-3 words (e.g. guard sleeping, ticket desk)..."
+                    className="min-w-0 flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-600 focus:border-sky-400 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-400 font-sans shadow-inner"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!guessInput.trim()}
+                    className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
+                  >
+                    Guess
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
+                  <span className="font-bold">You are Sketching! Live investigator guesses appear below:</span>
                 </div>
+              </div>
+            )}
+
+            {guessFeedback && (
+              <div className="p-2 rounded-xl text-xs font-bold text-amber-200 bg-amber-950/80 border border-amber-500/80 flex items-center justify-between animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{guessFeedback}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Recent Live Guesses Stream (Visible to Drawer and Guessers) */}
+            <div className="pt-1 border-t border-slate-800/80">
+              <div className="text-[10px] font-mono text-slate-400 mb-1.5 flex items-center justify-between">
+                <span>Recent Live Guesses:</span>
+                {isCurrentDrawer && <span className="text-[9px] text-amber-400 font-bold uppercase">Drawer Monitoring</span>}
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
+                {guessFeed.length === 0 ? (
+                  <span className="text-[11px] text-slate-500 italic">
+                    {isCurrentDrawer ? 'Waiting for investigators to type guesses...' : 'No guesses yet. Be the first to guess!'}
+                  </span>
+                ) : (
+                  guessFeed.slice(-6).map((g, idx) => (
+                    <span
+                      key={idx}
+                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
+                        g.isCorrect
+                          ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
+                          : g.isClose
+                          ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
+                          : 'bg-slate-900 border border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <span className="font-bold text-white">{g.playerName}:</span>
+                      <span>{g.text}</span>
+                      {g.isClose && <span className="text-amber-400 text-[9px] font-bold">★ CLOSE</span>}
+                      {g.isCorrect && <span className="text-emerald-400 text-[9px] font-bold">✓ SOLVED</span>}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* 5. SUBMIT DRAWING BUTTON (ONLY FOR CURRENT DRAWER) */}
           {isCurrentDrawer && (

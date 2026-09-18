@@ -215,6 +215,17 @@ export const Game: React.FC<GameProps> = ({
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
       setPlayerStatusNotice(`${payload?.displayName || 'A player'} came back!`);
       setTimeout(() => setPlayerStatusNotice(null), 3500);
+
+      // Restore secret drawer clue if this reconnecting client is the active drawer
+      if (payload?.isDrawer && payload?.drawerPrivateState) {
+        if (payload.drawerPrivateState.objective) {
+          setSecretDrawObjective(payload.drawerPrivateState.objective);
+        }
+        if (payload.drawerPrivateState.hint) {
+          setSecretDrawHint(payload.drawerPrivateState.hint);
+        }
+      }
+
       setGameState((prev) => ({
         ...prev,
         ...(payload?.gameState

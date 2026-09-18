@@ -44,6 +44,13 @@ export class TurnManager {
    * Advances to the next eligible connected drawer
    */
   public advanceTurn(players: Player[]): { drawerId: string; turnIndex: number } | null {
+    // Dynamically include any new or reconnected players in the turn order
+    for (const p of players) {
+      if (!this.turnOrder.includes(p.playerId)) {
+        this.turnOrder.push(p.playerId);
+      }
+    }
+
     if (this.turnOrder.length === 0) return null;
 
     this.currentTurnIndex++;

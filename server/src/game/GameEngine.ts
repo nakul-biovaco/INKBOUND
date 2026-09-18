@@ -449,6 +449,26 @@ export class GameEngine {
     AuthService.assertGuesser(playerId, this.session.currentDrawerId);
 
     if (!this.stateMachine.isDrawingActive()) {
+      if (this.session.state === GameStatus.PROMPT_SELECTION) {
+        this.emit(
+          'GUESS_FEEDBACK',
+          { status: 'WAITING', message: 'Drawer is selecting a secret clue... Guessing starts in a moment!' },
+          playerId
+        );
+        return;
+      }
+      if (
+        this.session.state === GameStatus.CLUE_SOLVED ||
+        this.session.state === GameStatus.STORY_REVEAL ||
+        this.session.state === GameStatus.NEXT_TURN
+      ) {
+        this.emit(
+          'GUESS_FEEDBACK',
+          { status: 'WAITING', message: 'Round completed! Preparing next investigator turn...' },
+          playerId
+        );
+        return;
+      }
       const err = new Error('Guessing is not currently active');
       (err as any).code = ErrorCode.GUESS_NOT_ALLOWED;
       throw err;
@@ -731,7 +751,7 @@ export class GameEngine {
     ) {
       logger.warn('Active drawer disconnected during drawing/prompt selection', { playerId });
       this.timerManager.pause();
-      this.emit('TIMER_SYNC', { isPaused: true, reason: 'DRAWER_DISCONNECTED', graceSeconds: 45 });
+      this.emit('TIMER_SYNC', { isPaused: true, reason: 'DRAWER_DISCONNECTED', graceSeconds: 12 });
 
       if (this.drawerDisconnectTimeout) {
         clearTimeout(this.drawerDisconnectTimeout);
@@ -746,10 +766,10 @@ export class GameEngine {
           !player.isConnected &&
           (this.stateMachine.isDrawingActive() || this.session.state === GameStatus.PROMPT_SELECTION)
         ) {
-          logger.info('Drawer did not reconnect; skipping turn safely');
+          logger.info('Drawer did not reconnect within 12s; rotating to next player');
           this.advanceToNextTurn();
         }
-      }, 45000);
+      }, 12000);
     }
   }
 

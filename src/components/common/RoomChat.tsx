@@ -49,11 +49,13 @@ export const RoomChat: React.FC<RoomChatProps> = ({
     'Evidence transmission ready',
   ]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom of chat box only (never scroll the whole page)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, gameLogs, activeTab]);
 
   // Subscribe to realtime channel broadcasts
@@ -143,7 +145,7 @@ export const RoomChat: React.FC<RoomChatProps> = ({
       </div>
 
       {/* 2. MESSAGE STREAM / LOG STREAM */}
-      <div className="flex-1 p-3.5 overflow-y-auto space-y-3 max-h-[42vh] sm:max-h-72 select-text overscroll-contain">
+      <div ref={messagesContainerRef} className="flex-1 p-3.5 overflow-y-auto space-y-3 max-h-[42vh] sm:max-h-72 select-text overscroll-contain">
         {activeTab === 'chat' ? (
           messages.map((msg) => (
             <div key={msg.id} className="flex items-start gap-2.5 leading-snug">
@@ -176,7 +178,6 @@ export const RoomChat: React.FC<RoomChatProps> = ({
             ))}
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* 3. INPUT BAR */}
