@@ -88,6 +88,7 @@ export const Game: React.FC<GameProps> = ({
   const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
   const [publicHint, setPublicHint] = useState<string | null>(null);
   const [publicWordLengths, setPublicWordLengths] = useState<number[] | null>(null);
+  const [publicFirstLetters, setPublicFirstLetters] = useState<string[] | null>(null);
 
   const cleanCardText = (txt: string): string => {
     if (!txt) return 'Clue';
@@ -157,9 +158,9 @@ export const Game: React.FC<GameProps> = ({
       showGameBanner({
         id: 'story-selected',
         type: 'story',
-        badge: 'CASE SELECTED',
-        title: `${payload.title} (${payload.genre})`,
-        subtitle: payload.description,
+        badge: 'CASE FILE ASSIGNED',
+        title: `"${payload.title}"`,
+        subtitle: payload.genre || 'Mystery Investigation',
       }, 5000);
       setGameState((prev) => ({
         ...prev,
@@ -189,9 +190,10 @@ export const Game: React.FC<GameProps> = ({
       setIsStorySelection(false);
       setSelectedStoryBriefing(null);
       setPublicHint(null);
+      setPublicWordLengths(null);
+      setPublicFirstLetters(null);
 
       const newTurn = payload.turnIndex || 0;
-      setPublicWordLengths(null);
       const stored = getStoredClue(room.id, newTurn);
       if (stored && stored.objective) {
         setSecretDrawObjective(stored.objective);
@@ -215,11 +217,14 @@ export const Game: React.FC<GameProps> = ({
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
       SoundService.playTurnStart();
       setIsStorySelection(false);
-      if (payload?.hint) {
-        setPublicHint(payload.hint);
+      if (payload?.category || payload?.hint) {
+        setPublicHint(payload.category || payload.hint);
       }
       if (payload?.wordLengths) {
         setPublicWordLengths(payload.wordLengths);
+      }
+      if (payload?.firstLetters) {
+        setPublicFirstLetters(payload.firstLetters);
       }
 
       const newTurn = payload.turnIndex || 0;
@@ -355,6 +360,12 @@ export const Game: React.FC<GameProps> = ({
 
       if (payload?.gameState?.wordLengths) {
         setPublicWordLengths(payload.gameState.wordLengths);
+      }
+      if (payload?.gameState?.firstLetters) {
+        setPublicFirstLetters(payload.gameState.firstLetters);
+      }
+      if (payload?.gameState?.category || payload?.gameState?.hint) {
+        setPublicHint(payload.gameState.category || payload.gameState.hint);
       }
 
       setGameState((prev) => ({
@@ -853,6 +864,7 @@ export const Game: React.FC<GameProps> = ({
           secretDrawHint={secretDrawHint}
           publicHint={publicHint || secretDrawHint}
           publicWordLengths={publicWordLengths}
+          publicFirstLetters={publicFirstLetters}
           roomCode={room.code}
           channel={channel}
           isDrawer={isDrawer}

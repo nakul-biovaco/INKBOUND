@@ -614,8 +614,3 @@ INSERT INTO public.cases (
     misleading_info = EXCLUDED.misleading_info,
     distorter_objective = EXCLUDED.distorter_objective,
     difficulty = EXCLUDED.difficulty;
-
--- Set default active case
-UPDATE public.game_sessions
-SET current_case_id = 'story_01_the_midnight_museum'
-WHERE current_case_id IS NULL;

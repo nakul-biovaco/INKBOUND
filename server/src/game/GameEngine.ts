@@ -398,7 +398,21 @@ export class GameEngine {
     const cleanObjective = this.session.selectedEvent?.drawingObjective
       ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
       : 'Mystery Clue';
-    const wordLengths = cleanObjective.split(/\s+/).filter(Boolean).map((w) => w.length);
+    const words = cleanObjective.split(/\s+/).filter(Boolean).slice(0, 2);
+    const wordLengths = words.map((w) => w.length);
+    const firstLetters = words.map((w) => w.charAt(0).toUpperCase());
+
+    let category = 'Crime Scene Evidence';
+    const combined = ((this.session.selectedEvent?.hint || '') + ' ' + cleanObjective).toLowerCase();
+    if (combined.includes('photo') || combined.includes('video') || combined.includes('diary') || combined.includes('letter') || combined.includes('note')) {
+      category = 'Personal Memory & Record';
+    } else if (combined.includes('key') || combined.includes('cutter') || combined.includes('knife') || combined.includes('poison') || combined.includes('gun') || combined.includes('safe') || combined.includes('lock')) {
+      category = 'Crime Tool & Evidence';
+    } else if (combined.includes('fare') || combined.includes('train') || combined.includes('car') || combined.includes('ticket') || combined.includes('station') || combined.includes('passenger')) {
+      category = 'Transit & Travel';
+    } else if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money') || combined.includes('gold')) {
+      category = 'Valuable Property';
+    }
 
     // Broadcast drawing started to all guessers
     this.emit('DRAWING_STARTED', {
@@ -407,8 +421,10 @@ export class GameEngine {
       roundStartedAt: startedAt,
       roundEndsAt: endsAt,
       timeLimitSeconds: drawSeconds,
-      hint: this.session.selectedEvent?.hint || 'Category: Mystery Clue',
+      hint: category,
       wordLengths,
+      firstLetters,
+      category,
     });
   }
 

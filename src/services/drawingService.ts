@@ -24,6 +24,14 @@ export class DrawingService {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    const pts = stroke.points;
+
+    if (stroke.tool === 'fill' && pts.length >= 1) {
+      DrawingService.floodFill(ctx, pts[0].x, pts[0].y, stroke.color);
+      ctx.restore();
+      return;
+    }
+
     if (stroke.tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.strokeStyle = 'rgba(0,0,0,1)';
@@ -39,8 +47,6 @@ export class DrawingService {
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.width;
     }
-
-    const pts = stroke.points;
 
     if (stroke.tool === 'line' && pts.length >= 2) {
       ctx.beginPath();
@@ -131,5 +137,91 @@ export class DrawingService {
       points: [startPoint],
       timestamp: Date.now(),
     };
+  }
+
+  /**
+   * Fast BFS canvas flood-fill for the paint bucket tool.
+   */
+  public static floodFill(
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    fillColorHex: string
+  ): void {
+    const canvas = ctx.canvas;
+    const width = canvas.width;
+    const height = canvas.height;
+    const px = Math.floor(startX);
+    const py = Math.floor(startY);
+    if (px < 0 || px >= width || py < 0 || py >= height) return;
+
+    let imgData: ImageData;
+    try {
+      imgData = ctx.getImageData(0, 0, width, height);
+    } catch {
+      return;
+    }
+    const data = imgData.data;
+
+    // Resolve fillColorHex to RGBA
+    const temp = document.createElement('canvas');
+    temp.width = 1;
+    temp.height = 1;
+    const tCtx = temp.getContext('2d');
+    if (!tCtx) return;
+    tCtx.fillStyle = fillColorHex;
+    tCtx.fillRect(0, 0, 1, 1);
+    const fillRgba = tCtx.getImageData(0, 0, 1, 1).data;
+    const [fillR, fillG, fillB, fillA] = fillRgba;
+
+    const startPos = (py * width + px) * 4;
+    const startR = data[startPos];
+    const startG = data[startPos + 1];
+    const startB = data[startPos + 2];
+    const startA = data[startPos + 3];
+
+    if (
+      Math.abs(startR - fillR) < 5 &&
+      Math.abs(startG - fillG) < 5 &&
+      Math.abs(startB - fillB) < 5 &&
+      Math.abs(startA - fillA) < 5
+    ) {
+      return;
+    }
+
+    const matchColor = (pos: number) => {
+      return (
+        Math.abs(data[pos] - startR) < 32 &&
+        Math.abs(data[pos + 1] - startG) < 32 &&
+        Math.abs(data[pos + 2] - startB) < 32 &&
+        Math.abs(data[pos + 3] - startA) < 32
+      );
+    };
+
+    const queue: number[] = [px, py];
+    const visited = new Uint8Array(width * height);
+
+    while (queue.length > 0) {
+      const cy = queue.pop()!;
+      const cx = queue.pop()!;
+      const pixelIndex = cy * width + cx;
+      if (visited[pixelIndex]) continue;
+      visited[pixelIndex] = 1;
+
+      const pos = pixelIndex * 4;
+      if (!matchColor(pos)) continue;
+
+      data[pos] = fillR;
+      data[pos + 1] = fillG;
+      data[pos + 2] = fillB;
+      data[pos + 3] = fillA;
+
+      if (cx > 0 && !visited[pixelIndex - 1]) queue.push(cx - 1, cy);
+      if (cx < width - 1 && !visited[pixelIndex + 1]) queue.push(cx + 1, cy);
+      if (cy > 0 && !visited[pixelIndex - width]) queue.push(cx, cy - 1);
+      if (cy < height - 1 && !visited[pixelIndex + width]) queue.push(cx, cy + 1);
+    }
+
+    ctx.putImageData(imgData, 0, 0);
   }
 }

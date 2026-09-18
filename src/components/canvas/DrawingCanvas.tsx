@@ -11,6 +11,7 @@ import {
   Radio,
   Users,
   Sparkles,
+  PaintBucket,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -38,6 +39,7 @@ interface DrawingCanvasProps {
   secretDrawHint?: string | null;
   publicHint?: string | null;
   publicWordLengths?: number[] | null;
+  publicFirstLetters?: string[] | null;
   roomCode?: string;
   channel: RoomChannelManager;
   isDrawer?: boolean;
@@ -60,6 +62,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   secretDrawHint,
   publicHint,
   publicWordLengths,
+  publicFirstLetters,
   roomCode,
   channel,
   isDrawer: propIsDrawer,
@@ -153,58 +156,47 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const dynamicCategory = getDynamicCategory();
 
-  const dynamicHintMessage = (() => {
-    if (targetWords.length > 0) {
-      if (elapsed >= 45 && targetWords.length >= 2) {
-        return `🔥 Starts with "${targetWords[0][0]}" & "${targetWords[1][0]}" • ${dynamicCategory}`;
-      }
-      if (elapsed >= 20 && targetWords.length >= 1) {
-        return `💡 First word starts with "${targetWords[0][0]}" • ${dynamicCategory}`;
-      }
+  const effectiveFirstLetters = (publicFirstLetters && publicFirstLetters.length > 0)
+    ? publicFirstLetters
+    : (targetWords.length > 0 ? targetWords.map((w) => w[0]?.toUpperCase() || '') : []);
+
+  const guesserHintMessage = (() => {
+    if (effectiveFirstLetters.length >= 2 && elapsed >= 45) {
+      return `🔥 Starts with "${effectiveFirstLetters[0]}" & "${effectiveFirstLetters[1]}" • ${dynamicCategory}`;
+    }
+    if (effectiveFirstLetters.length >= 1 && elapsed >= 20) {
+      return `💡 First word starts with "${effectiveFirstLetters[0]}" • ${dynamicCategory}`;
     }
     return `Category: ${dynamicCategory}`;
   })();
 
   const renderLetterPattern = () => {
-    // 1. If we have the target words (drawer or solved), render with progressive letter reveals
-    if (targetWords.length > 0) {
-      return (
-        <div className="flex flex-wrap items-center gap-3">
-          {targetWords.map((w, wIdx) => {
-            // Progressive reveal: unmask 1st letter of word 0 after 20s, word 1 after 45s
-            const revealFirstLetter = (wIdx === 0 && elapsed >= 20) || (wIdx === 1 && elapsed >= 45);
-            const dashes = w.split('').map((char, cIdx) => {
-              const showChar = cIdx === 0 && revealFirstLetter;
-              return (
-                <span
-                  key={cIdx}
-                  className={`inline-block border-b-2 ${showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'} w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
-                >
-                  {showChar ? char : '\u00A0'}
-                </span>
-              );
-            });
-            return (
-              <span key={wIdx} className="inline-flex items-end">
-                {dashes}
-                <span className="text-[10px] text-slate-400 font-mono font-normal ml-1">({w.length})</span>
-              </span>
-            );
-          })}
-        </div>
-      );
-    }
+    const lengths = (publicWordLengths && publicWordLengths.length > 0)
+      ? publicWordLengths
+      : (targetWords.length > 0 ? targetWords.map((w) => w.length) : [4, 6]);
 
-    // 2. If we have public word lengths from server (e.g. [4, 7] for guessers)
-    const lengths = publicWordLengths && publicWordLengths.length > 0 ? publicWordLengths : [4, 6];
     return (
       <div className="flex flex-wrap items-center gap-3">
         {lengths.map((len, wIdx) => {
-          const dashes = Array.from({ length: len }).map((_, cIdx) => (
-            <span key={cIdx} className="inline-block border-b-2 border-amber-400/90 w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold">
-              &nbsp;
-            </span>
-          ));
+          // Progressive letter reveal for guessers:
+          // Word 0 first letter revealed after 20s
+          // Word 1 first letter revealed after 45s
+          const revealFirstLetter = (wIdx === 0 && elapsed >= 20) || (wIdx === 1 && elapsed >= 45);
+          const firstChar = revealFirstLetter && effectiveFirstLetters[wIdx] ? effectiveFirstLetters[wIdx] : null;
+
+          const dashes = Array.from({ length: len }).map((_, cIdx) => {
+            const showChar = cIdx === 0 && Boolean(firstChar);
+            return (
+              <span
+                key={cIdx}
+                className={`inline-block border-b-2 ${showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'
+                  } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
+              >
+                {showChar ? firstChar : '\u00A0'}
+              </span>
+            );
+          });
+
           return (
             <span key={wIdx} className="inline-flex items-end">
               {dashes}
@@ -245,6 +237,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         x: p.x * canvas.width,
         y: p.y * canvas.height,
       }));
+
+      if (chunk.tool === 'fill' && denormalizedPoints.length > 0) {
+        DrawingService.floodFill(ctx, denormalizedPoints[0].x, denormalizedPoints[0].y, chunk.color || '#111827');
+        return;
+      }
 
       ctx.beginPath();
       ctx.strokeStyle = chunk.tool === 'eraser' ? '#fbf8f1' : (chunk.color || '#111827');
@@ -440,6 +437,48 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     const pt = getCoordinates(e);
     if (!pt) return;
+
+    if (currentTool === 'fill') {
+      const fillStroke = DrawingService.createStroke(
+        `draw-${gameState.id}`,
+        currentUser.id,
+        'fill',
+        currentColor,
+        1,
+        pt
+      );
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          DrawingService.floodFill(ctx, pt.x, pt.y, currentColor);
+        }
+        setStrokes((prev) => [...prev, fillStroke]);
+        setRedoStack([]);
+        channel.broadcast(
+          'DRAWING_STROKE',
+          currentUser.id,
+          {
+            drawingId: fillStroke.drawingId,
+            stroke: fillStroke,
+          },
+          gameState.sequenceNumber
+        );
+        backend.drawStroke({
+          strokeId: fillStroke.id,
+          tool: 'fill',
+          color: currentColor,
+          width: 1,
+          points: [{
+            x: Math.max(0, Math.min(1, pt.x / canvas.width)),
+            y: Math.max(0, Math.min(1, pt.y / canvas.height)),
+          }],
+          isComplete: true,
+          timestamp: fillStroke.timestamp,
+        });
+      }
+      return;
+    }
 
     isDrawingRef.current = true;
     const newStroke = DrawingService.createStroke(
@@ -771,10 +810,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   {cleanTarget || 'Mystery Clue'}
                 </span>
               </div>
-              <div className="mt-1 text-xs text-amber-300/90 font-mono">
-                {dynamicHintMessage}
-              </div>
-              <div className="mt-1 text-xs text-slate-300 font-sans">
+              <div className="mt-1.5 text-xs text-slate-300 font-sans">
                 Draw this clue on the parchment canvas below so other players can guess it!
               </div>
             </div>
@@ -795,7 +831,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">HINT:</span>
                   <span className="text-xs sm:text-sm font-bold text-amber-200">
-                    {dynamicHintMessage}
+                    {guesserHintMessage}
                   </span>
                 </div>
                 <div className="flex items-center">
@@ -808,7 +844,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           {/* 2. DEDICATED DRAWER TOOLBAR (Cleanly outside canvas, no overlap with canvas pixels or clear button) */}
           {isCurrentDrawer && (
             <div className="w-full bg-[#0d121e]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-xl flex flex-wrap items-center justify-between gap-2">
-              {/* Tool switch: Pencil vs Eraser */}
+              {/* Tool switch: Pencil vs Fill vs Eraser */}
               <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
                 <button
                   type="button"
@@ -816,19 +852,29 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     setCurrentTool('pencil');
                     if (currentColor === '#fbf8f1') setCurrentColor('#111827');
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
-                    currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'pencil' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   <span className="text-xs">Draw</span>
                 </button>
                 <button
                   type="button"
+                  onClick={() => {
+                    setCurrentTool('fill');
+                    if (currentColor === '#fbf8f1') setCurrentColor('#111827');
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'fill' ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.7)]' : 'text-slate-400 hover:text-white'
+                    }`}
+                >
+                  <PaintBucket className="w-3.5 h-3.5" />
+                  <span className="text-xs">Fill</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCurrentTool('eraser')}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${
-                    currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition-all ${currentTool === 'eraser' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    }`}
                 >
                   <Eraser className="w-3.5 h-3.5" />
                   <span className="text-xs">Eraser</span>
@@ -848,9 +894,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         if (currentTool === 'eraser') setCurrentTool('pencil');
                       }}
                       style={{ backgroundColor: color }}
-                      className={`w-6 h-6 rounded-full border transition-all ${
-                        isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
-                      }`}
+                      className={`w-6 h-6 rounded-full border transition-all ${isSelected ? 'scale-125 ring-2 ring-red-500 border-white shadow-lg' : 'border-slate-500 hover:scale-110 opacity-85'
+                        }`}
                     />
                   );
                 })}
@@ -928,9 +973,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               onMouseMove={handlePointerMove}
               onMouseUp={handlePointerUp}
               onMouseLeave={handlePointerUp}
-              className={`w-full h-full object-contain select-none ${
-                isCurrentDrawer ? 'cursor-crosshair pointer-events-auto' : 'cursor-default pointer-events-none'
-              }`}
+              className={`w-full h-full object-contain select-none ${isCurrentDrawer ? (currentTool === 'fill' ? 'cursor-cell pointer-events-auto' : 'cursor-crosshair pointer-events-auto') : 'cursor-default pointer-events-none'
+                }`}
             />
           </div>
 
@@ -998,13 +1042,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   guessFeed.slice(-6).map((g, idx) => (
                     <span
                       key={idx}
-                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${
-                        g.isCorrect
-                          ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
-                          : g.isClose
+                      className={`px-2 py-1 rounded-lg text-[11px] flex items-center gap-1.5 ${g.isCorrect
+                        ? 'bg-emerald-950/90 border border-emerald-500 text-emerald-200 font-bold animate-bounce'
+                        : g.isClose
                           ? 'bg-amber-950/80 border border-amber-500/70 text-amber-200 font-medium'
                           : 'bg-slate-900 border border-slate-700 text-slate-300'
-                      }`}
+                        }`}
                     >
                       <span className="font-bold text-white">{g.playerName}:</span>
                       <span>{g.text}</span>
@@ -1055,9 +1098,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 return (
                   <div
                     key={p.id}
-                    className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 flex items-center gap-2 border ${
-                      hasSubmitted ? 'bg-emerald-950/30 border-emerald-600/60 text-emerald-200' : 'bg-slate-900/60 border-slate-800 text-slate-300'
-                    }`}
+                    className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 flex items-center gap-2 border ${hasSubmitted ? 'bg-emerald-950/30 border-emerald-600/60 text-emerald-200' : 'bg-slate-900/60 border-slate-800 text-slate-300'
+                      }`}
                   >
                     <AvatarBadge avatar={p.avatar} size="sm" />
                     <div className="min-w-0">
@@ -1091,11 +1133,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
-                      isDrawing
-                        ? 'bg-red-950/30 border-red-600/80 shadow-[0_0_10px_rgba(220,38,38,0.2)]'
-                        : 'bg-slate-900/40 border-slate-800'
-                    }`}
+                    className={`flex items-center justify-between p-2 rounded-xl border transition-all ${isDrawing
+                      ? 'bg-red-950/30 border-red-600/80 shadow-[0_0_10px_rgba(220,38,38,0.2)]'
+                      : 'bg-slate-900/40 border-slate-800'
+                      }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs shrink-0">
@@ -1108,13 +1149,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     </div>
 
                     <div
-                      className={`text-[10px] font-mono shrink-0 ${
-                        isDrawing
-                          ? 'text-red-400 font-bold'
-                          : hasSubmitted
+                      className={`text-[10px] font-mono shrink-0 ${isDrawing
+                        ? 'text-red-400 font-bold'
+                        : hasSubmitted
                           ? 'text-emerald-400 font-semibold'
                           : 'text-slate-400'
-                      }`}
+                        }`}
                     >
                       {isDrawing ? 'Drawing...' : hasSubmitted ? '✓ Submitted' : 'Waiting...'}
                     </div>

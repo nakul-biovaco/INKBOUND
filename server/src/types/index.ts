@@ -72,7 +72,7 @@ export interface Point {
   y: number; // Normalized 0.0 - 1.0
 }
 
-export type DrawingTool = 'pencil' | 'brush' | 'marker' | 'eraser' | 'line' | 'rectangle' | 'circle';
+export type DrawingTool = 'pencil' | 'brush' | 'marker' | 'eraser' | 'line' | 'rectangle' | 'circle' | 'fill';
 
 export interface StrokeChunk {
   strokeId: string;
@@ -239,6 +239,8 @@ export interface PublicGameState {
   drawingStrokeCount: number;
   hint?: string | null;
   wordLengths?: number[] | null;
+  firstLetters?: string[] | null;
+  category?: string | null;
 }
 
 export interface PrivateDrawerState {
@@ -337,7 +339,7 @@ export const SelectPromptSchema = z.object({
 export const DrawStrokeSchema = z.object({
   chunk: z.object({
     strokeId: z.string(),
-    tool: z.enum(['pencil', 'brush', 'marker', 'eraser', 'line', 'rectangle', 'circle']),
+    tool: z.enum(['pencil', 'brush', 'marker', 'eraser', 'line', 'rectangle', 'circle', 'fill']),
     color: z.string(),
     width: z.number().min(1).max(100),
     points: z.array(
