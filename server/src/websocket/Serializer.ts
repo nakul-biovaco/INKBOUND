@@ -7,6 +7,7 @@ import {
   PublicGameState,
   Room,
 } from '../types/index.js';
+import { MarkdownStoryParser } from '../story/MarkdownStoryParser.js';
 
 export class Serializer {
   /**
@@ -22,12 +23,7 @@ export class Serializer {
     });
 
     const cleanObj = session.selectedEvent
-      ? session.selectedEvent.drawingObjective
-          .replace(/^[A-C]:\s*/i, '')
-          .replace(/\*canon\*|\*B-alt\*|\*C-alt\*/gi, '')
-          .replace(/^(finding|discovering|getting into|picking up|refusing)\s+(an?\s+|the\s+)?/i, '')
-          .replace(/\s+(while cleaning|out of \w+|near the \w+|in the \w+).*$/i, '')
-          .trim()
+      ? MarkdownStoryParser.cleanToClueWord(session.selectedEvent.drawingObjective)
       : '';
     const words = cleanObj ? cleanObj.split(/\s+/).filter(Boolean).slice(0, 2) : [];
     const wordLengths = words.length > 0 ? words.map((w) => w.length) : null;
@@ -43,6 +39,8 @@ export class Serializer {
       category = 'Transit & Travel';
     } else if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money') || combined.includes('gold')) {
       category = 'Valuable Property';
+    } else if (session.selectedEvent?.hint) {
+      category = session.selectedEvent.hint;
     }
 
     return {

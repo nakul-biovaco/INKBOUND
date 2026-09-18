@@ -206,9 +206,21 @@ export const Game: React.FC<GameProps> = ({
       setGameBanner(null);
       setIsStorySelection(false);
       setSelectedStoryBriefing(null);
-      setPublicHint(null);
-      setPublicWordLengths(null);
-      setPublicFirstLetters(null);
+      if (payload?.category || payload?.hint) {
+        setPublicHint(payload.category || payload.hint);
+      } else {
+        setPublicHint(null);
+      }
+      if (payload?.wordLengths) {
+        setPublicWordLengths(payload.wordLengths);
+      } else {
+        setPublicWordLengths(null);
+      }
+      if (payload?.firstLetters) {
+        setPublicFirstLetters(payload.firstLetters);
+      } else {
+        setPublicFirstLetters(null);
+      }
 
       const newTurn = payload.turnIndex || 0;
       const stored = getStoredClue(room.id, newTurn);

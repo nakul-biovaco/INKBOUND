@@ -1,4 +1,4 @@
-import { PromptOption, StoryDefinition, StoryEnding, StoryEvent } from '../types/index.js';
+import { StoryDefinition, StoryEnding, StoryEvent } from '../types/index.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('MarkdownStoryParser');
@@ -106,7 +106,7 @@ export class MarkdownStoryParser {
       const cleanObjective = MarkdownStoryParser.cleanToClueWord(canonRaw);
       const finalObjective = cleanEventTitle && cleanEventTitle.split(' ').length <= 3 ? cleanEventTitle : cleanObjective;
 
-      const options = rawOptions.map(opt => ({
+      const options = rawOptions.map((opt) => ({
         ...opt,
         text: MarkdownStoryParser.cleanToClueWord(opt.text),
       }));
@@ -123,10 +123,15 @@ export class MarkdownStoryParser {
         sequence: seq,
         eventType: 'DRAW_EVENT',
         drawingObjective: finalObjective,
-        visualElements: visualElements.length > 0 ? visualElements : ['clue', 'scene', 'figure'],
-        acceptedConcepts: Array.from(allAccepted).filter(s => s.length > 0),
-        semanticKeywords: this.extractKeywords(finalObjective + ' ' + eventTitle),
-        hint: `Category: Mystery Clue`,
+        visualElements:
+          visualElements.length > 0
+            ? visualElements
+            : ['clue', 'scene', 'figure'],
+        acceptedConcepts: Array.from(allAccepted).filter((s) => s.length > 0),
+        semanticKeywords: this.extractKeywords(
+          `${finalObjective} ${narrative} ${visualElements.join(' ')}`
+        ),
+        hint: hint || 'Look closely at the crime evidence.',
         difficulty: seq > 12 ? 'HARD' : seq > 5 ? 'MEDIUM' : 'EASY',
         narrativeDescription: narrative,
         consequenceReveal: narrative,
@@ -137,6 +142,12 @@ export class MarkdownStoryParser {
           ...(seq === 16 ? { truthExposed: true } : {}),
         },
       });
+    }
+
+    // If nothing could be parsed, there's no valid story to return.
+    if (events.length === 0) {
+      logger.error(`No events found while parsing single story file ${fileName}`);
+      return null;
     }
 
     const endings: StoryEnding[] = [
@@ -176,12 +187,19 @@ export class MarkdownStoryParser {
   /**
    * Parses bundled stories (02–06, 08–12, 14–17)
    */
-  private static parseBundledStory(storyNum: string, rawTitle: string, content: string): StoryDefinition | null {
+  private static parseBundledStory(
+    storyNum: string,
+    rawTitle: string,
+    content: string
+  ): StoryDefinition | null {
     const title = this.cleanTitle(rawTitle);
     const id = `story_${storyNum}_${this.slugify(title)}`;
 
-    const genre = this.extractField(content, /Genre:\*\*\s*([^\n·]+)/i) || 'Mystery';
-    const difficulty = this.extractDifficulty(this.extractField(content, /Difficulty:\*\*\s*([^\n·]+)/i));
+    const genre =
+      this.extractField(content, /Genre:\*\*\s*([^\n·]+)/i) || 'Mystery';
+    const difficulty = this.extractDifficulty(
+      this.extractField(content, /Difficulty:\*\*\s*([^\n·]+)/i)
+    );
     const hook = this.extractField(content, /Hook:\*\*\s*([^\n]+)/i) || '';
     const premise = this.extractField(content, /Premise:\*\*\s*([^\n]+)/i) || hook;
 
@@ -207,7 +225,10 @@ export class MarkdownStoryParser {
         const optsRaw = optionsMatch[1];
         const parts = optsRaw.split(/\s*\/\s*/);
         for (const part of parts) {
-          const isCanon = part.toLowerCase().includes('*canon*') || part.toLowerCase().includes('(canon)') || part.toLowerCase().includes('canon');
+          const isCanon =
+            part.toLowerCase().includes('*canon*') ||
+            part.toLowerCase().includes('(canon)') ||
+            part.toLowerCase().includes('canon');
           const cleaned = part
             .replace(/^[A-C]:\s*/i, '')
             .replace(/\*canon\*/gi, '')
@@ -248,7 +269,7 @@ export class MarkdownStoryParser {
         eventType: seq === 14 || seq === 15 ? 'NARRATIVE_TWIST' : 'DRAW_EVENT',
         drawingObjective: canonText,
         visualElements: this.extractVisualElements(canonText + ' ' + narrative),
-        acceptedConcepts: Array.from(new Set(accepted)).filter(s => s.length > 0),
+        acceptedConcepts: Array.from(new Set(accepted)).filter((s) => s.length > 0),
         semanticKeywords: this.extractKeywords(canonText),
         hint,
         difficulty: seq > 12 ? 'HARD' : seq > 5 ? 'MEDIUM' : 'EASY',
@@ -260,6 +281,11 @@ export class MarkdownStoryParser {
           ...(seq >= 15 ? { truthExposed: true } : {}),
         },
       });
+    }
+
+    if (events.length === 0) {
+      logger.error(`No events found while parsing bundled story ${storyNum} (${title})`);
+      return null;
     }
 
     const endings: StoryEnding[] = [

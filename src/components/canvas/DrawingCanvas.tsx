@@ -142,16 +142,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (combined.includes('photo') || combined.includes('video') || combined.includes('diary') || combined.includes('letter') || combined.includes('note')) {
       return 'Personal Memory & Record';
     }
-    if (combined.includes('key') || combined.includes('cutter') || combined.includes('knife') || combined.includes('poison') || combined.includes('gun') || combined.includes('safe')) {
-      return 'Crime Tool / Physical Clue';
+    if (combined.includes('key') || combined.includes('cutter') || combined.includes('knife') || combined.includes('poison') || combined.includes('gun') || combined.includes('safe') || combined.includes('lock')) {
+      return 'Crime Tool & Evidence';
     }
-    if (combined.includes('fare') || combined.includes('train') || combined.includes('car') || combined.includes('ticket') || combined.includes('station') || combined.includes('passenger')) {
+    if (combined.includes('fare') || combined.includes('train') || combined.includes('car') || combined.includes('ticket') || combined.includes('station') || combined.includes('passenger') || combined.includes('taxi')) {
       return 'Transit & Transportation';
     }
-    if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money')) {
+    if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money') || combined.includes('gold')) {
       return 'Valuable Stolen Goods';
     }
-    return publicHint || 'Crime Scene Evidence';
+    if (publicHint && !/focus on the clue/i.test(publicHint) && !/mystery clue/i.test(publicHint)) {
+      return publicHint;
+    }
+    return 'Crime Scene Evidence';
   };
 
   const dynamicCategory = getDynamicCategory();
@@ -161,10 +164,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     : (targetWords.length > 0 ? targetWords.map((w) => w[0]?.toUpperCase() || '') : []);
 
   const guesserHintMessage = (() => {
-    if (effectiveFirstLetters.length >= 2 && elapsed >= 45) {
+    if (effectiveFirstLetters.length >= 2 && elapsed >= 25) {
       return `🔥 Starts with "${effectiveFirstLetters[0]}" & "${effectiveFirstLetters[1]}" • ${dynamicCategory}`;
     }
-    if (effectiveFirstLetters.length >= 1 && elapsed >= 20) {
+    if (effectiveFirstLetters.length >= 1 && elapsed >= 10) {
       return `💡 First word starts with "${effectiveFirstLetters[0]}" • ${dynamicCategory}`;
     }
     return `Category: ${dynamicCategory}`;
@@ -173,15 +176,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const renderLetterPattern = () => {
     const lengths = (publicWordLengths && publicWordLengths.length > 0)
       ? publicWordLengths
-      : (targetWords.length > 0 ? targetWords.map((w) => w.length) : [4, 6]);
+      : (targetWords.length > 0 ? targetWords.map((w) => w.length) : (effectiveFirstLetters.length >= 2 ? [effectiveFirstLetters[0].length + 4, effectiveFirstLetters[1].length + 5] : [5, 7]));
 
     return (
       <div className="flex flex-wrap items-center gap-3">
         {lengths.map((len, wIdx) => {
           // Progressive letter reveal for guessers:
-          // Word 0 first letter revealed after 20s
-          // Word 1 first letter revealed after 45s
-          const revealFirstLetter = (wIdx === 0 && elapsed >= 20) || (wIdx === 1 && elapsed >= 45);
+          // Word 0 first letter revealed after 10s
+          // Word 1 first letter revealed after 25s
+          const revealFirstLetter = (wIdx === 0 && elapsed >= 10) || (wIdx === 1 && elapsed >= 25);
           const firstChar = revealFirstLetter && effectiveFirstLetters[wIdx] ? effectiveFirstLetters[wIdx] : null;
 
           const dashes = Array.from({ length: len }).map((_, cIdx) => {
@@ -189,8 +192,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             return (
               <span
                 key={cIdx}
-                className={`inline-block border-b-2 ${showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'
-                  } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
+                className={`inline-block border-b-2 ${
+                  showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'
+                } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
               >
                 {showChar ? firstChar : '\u00A0'}
               </span>
