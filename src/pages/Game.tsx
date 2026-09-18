@@ -91,6 +91,15 @@ export const Game: React.FC<GameProps> = ({
   const [storyChooserName, setStoryChooserName] = useState<string>('');
   const [offeredStories, setOfferedStories] = useState<Array<{ storyId: string; title: string; genre: string; difficulty: string; description: string }>>([]);
   const [selectedStoryBriefing, setSelectedStoryBriefing] = useState<{ title: string; genre: string; description: string } | null>(null);
+  const [storyOverviewSeconds, setStoryOverviewSeconds] = useState<number>(10);
+
+  useEffect(() => {
+    if (!selectedStoryBriefing) return;
+    const interval = setInterval(() => {
+      setStoryOverviewSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [selectedStoryBriefing]);
 
   // Authoritative drawer prompt options & persistent secret clue
   const initialStoredClue = getStoredClue(room.id, initialState.turnIndex);
@@ -207,21 +216,18 @@ export const Game: React.FC<GameProps> = ({
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
       SoundService.playDramaticSting();
       setIsStorySelection(false);
-      setSelectedStoryBriefing(null);
-      showGameBanner({
-        id: 'story-selected',
-        type: 'story',
-        badge: 'CASE FILE ASSIGNED',
-        title: `"${payload.title}"`,
-        subtitle: payload.genre || 'Mystery Investigation',
-      }, 5000);
+      setSelectedStoryBriefing({
+        title: payload.title,
+        genre: payload.genre || 'Mystery Investigation',
+        description: payload.description || 'A confidential crime dossier has been unsealed for investigation.',
+      });
+      setStoryOverviewSeconds(payload.overviewSeconds || 10);
 
       const targetStoryId = payload.storyId || payload.title;
       const resolvedCase = CaseManager.getCase(targetStoryId);
 
       setGameState((prev) => ({
         ...prev,
-        status: 'PLAYER_DRAWING',
         caseId: resolvedCase.id,
         currentCase: resolvedCase,
       }));
@@ -1025,8 +1031,8 @@ export const Game: React.FC<GameProps> = ({
       )}
 
       {/* 1. DYNAMIC STORY SELECTION & CASE DOSSIER PHASE */}
-      {(isStorySelection || (gameState.status === 'STORY_SELECTION' && !gameState.currentTurnPlayerId && gameState.turnIndex < 0)) &&
-        gameState.status !== 'PLAYER_DRAWING' &&
+      {(selectedStoryBriefing || isStorySelection || (gameState.status === 'STORY_SELECTION' && !gameState.currentTurnPlayerId && gameState.turnIndex < 0)) &&
+        (!selectedStoryBriefing ? gameState.status !== 'PLAYER_DRAWING' : true) &&
         gameState.status !== 'FINAL_THEORY' &&
         gameState.status !== 'RESULTS' && (
           <div className="relative z-10 flex flex-col min-h-screen justify-between">
@@ -1107,17 +1113,27 @@ export const Game: React.FC<GameProps> = ({
                     );
                   })()}
 
-                  <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs font-mono text-[#5c422e]">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-red-800 animate-spin" />
-                      <span className="font-bold">Cataloging evidence for Detective drawing round...</span>
+                  {/* Compulsory 10-Second Countdown Bar */}
+                  <div className="pt-2 max-w-xl mx-auto space-y-2.5">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-[#4a3525]">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-red-800 animate-spin" />
+                        <span>READING CASE DOSSIER • ROUND BEGINS IN</span>
+                      </div>
+                      <span className="text-sm font-black text-red-800 tabular-nums px-2 py-0.5 rounded bg-red-100 border border-red-800 shadow-xs">
+                        00:{storyOverviewSeconds.toString().padStart(2, '0')}
+                      </span>
                     </div>
-                    <button
-                      onClick={() => setSelectedStoryBriefing(null)}
-                      className="px-5 py-2.5 rounded-xl bg-red-800 hover:bg-red-700 text-white border border-red-900 text-xs font-bold font-mono uppercase tracking-wider transition-colors shadow-md cursor-pointer"
-                    >
-                      Acknowledge & Proceed (×)
-                    </button>
+                    {/* Visual Progress Bar */}
+                    <div className="w-full h-2.5 rounded-full bg-[#ede1cf] border border-[#b89e7c] overflow-hidden p-0.5 shadow-inner">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-red-800 via-amber-700 to-red-800 transition-all duration-1000 ease-linear"
+                        style={{ width: `${Math.min(100, Math.max(0, (storyOverviewSeconds / 10) * 100))}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#7a5e45] font-mono">
+                      Review the case overview carefully. Random detective clue assignments are being drafted.
+                    </p>
                   </div>
                 </div>
               ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (

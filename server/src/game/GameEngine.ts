@@ -230,19 +230,20 @@ export class GameEngine {
     this.storyEngine = new StoryEngine(story);
     this.session.storyVariables = this.storyEngine.getVariables();
 
-    logger.info(`Story chosen: "${story.title}" (${story.id})`);
+    const overviewSeconds = 10;
 
-    // Broadcast chosen story to everyone in the room
+    // Broadcast chosen story with overview reading time to everyone in the room
     this.emit('STORY_SELECTED', {
       storyId: story.id,
       title: story.title,
       genre: story.genre,
       difficulty: story.difficulty,
       description: story.description,
+      overviewSeconds,
     });
 
-    // Move to round start after a 2-second narrative banner
-    this.timerManager.startTimer('story_selected_delay', 2, () => {
+    // Move to round start after 10-second case dossier overview reading
+    this.timerManager.startTimer('story_selected_delay', overviewSeconds, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.turnManager.randomizeFirstDrawer();
       this.beginTurn();
