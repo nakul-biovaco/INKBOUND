@@ -69,6 +69,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   onLeaveRoom,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
   const currentStrokeRef = useRef<Stroke | null>(null);
 
@@ -237,27 +238,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const denormalizedPoints = chunk.points.map((p: any) => ({
-        x: p.x * canvas.width,
-        y: p.y * canvas.height,
-      }));
+      const strokeObj: Stroke = {
+        id: chunk.strokeId || `chunk-${Date.now()}`,
+        drawingId: `draw-${gameState.id}`,
+        playerId: gameState.currentTurnPlayerId || '',
+        tool: chunk.tool || 'pencil',
+        color: chunk.color || '#111827',
+        width: chunk.width || 4,
+        points: chunk.points,
+        timestamp: chunk.timestamp || Date.now(),
+      };
 
-      if (chunk.tool === 'fill' && denormalizedPoints.length > 0) {
-        DrawingService.floodFill(ctx, denormalizedPoints[0].x, denormalizedPoints[0].y, chunk.color || '#111827');
-        return;
-      }
-
-      ctx.beginPath();
-      ctx.strokeStyle = chunk.tool === 'eraser' ? '#fbf8f1' : (chunk.color || '#111827');
-      ctx.lineWidth = chunk.width || 4;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      ctx.moveTo(denormalizedPoints[0].x, denormalizedPoints[0].y);
-      for (let i = 1; i < denormalizedPoints.length; i++) {
-        ctx.lineTo(denormalizedPoints[i].x, denormalizedPoints[i].y);
-      }
-      ctx.stroke();
+      setStrokes((prev) => [...prev, strokeObj]);
+      DrawingService.renderStroke(ctx, strokeObj, canvas.width, canvas.height);
     });
 
     const unsubClear = backend.on('DRAW_CLEAR', () => {
@@ -324,6 +317,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     };
   }, [backend, isCurrentDrawer]);
 
+  const strokesRef = useRef<Stroke[]>(strokes);
+  useEffect(() => {
+    strokesRef.current = strokes;
+  }, [strokes]);
+
+  const lastLiveStrokeRef = useRef<{ id: string; renderedCount: number }>({ id: '', renderedCount: 0 });
+
   // Observer Mode: Realtime sync of strokes & live stream
   useEffect(() => {
     if (isCurrentDrawer) return;
@@ -333,29 +333,65 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         const payload = msg.payload as StrokeBroadcastPayload;
         if (payload?.stroke) {
           setStrokes((prev) => [...prev, payload.stroke]);
+          lastLiveStrokeRef.current = { id: '', renderedCount: 0 };
           const canvas = canvasRef.current;
           if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              DrawingService.renderStroke(ctx, payload.stroke);
+              DrawingService.renderStroke(ctx, payload.stroke, canvas.width, canvas.height);
             }
           }
         }
       } else if (msg.type === 'STROKE_LIVE_UPDATE') {
         const payload = msg.payload as { stroke?: Stroke };
         if (payload?.stroke) {
+          const live = payload.stroke;
           const canvas = canvasRef.current;
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              DrawingService.renderStroke(ctx, payload.stroke);
-            }
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          const pts = live.points;
+          if (pts.length < 2) return;
+
+          if (lastLiveStrokeRef.current.id !== live.id) {
+            lastLiveStrokeRef.current = { id: live.id, renderedCount: 1 };
           }
+
+          const startIdx = Math.max(1, lastLiveStrokeRef.current.renderedCount);
+          const rect = canvas.getBoundingClientRect();
+          const dpr = canvas.width / (rect.width || 1);
+
+          ctx.save();
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          if (live.tool === 'eraser') {
+            ctx.strokeStyle = '#fbf8f1';
+            ctx.lineWidth = live.width * 2 * dpr;
+          } else if (live.tool === 'marker') {
+            ctx.globalAlpha = 0.5;
+            ctx.strokeStyle = live.color;
+            ctx.lineWidth = live.width * 2.5 * dpr;
+          } else {
+            ctx.strokeStyle = live.color;
+            ctx.lineWidth = live.width * dpr;
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(pts[startIdx - 1].x * canvas.width, pts[startIdx - 1].y * canvas.height);
+          for (let i = startIdx; i < pts.length; i++) {
+            ctx.lineTo(pts[i].x * canvas.width, pts[i].y * canvas.height);
+          }
+          ctx.stroke();
+          ctx.restore();
+
+          lastLiveStrokeRef.current.renderedCount = pts.length;
         }
       } else if (msg.type === 'DRAWING_UNDO') {
         const payload = msg.payload as { strokes?: Stroke[] };
         if (payload?.strokes) {
           setStrokes(payload.strokes);
+          lastLiveStrokeRef.current = { id: '', renderedCount: 0 };
           const canvas = canvasRef.current;
           if (canvas) {
             const ctx = canvas.getContext('2d');
@@ -368,6 +404,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
       } else if (msg.type === 'DRAWING_CLEARED') {
         setStrokes([]);
+        lastLiveStrokeRef.current = { id: '', renderedCount: 0 };
         const canvas = canvasRef.current;
         if (canvas) {
           const ctx = canvas.getContext('2d');
@@ -382,65 +419,72 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => unsubscribe();
   }, [channel, isCurrentDrawer]);
 
-  // Canvas Initialization (Parchment Paper Canvas)
+  // Dynamic responsive canvas sizing & high-DPI scaling
   useEffect(() => {
+    const container = canvasContainerRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!container || !canvas) return;
 
-    canvas.width = 1280;
-    canvas.height = 800;
+    const resizeCanvas = () => {
+      const rect = container.getBoundingClientRect();
+      const w = rect.width || container.clientWidth;
+      const h = rect.height || container.clientHeight;
+      if (w === 0 || h === 0) return;
 
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#fbf8f1';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      DrawingService.replayStrokes(ctx, canvas.width, canvas.height, strokes);
-    }
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const targetW = Math.max(1, Math.round(w * dpr));
+      const targetH = Math.max(1, Math.round(h * dpr));
+
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#fbf8f1';
+          ctx.fillRect(0, 0, targetW, targetH);
+          DrawingService.replayStrokes(ctx, targetW, targetH, strokesRef.current);
+        }
+      }
+    };
+
+    resizeCanvas();
+    const observer = new ResizeObserver(() => resizeCanvas());
+    observer.observe(container);
+
+    return () => observer.disconnect();
   }, []);
 
   const lastBroadcastRef = useRef<number>(0);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent): Point | null => {
+  // Pure normalized coordinate mapping across 100% of visible canvas
+  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
+    if (rect.width === 0 || rect.height === 0) return null;
 
-    if ('touches' in e && e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else if ('changedTouches' in e && e.changedTouches && e.changedTouches.length > 0) {
-      clientX = e.changedTouches[0].clientX;
-      clientY = e.changedTouches[0].clientY;
-    } else if ('clientX' in e) {
-      clientX = (e as MouseEvent | PointerEvent).clientX;
-      clientY = (e as MouseEvent | PointerEvent).clientY;
-    }
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
+    // Normalized [0, 1] relative to the exact visible canvas boundary
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
     };
   };
 
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isCurrentDrawer) return;
 
-    if ('pointerId' in e && e.target && 'setPointerCapture' in (e.target as any)) {
-      try {
-        (e.target as any).setPointerCapture((e as any).pointerId);
-      } catch {
-        // ignore capture failure
-      }
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
     }
 
-    const pt = getCoordinates(e);
-    if (!pt) return;
+    const normPt = getCoordinates(e);
+    if (!normPt) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     if (currentTool === 'fill') {
       const fillStroke = DrawingService.createStroke(
@@ -449,38 +493,32 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         'fill',
         currentColor,
         1,
-        pt
+        normPt
       );
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          DrawingService.floodFill(ctx, pt.x, pt.y, currentColor);
-        }
-        setStrokes((prev) => [...prev, fillStroke]);
-        setRedoStack([]);
-        channel.broadcast(
-          'DRAWING_STROKE',
-          currentUser.id,
-          {
-            drawingId: fillStroke.drawingId,
-            stroke: fillStroke,
-          },
-          gameState.sequenceNumber
-        );
-        backend.drawStroke({
-          strokeId: fillStroke.id,
-          tool: 'fill',
-          color: currentColor,
-          width: 1,
-          points: [{
-            x: Math.max(0, Math.min(1, pt.x / canvas.width)),
-            y: Math.max(0, Math.min(1, pt.y / canvas.height)),
-          }],
-          isComplete: true,
-          timestamp: fillStroke.timestamp,
-        });
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        DrawingService.floodFill(ctx, normPt.x * canvas.width, normPt.y * canvas.height, currentColor);
       }
+      setStrokes((prev) => [...prev, fillStroke]);
+      setRedoStack([]);
+      channel.broadcast(
+        'DRAWING_STROKE',
+        currentUser.id,
+        {
+          drawingId: fillStroke.drawingId,
+          stroke: fillStroke,
+        },
+        gameState.sequenceNumber
+      );
+      backend.drawStroke({
+        strokeId: fillStroke.id,
+        tool: 'fill',
+        color: currentColor,
+        width: 1,
+        points: [normPt],
+        isComplete: true,
+        timestamp: fillStroke.timestamp,
+      });
       return;
     }
 
@@ -491,49 +529,85 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       currentTool,
       currentTool === 'eraser' ? '#fbf8f1' : currentColor,
       strokeWidth,
-      pt
+      normPt
     );
     currentStrokeRef.current = newStroke;
 
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        DrawingService.renderStroke(ctx, newStroke);
-      }
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const pxX = normPt.x * canvas.width;
+      const pxY = normPt.y * canvas.height;
+      const rect = canvas.getBoundingClientRect();
+      const dprScale = canvas.width / (rect.width || 1);
+      ctx.save();
+      ctx.fillStyle = newStroke.color;
+      ctx.beginPath();
+      ctx.arc(pxX, pxY, Math.max(1.5, (newStroke.width * dprScale) / 2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
   };
 
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || !currentStrokeRef.current || !isCurrentDrawer) return;
 
-    const pt = getCoordinates(e);
-    if (!pt) return;
+    const normPt = getCoordinates(e);
+    if (!normPt) return;
 
-    currentStrokeRef.current.points.push(pt);
+    const stroke = currentStrokeRef.current;
+    const pts = stroke.points;
+    const prevPt = pts[pts.length - 1];
+
+    const dx = normPt.x - prevPt.x;
+    const dy = normPt.y - prevPt.y;
+    if (dx * dx + dy * dy < 0.000001) return;
+
+    pts.push(normPt);
 
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        DrawingService.renderStroke(ctx, currentStrokeRef.current);
+        // Fast incremental O(1) line drawing for instant realtime response
+        const rect = canvas.getBoundingClientRect();
+        const dprScale = canvas.width / (rect.width || 1);
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (stroke.tool === 'eraser') {
+          ctx.strokeStyle = '#fbf8f1';
+          ctx.lineWidth = stroke.width * 2 * dprScale;
+        } else if (stroke.tool === 'marker') {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = stroke.color;
+          ctx.lineWidth = stroke.width * 2.5 * dprScale;
+        } else {
+          ctx.strokeStyle = stroke.color;
+          ctx.lineWidth = stroke.width * dprScale;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(prevPt.x * canvas.width, prevPt.y * canvas.height);
+        ctx.lineTo(normPt.x * canvas.width, normPt.y * canvas.height);
+        ctx.stroke();
+        ctx.restore();
       }
     }
 
-    // Stream live stroke updates to observers (throttled to 45ms)
+    // Stream live stroke to spectators (throttled to 35ms)
     const now = Date.now();
-    if (now - lastBroadcastRef.current > 45) {
+    if (now - lastBroadcastRef.current > 35) {
       lastBroadcastRef.current = now;
       channel.broadcast('STROKE_LIVE_UPDATE', currentUser.id, {
-        stroke: currentStrokeRef.current,
+        stroke,
       });
     }
   };
 
-  const handlePointerUp = (e?: React.MouseEvent | React.TouchEvent | React.PointerEvent | MouseEvent | TouchEvent | PointerEvent) => {
-    if (e && 'pointerId' in e && e.target && 'releasePointerCapture' in (e.target as any)) {
+  const handlePointerUp = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e) {
       try {
-        (e.target as any).releasePointerCapture((e as any).pointerId);
+        e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
         // ignore
       }
@@ -544,6 +618,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     isDrawingRef.current = false;
     const completedStroke = currentStrokeRef.current;
     currentStrokeRef.current = null;
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        DrawingService.renderStroke(ctx, completedStroke, canvas.width, canvas.height);
+      }
+    }
 
     setStrokes((prev) => [...prev, completedStroke]);
 
@@ -557,60 +639,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       gameState.sequenceNumber
     );
 
-    // Send authoritative stroke to game engine via WebSocket
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const normalizedPoints = completedStroke.points.map((p) => ({
-        x: Math.max(0, Math.min(1, p.x / canvas.width)),
-        y: Math.max(0, Math.min(1, p.y / canvas.height)),
-      }));
-      backend.drawStroke({
-        strokeId: completedStroke.id,
-        tool: completedStroke.tool === 'eraser' ? 'eraser' : 'pencil',
-        color: completedStroke.color,
-        width: completedStroke.width,
-        points: normalizedPoints,
-        isComplete: true,
-        timestamp: completedStroke.timestamp,
-      });
-    }
+    backend.drawStroke({
+      strokeId: completedStroke.id,
+      tool: completedStroke.tool === 'eraser' ? 'eraser' : 'pencil',
+      color: completedStroke.color,
+      width: completedStroke.width,
+      points: completedStroke.points,
+      isComplete: true,
+      timestamp: completedStroke.timestamp,
+    });
   };
-
-  // Attach non-passive touch listeners on canvas to completely eliminate mobile screen dragging / wobble
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (!isCurrentDrawer) return;
-      if (e.cancelable) e.preventDefault();
-      handlePointerDown(e);
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isDrawingRef.current || !isCurrentDrawer) return;
-      if (e.cancelable) e.preventDefault();
-      handlePointerMove(e);
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!isCurrentDrawer) return;
-      if (e.cancelable) e.preventDefault();
-      handlePointerUp();
-    };
-
-    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-    canvas.addEventListener('touchend', onTouchEnd, { passive: false });
-    canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
-
-    return () => {
-      canvas.removeEventListener('touchstart', onTouchStart);
-      canvas.removeEventListener('touchmove', onTouchMove);
-      canvas.removeEventListener('touchend', onTouchEnd);
-      canvas.removeEventListener('touchcancel', onTouchEnd);
-    };
-  }, [isCurrentDrawer, currentTool, currentColor, strokeWidth, gameState.id, currentUser.id]);
 
   const handleClear = () => {
     if (!isCurrentDrawer) return;
@@ -676,7 +714,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        DrawingService.renderStroke(ctx, restored);
+        DrawingService.renderStroke(ctx, restored, canvas.width, canvas.height);
       }
     }
 
@@ -951,35 +989,47 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           )}
 
-          {/* 3. PARCHMENT DRAWING CANVAS (Enlarged, 100% unobstructed, gesture lock) */}
+          {/* 3. PARCHMENT DRAWING CANVAS (100% Edge-to-Edge, Mobile-Friendly, Zero Dead-Zone) */}
           <div
-            className="relative w-full aspect-[4/3] sm:aspect-[16/10] min-h-[460px] sm:min-h-[540px] md:min-h-[600px] lg:min-h-[660px] xl:min-h-[720px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex items-center justify-center"
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[64vh] min-h-[290px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-[520px] bg-[#fbf8f1] rounded-2xl shadow-[0_0_0_1px_rgba(239,68,68,0.18),0_20px_50px_rgba(0,0,0,0.45)] border-2 border-slate-600 overflow-hidden flex flex-col"
             style={{ touchAction: 'none' }}
           >
-            <div className="absolute inset-x-0 top-0 z-20 h-7 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 pointer-events-none">
+            {/* Header Sub-bar */}
+            <div className="flex-shrink-0 h-7 bg-gradient-to-r from-[#121722]/95 via-[#202838]/90 to-[#121722]/95 border-b border-slate-600/80 flex items-center justify-between px-3 select-none">
               <span className="text-[9px] font-mono font-bold tracking-[0.18em] uppercase text-slate-300">Evidence Canvas</span>
               <span className={`text-[9px] font-mono font-bold uppercase ${isCurrentDrawer ? 'text-red-400' : 'text-sky-300'}`}>
                 {isCurrentDrawer ? '● Input Enabled' : '◉ Live Spectator Stream'}
               </span>
             </div>
 
-            {/* HTML5 Canvas */}
-            <canvas
-              ref={canvasRef}
-              style={{
-                touchAction: 'none',
-              }}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onMouseDown={handlePointerDown}
-              onMouseMove={handlePointerMove}
-              onMouseUp={handlePointerUp}
-              onMouseLeave={handlePointerUp}
-              className={`w-full h-full object-contain select-none ${isCurrentDrawer ? (currentTool === 'fill' ? 'cursor-cell pointer-events-auto' : 'cursor-crosshair pointer-events-auto') : 'cursor-default pointer-events-none'
+            {/* Drawing Canvas Area (Full 100% usable drawing surface) */}
+            <div
+              ref={canvasContainerRef}
+              className="flex-1 w-full min-h-0 relative overflow-hidden bg-[#fbf8f1]"
+              style={{ touchAction: 'none' }}
+            >
+              <canvas
+                ref={canvasRef}
+                style={{
+                  touchAction: 'none',
+                  display: 'block',
+                  width: '100%',
+                  height: '100%',
+                }}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                className={`w-full h-full block select-none ${
+                  isCurrentDrawer
+                    ? currentTool === 'fill'
+                      ? 'cursor-cell pointer-events-auto'
+                      : 'cursor-crosshair pointer-events-auto'
+                    : 'cursor-default pointer-events-none'
                 }`}
-            />
+              />
+            </div>
           </div>
 
           {/* 4. GUESSER CONSOLE & LIVE GUESS STREAM (VISIBLE TO BOTH DRAWER AND GUESSERS) */}

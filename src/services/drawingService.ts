@@ -17,14 +17,31 @@ export class DrawingService {
   /**
    * Smoothly draws a single stroke onto a 2D canvas rendering context using quadratic Bézier curves.
    */
-  public static renderStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
+  public static renderStroke(
+    ctx: CanvasRenderingContext2D,
+    stroke: Stroke,
+    canvasWidth?: number,
+    canvasHeight?: number
+  ): void {
     if (!stroke.points || stroke.points.length === 0) return;
+
+    const w = canvasWidth || ctx.canvas.width;
+    const h = canvasHeight || ctx.canvas.height;
+    const dpr = ctx.canvas.clientWidth ? w / ctx.canvas.clientWidth : 1;
+
+    // Helper: auto-scale normalized coordinates [0, 1] to canvas dimensions
+    const toPx = (p: Point): Point => {
+      if (p.x <= 1.05 && p.y <= 1.05) {
+        return { x: p.x * w, y: p.y * h };
+      }
+      return p;
+    };
 
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const pts = stroke.points;
+    const pts = stroke.points.map(toPx);
 
     if (stroke.tool === 'fill' && pts.length >= 1) {
       DrawingService.floodFill(ctx, pts[0].x, pts[0].y, stroke.color);
@@ -33,19 +50,19 @@ export class DrawingService {
     }
 
     if (stroke.tool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
-      ctx.lineWidth = stroke.width * 2;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = '#fbf8f1';
+      ctx.lineWidth = stroke.width * 2 * dpr;
     } else if (stroke.tool === 'marker') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.5;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width * 2.5;
+      ctx.lineWidth = stroke.width * 2.5 * dpr;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1.0;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width;
+      ctx.lineWidth = stroke.width * dpr;
     }
 
     if (stroke.tool === 'line' && pts.length >= 2) {
@@ -79,9 +96,9 @@ export class DrawingService {
 
     // Freehand smooth Bézier curve interpolation
     if (pts.length === 1) {
-      ctx.fillStyle = stroke.color;
+      ctx.fillStyle = stroke.tool === 'eraser' ? '#fbf8f1' : stroke.color;
       ctx.beginPath();
-      ctx.arc(pts[0].x, pts[0].y, stroke.width / 2, 0, Math.PI * 2);
+      ctx.arc(pts[0].x, pts[0].y, Math.max(1, (stroke.width * dpr) / 2), 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.beginPath();
@@ -111,8 +128,10 @@ export class DrawingService {
     strokes: Stroke[]
   ): void {
     ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#fbf8f1';
+    ctx.fillRect(0, 0, width, height);
     strokes.forEach((stroke) => {
-      this.renderStroke(ctx, stroke);
+      this.renderStroke(ctx, stroke, width, height);
     });
   }
 
