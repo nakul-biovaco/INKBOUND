@@ -369,29 +369,89 @@ export class MarkdownStoryParser {
   }
 
   private static generateAcceptedPhrases(phrase: string): string[] {
-    const words = phrase.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-    if (words.length >= 3) {
-      return [
-        words.slice(0, 3).join(' '),
-        words.slice(-3).join(' '),
-      ];
+    const clean = phrase.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const words = clean.split(/\s+/).filter(Boolean);
+    const accepted = new Set<string>([clean]);
+    for (const w of words) {
+      if (w.length >= 3) {
+        accepted.add(w);
+      }
     }
-    return [phrase.toLowerCase()];
+    // Add common synonyms
+    if (clean.includes('photo') || clean.includes('picture')) {
+      accepted.add('photo');
+      accepted.add('picture');
+      accepted.add('photograph');
+    }
+    if (clean.includes('diary') || clean.includes('journal')) {
+      accepted.add('diary');
+      accepted.add('journal');
+      accepted.add('notebook');
+    }
+    if (clean.includes('video') || clean.includes('tape')) {
+      accepted.add('video');
+      accepted.add('tape');
+      accepted.add('movie');
+    }
+    if (clean.includes('fare') || clean.includes('taxi')) {
+      accepted.add('fare');
+      accepted.add('taxi');
+      accepted.add('cab');
+    }
+    if (clean.includes('radio') || clean.includes('dispatcher')) {
+      accepted.add('radio');
+      accepted.add('dispatch');
+    }
+    return Array.from(accepted);
   }
 
   public static cleanToClueWord(text: string): string {
     if (!text) return 'Mystery Clue';
     let clean = text
       .replace(/^#*\s*\d+\s*[—–-]\s*/, '')
-      .replace(/^A\s+|^An\s+|^The\s+/i, '')
       .replace(/^MAJOR TWIST\s*—\s*/i, '')
+      .replace(/\*canon\*|\*B-alt\*|\*C-alt\*|\*B\*|\*C\*|\(canon\)/gi, '')
+      .replace(/^[A-C]:\s*/i, '')
       .replace(/[.!?:;]+$/, '')
       .trim();
-    const words = clean.split(/\s+/);
-    if (words.length > 3) {
-      clean = words.slice(0, 3).join(' ');
+
+    // Strip leading action verbs/gerunds and articles
+    clean = clean.replace(
+      /^(finding|discovering|looking for|searching for|getting into|picking up|refusing|breaking into|stealing|taking|examining|inspecting|opening|hiding|dropping|holding|leaving|meeting|hearing|watching|spotting|noticing)\s+(an?\s+|the\s+)?/i,
+      ''
+    );
+
+    // Strip trailing context clauses like "while cleaning", "out of a closet", etc.
+    clean = clean.replace(/\s+(while cleaning|out of \w+|near the \w+|in the \w+|on the \w+|from the \w+|at the \w+).*$/i, '');
+
+    // Strip leading articles
+    clean = clean.replace(/^(a|an|the)\s+/i, '').trim();
+
+    // Handle common phrases into crisp 2 words
+    if (/refusing.*fare/i.test(text) || clean.toLowerCase() === 'fare') {
+      return 'Taxi Fare';
     }
-    return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : 'Mystery Clue';
+    if (/dispatcher.*voice|radio crackles/i.test(text)) {
+      return 'Dispatch Radio';
+    }
+    if (/fender-bender|car crash/i.test(text)) {
+      return 'Car Crash';
+    }
+
+    const words = clean.split(/\s+/).filter(Boolean);
+    let resultWords: string[] = [];
+    if (words.length <= 2) {
+      resultWords = words;
+    } else {
+      // Pick the most descriptive 2 words
+      resultWords = words.slice(-2);
+    }
+
+    const formatted = resultWords
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+
+    return formatted || 'Mystery Clue';
   }
 
   private static generateDistractors(title: string, events: StoryEvent[]): Array<{ distractorId: string; text: string; category: string }> {

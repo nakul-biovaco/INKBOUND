@@ -36,7 +36,7 @@ export const VALID_TRANSITIONS: Record<GameStatus, GameStatus[]> = {
   NEXT_TURN: ['ROUND_START', 'PROMPT_SELECTION', 'FINAL_INVESTIGATION'],
   FINAL_INVESTIGATION: ['ENDING'],
   ENDING: ['GAME_COMPLETE'],
-  GAME_COMPLETE: ['LOBBY'],
+  GAME_COMPLETE: ['LOBBY', 'COUNTDOWN', 'STORY_SELECTION'],
 };
 
 // ==========================================
@@ -238,6 +238,7 @@ export interface PublicGameState {
   storyVariables: Record<string, boolean | number | string>;
   drawingStrokeCount: number;
   hint?: string | null;
+  wordLengths?: number[] | null;
 }
 
 export interface PrivateDrawerState {
@@ -341,8 +342,8 @@ export const DrawStrokeSchema = z.object({
     width: z.number().min(1).max(100),
     points: z.array(
       z.object({
-        x: z.number().min(0).max(1),
-        y: z.number().min(0).max(1),
+        x: z.number().transform((v) => Math.max(0, Math.min(1, v))),
+        y: z.number().transform((v) => Math.max(0, Math.min(1, v))),
       })
     ),
     isComplete: z.boolean(),

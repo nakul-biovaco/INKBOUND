@@ -87,6 +87,24 @@ export const Game: React.FC<GameProps> = ({
   );
   const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
   const [publicHint, setPublicHint] = useState<string | null>(null);
+  const [publicWordLengths, setPublicWordLengths] = useState<number[] | null>(null);
+
+  const cleanCardText = (txt: string): string => {
+    if (!txt) return 'Clue';
+    let clean = txt
+      .replace(/^#*\s*\d+\s*[—–-]\s*/, '')
+      .replace(/^(finding|discovering|getting into|picking up|refusing)\s+(an?\s+|the\s+)?/i, '')
+      .replace(/\s+(while cleaning|out of \w+|near the \w+|in the \w+).*$/i, '')
+      .replace(/^A\s+|^An\s+|^The\s+/i, '')
+      .replace(/[.!?:;]+$/, '')
+      .trim();
+    if (/refusing.*fare/i.test(txt)) return 'Taxi Fare';
+    if (/dispatcher.*voice|radio crackles/i.test(txt)) return 'Dispatch Radio';
+    if (/fender-bender|car crash/i.test(txt)) return 'Car Crash';
+    const words = clean.split(/\s+/).filter(Boolean);
+    const picked = words.length > 2 ? words.slice(-2) : words;
+    return picked.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
 
   // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
   const [gameBanner, setGameBanner] = useState<GameBanner | null>(null);
@@ -173,6 +191,7 @@ export const Game: React.FC<GameProps> = ({
       setPublicHint(null);
 
       const newTurn = payload.turnIndex || 0;
+      setPublicWordLengths(null);
       const stored = getStoredClue(room.id, newTurn);
       if (stored && stored.objective) {
         setSecretDrawObjective(stored.objective);
@@ -198,6 +217,9 @@ export const Game: React.FC<GameProps> = ({
       setIsStorySelection(false);
       if (payload?.hint) {
         setPublicHint(payload.hint);
+      }
+      if (payload?.wordLengths) {
+        setPublicWordLengths(payload.wordLengths);
       }
 
       const newTurn = payload.turnIndex || 0;
@@ -264,13 +286,16 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubStoryReveal = backend.on('STORY_REVEAL', (payload: any) => {
       SoundService.playDramaticSting();
+      const shortText = payload.revealedText && payload.revealedText.length > 70
+        ? payload.revealedText.substring(0, 68) + '...'
+        : (payload.revealedText || 'New evidence uncovered');
       showGameBanner({
         id: 'story-reveal',
         type: 'reveal',
-        badge: `CLUE #${payload.solvedCount} DISCOVERED`,
-        title: `"${payload.revealedText}"`,
+        badge: `CLUE #${payload.solvedCount || 1} DISCOVERED`,
+        title: `"${shortText}"`,
         subtitle: 'The mystery timeline is coming together...',
-      }, 6000);
+      }, 4000);
     });
 
     const unsubNextTurn = backend.on('NEXT_TURN', (_payload: any) => {
@@ -326,6 +351,10 @@ export const Game: React.FC<GameProps> = ({
         if (payload.drawerPrivateState.hint) {
           setSecretDrawHint(payload.drawerPrivateState.hint);
         }
+      }
+
+      if (payload?.gameState?.wordLengths) {
+        setPublicWordLengths(payload.gameState.wordLengths);
       }
 
       setGameState((prev) => ({
@@ -511,9 +540,9 @@ export const Game: React.FC<GameProps> = ({
       />
       <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
 
-      {/* INTEGRATED HUD GAME ALERT BANNER (Replacing fragmented vibe-coded floating pills) */}
+      {/* INTEGRATED HUD GAME ALERT BANNER (Non-intrusive top-right toast) */}
       {gameBanner && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 animate-fadeIn select-none pointer-events-auto">
+        <div className="fixed top-4 right-4 z-50 max-w-md w-[92vw] sm:w-[400px] animate-fadeIn select-none pointer-events-auto">
           <div
             onClick={() => setGameBanner(null)}
             className={`cursor-pointer rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3 border backdrop-blur-md transition-all ${
@@ -611,7 +640,7 @@ export const Game: React.FC<GameProps> = ({
                   onMouseEnter={() => SoundService.playCardFlip()}
                   onClick={() => {
                     SoundService.playStamp();
-                    handleSelectPrompt(opt.optionIndex, opt.previewText);
+                    handleSelectPrompt(opt.optionIndex, cleanCardText(opt.previewText));
                   }}
                   className="group relative p-5 rounded-2xl bg-[#161c2e] hover:bg-[#1e2740] border-2 border-slate-700 hover:border-red-500 transition-all text-left shadow-lg hover:shadow-red-500/25 hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
                 >
@@ -634,7 +663,7 @@ export const Game: React.FC<GameProps> = ({
                     </div>
 
                     <div className="text-sm sm:text-base font-bold text-white group-hover:text-red-300 font-serif leading-snug">
-                      "{opt.previewText}"
+                      "{cleanCardText(opt.previewText)}"
                     </div>
                   </div>
 
@@ -823,6 +852,7 @@ export const Game: React.FC<GameProps> = ({
           secretDrawObjective={secretDrawObjective}
           secretDrawHint={secretDrawHint}
           publicHint={publicHint || secretDrawHint}
+          publicWordLengths={publicWordLengths}
           roomCode={room.code}
           channel={channel}
           isDrawer={isDrawer}

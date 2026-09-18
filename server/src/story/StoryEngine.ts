@@ -1,4 +1,5 @@
 import { PromptOption, StoryDefinition, StoryEnding, StoryEvent } from '../types/index.js';
+import { MarkdownStoryParser } from './MarkdownStoryParser.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('StoryEngine');
@@ -89,12 +90,7 @@ export class StoryEngine {
 
     const cleanClue = (txt: string): string => {
       if (!txt) return 'Mystery Clue';
-      let clean = txt.replace(/^A\s+|^An\s+|^The\s+/i, '').replace(/[.!?:;]+$/, '').trim();
-      const words = clean.split(/\s+/);
-      if (words.length > 4) {
-        clean = words.slice(0, 3).join(' ');
-      }
-      return clean;
+      return MarkdownStoryParser.cleanToClueWord(txt);
     };
 
     const rawOptions: PromptOption[] = [

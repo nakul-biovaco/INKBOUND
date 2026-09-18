@@ -23,6 +23,7 @@ import { GuessEngine } from '../guessing/GuessEngine.js';
 import { DrawingManager } from '../drawing/DrawingManager.js';
 import { RoomManager } from '../rooms/RoomManager.js';
 import { AuthService } from '../auth/AuthService.js';
+import { MarkdownStoryParser } from '../story/MarkdownStoryParser.js';
 import { IdGenerator } from '../utils/idGenerator.js';
 import { createLogger } from '../utils/logger.js';
 import { stateStore } from '../redis/StateStore.js';
@@ -394,6 +395,11 @@ export class GameEngine {
       this.session.currentDrawerId!
     );
 
+    const cleanObjective = this.session.selectedEvent?.drawingObjective
+      ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+      : 'Mystery Clue';
+    const wordLengths = cleanObjective.split(/\s+/).filter(Boolean).map((w) => w.length);
+
     // Broadcast drawing started to all guessers
     this.emit('DRAWING_STARTED', {
       drawerPlayerId: this.session.currentDrawerId,
@@ -401,7 +407,8 @@ export class GameEngine {
       roundStartedAt: startedAt,
       roundEndsAt: endsAt,
       timeLimitSeconds: drawSeconds,
-      hint: this.session.selectedEvent?.hint || null,
+      hint: this.session.selectedEvent?.hint || 'Category: Mystery Clue',
+      wordLengths,
     });
   }
 

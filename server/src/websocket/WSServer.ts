@@ -80,14 +80,22 @@ export class WSServer {
       }
 
       ws.on('message', async (data: string) => {
+        let raw: any = null;
         try {
-          const raw = JSON.parse(data.toString());
+          raw = JSON.parse(data.toString());
           await this.handleClientMessage(ws, raw);
         } catch (err: any) {
           logger.error('Error handling WS message', err);
+          let safeMsg = err?.message || 'Invalid request';
+          if (err?.name === 'ZodError' || Array.isArray(err?.issues) || typeof safeMsg === 'string' && safeMsg.startsWith('[')) {
+            if (raw && raw.event === WSClientEvent.DRAW_STROKE) {
+              return; // Gracefully ignore invalid stroke chunk without throwing scary alerts to user
+            }
+            safeMsg = 'Invalid action or parameters';
+          }
           this.sendToSocket(ws, WSServerEvent.ERROR, {
-            code: err.code || ErrorCode.INVALID_PAYLOAD,
-            message: err.message || 'Invalid WebSocket message format',
+            code: err?.code || ErrorCode.INVALID_PAYLOAD,
+            message: safeMsg,
           });
         }
       });

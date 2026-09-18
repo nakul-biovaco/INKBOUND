@@ -223,6 +223,14 @@ export const App: React.FC = () => {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
 
+  // Auto-dismiss transient alert banner after 4.5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(''), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
   // Sync music mode: Home MP3 at 30% volume on Home, procedural Noir Piano/Violin in Lobby & Game
   useEffect(() => {
     SoundService.setMusicMode(view === 'HOME' ? 'HOME' : 'GAME');
@@ -388,6 +396,15 @@ export const App: React.FC = () => {
           setErrorMessage('That room has closed or the server restarted. Please create or join a new room!');
           return;
         }
+
+        // Suppress raw Zod validation JSON or internal code dumps from player screen
+        if (message.startsWith('[') || message.startsWith('{') || message.includes('"code":') || message.includes('too_big')) {
+          return;
+        }
+        if (message.includes('Cannot transition from GAME_COMPLETE to COUNTDOWN')) {
+          return;
+        }
+
         setErrorMessage(message);
       }
     });

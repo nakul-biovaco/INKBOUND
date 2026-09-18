@@ -37,6 +37,16 @@ export class Serializer {
       storyVariables: session.storyVariables,
       drawingStrokeCount: session.drawingStrokes.length,
       hint: session.selectedEvent ? session.selectedEvent.hint : null,
+      wordLengths: session.selectedEvent
+        ? session.selectedEvent.drawingObjective
+            .replace(/^[A-C]:\s*/i, '')
+            .replace(/\*canon\*|\*B-alt\*|\*C-alt\*/gi, '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w.length)
+        : null,
     };
   }
 

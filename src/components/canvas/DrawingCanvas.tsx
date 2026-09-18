@@ -37,6 +37,7 @@ interface DrawingCanvasProps {
   secretDrawObjective?: string | null;
   secretDrawHint?: string | null;
   publicHint?: string | null;
+  publicWordLengths?: number[] | null;
   roomCode?: string;
   channel: RoomChannelManager;
   isDrawer?: boolean;
@@ -55,10 +56,10 @@ const PALETTE_COLORS = [
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   gameState,
   currentUser,
-  secretClue,
   secretDrawObjective,
   secretDrawHint,
   publicHint,
+  publicWordLengths,
   roomCode,
   channel,
   isDrawer: propIsDrawer,
@@ -108,21 +109,106 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   }, [gameState.turnIndex, gameState.currentTurnPlayerId]);
 
-  const renderLetterPattern = (word?: string) => {
-    if (!word) return <span className="text-amber-400">_ _ _ _</span>;
-    const words = word.trim().split(/\s+/);
+  const cleanClueToTwoWords = (txt?: string | null): string => {
+    if (!txt) return '';
+    let clean = txt
+      .replace(/^#*\s*\d+\s*[—–-]\s*/, '')
+      .replace(/^A\s+|^An\s+|^The\s+/i, '')
+      .replace(/^(finding|discovering|getting into|picking up|refusing)\s+(an?\s+|the\s+)?/i, '')
+      .replace(/\s+(while cleaning|out of \w+|near the \w+|in the \w+|on the \w+).*$/i, '')
+      .replace(/[.!?:;]+$/, '')
+      .trim();
+    if (/refusing.*fare/i.test(txt)) return 'Taxi Fare';
+    if (/dispatcher.*voice|radio crackles/i.test(txt)) return 'Dispatch Radio';
+    if (/fender-bender|car crash/i.test(txt)) return 'Car Crash';
+
+    const words = clean.split(/\s+/).filter(Boolean);
+    const chosen = words.length > 2 ? words.slice(-2) : words;
+    return chosen.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
+  const cleanTarget = cleanClueToTwoWords(secretDrawObjective);
+  const targetWords = cleanTarget ? cleanTarget.split(' ') : [];
+
+  // Dynamic progressive real-time hints
+  const totalSec = gameState.turnDuration || 80;
+  const elapsed = Math.max(0, totalSec - remainingSeconds);
+
+  const getDynamicCategory = (): string => {
+    const combined = ((secretDrawHint || '') + ' ' + (publicHint || '') + ' ' + cleanTarget).toLowerCase();
+    if (combined.includes('photo') || combined.includes('video') || combined.includes('diary') || combined.includes('letter') || combined.includes('note')) {
+      return 'Personal Memory & Record';
+    }
+    if (combined.includes('key') || combined.includes('cutter') || combined.includes('knife') || combined.includes('poison') || combined.includes('gun') || combined.includes('safe')) {
+      return 'Crime Tool / Physical Clue';
+    }
+    if (combined.includes('fare') || combined.includes('train') || combined.includes('car') || combined.includes('ticket') || combined.includes('station') || combined.includes('passenger')) {
+      return 'Transit & Transportation';
+    }
+    if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money')) {
+      return 'Valuable Stolen Goods';
+    }
+    return publicHint || 'Crime Scene Evidence';
+  };
+
+  const dynamicCategory = getDynamicCategory();
+
+  const dynamicHintMessage = (() => {
+    if (targetWords.length > 0) {
+      if (elapsed >= 45 && targetWords.length >= 2) {
+        return `🔥 Starts with "${targetWords[0][0]}" & "${targetWords[1][0]}" • ${dynamicCategory}`;
+      }
+      if (elapsed >= 20 && targetWords.length >= 1) {
+        return `💡 First word starts with "${targetWords[0][0]}" • ${dynamicCategory}`;
+      }
+    }
+    return `Category: ${dynamicCategory}`;
+  })();
+
+  const renderLetterPattern = () => {
+    // 1. If we have the target words (drawer or solved), render with progressive letter reveals
+    if (targetWords.length > 0) {
+      return (
+        <div className="flex flex-wrap items-center gap-3">
+          {targetWords.map((w, wIdx) => {
+            // Progressive reveal: unmask 1st letter of word 0 after 20s, word 1 after 45s
+            const revealFirstLetter = (wIdx === 0 && elapsed >= 20) || (wIdx === 1 && elapsed >= 45);
+            const dashes = w.split('').map((char, cIdx) => {
+              const showChar = cIdx === 0 && revealFirstLetter;
+              return (
+                <span
+                  key={cIdx}
+                  className={`inline-block border-b-2 ${showChar ? 'border-emerald-400 text-emerald-300' : 'border-amber-400/90 text-amber-200'} w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold`}
+                >
+                  {showChar ? char : '\u00A0'}
+                </span>
+              );
+            });
+            return (
+              <span key={wIdx} className="inline-flex items-end">
+                {dashes}
+                <span className="text-[10px] text-slate-400 font-mono font-normal ml-1">({w.length})</span>
+              </span>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // 2. If we have public word lengths from server (e.g. [4, 7] for guessers)
+    const lengths = publicWordLengths && publicWordLengths.length > 0 ? publicWordLengths : [4, 6];
     return (
       <div className="flex flex-wrap items-center gap-3">
-        {words.map((w, wIdx) => {
-          const dashes = w.split('').map((char, cIdx) => (
+        {lengths.map((len, wIdx) => {
+          const dashes = Array.from({ length: len }).map((_, cIdx) => (
             <span key={cIdx} className="inline-block border-b-2 border-amber-400/90 w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base font-bold">
-              {char === '-' ? '-' : '\u00A0'}
+              &nbsp;
             </span>
           ));
           return (
             <span key={wIdx} className="inline-flex items-end">
               {dashes}
-              <span className="text-[10px] text-slate-400 font-mono font-normal ml-1">({w.length})</span>
+              <span className="text-[10px] text-slate-400 font-mono font-normal ml-1">({len})</span>
             </span>
           );
         })}
@@ -432,8 +518,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const canvas = canvasRef.current;
     if (canvas) {
       const normalizedPoints = completedStroke.points.map((p) => ({
-        x: p.x / canvas.width,
-        y: p.y / canvas.height,
+        x: Math.max(0, Math.min(1, p.x / canvas.width)),
+        y: Math.max(0, Math.min(1, p.y / canvas.height)),
       }));
       backend.drawStroke({
         strokeId: completedStroke.id,
@@ -559,10 +645,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const formattedTimer = `00:${remainingSeconds.toString().padStart(2, '0')}`;
 
-  const clueText =
-    secretClue?.clueText ||
-    'You saw someone leaving through the east gate with a red bag.';
-
   // Render real dynamic players roster matching current game
   const rosterPlayers: Player[] =
     gameState.players.length > 0 ? gameState.players : [currentUser];
@@ -627,7 +709,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             <div className="relative text-base font-semibold leading-relaxed text-white mb-2">
               {isCurrentDrawer ? (
                 <span className="text-amber-300 font-serif text-lg font-bold">
-                  {secretDrawObjective || clueText}
+                  {cleanTarget || 'Mystery Clue'}
                 </span>
               ) : (
                 <span className="text-slate-300 text-sm font-sans leading-relaxed">
@@ -686,14 +768,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-xs uppercase font-mono tracking-widest text-slate-400">CLUE:</span>
                 <span className="text-xl sm:text-2xl font-black text-amber-300 tracking-wide font-serif">
-                  {secretDrawObjective || clueText}
+                  {cleanTarget || 'Mystery Clue'}
                 </span>
               </div>
-              {(secretDrawHint || publicHint) && (
-                <div className="mt-1 text-xs text-amber-300/90 font-mono">
-                  Hint: {secretDrawHint || publicHint}
-                </div>
-              )}
+              <div className="mt-1 text-xs text-amber-300/90 font-mono">
+                {dynamicHintMessage}
+              </div>
               <div className="mt-1 text-xs text-slate-300 font-sans">
                 Draw this clue on the parchment canvas below so other players can guess it!
               </div>
@@ -715,11 +795,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">HINT:</span>
                   <span className="text-xs sm:text-sm font-bold text-amber-200">
-                    {publicHint || 'Crime Scene Evidence'}
+                    {dynamicHintMessage}
                   </span>
                 </div>
                 <div className="flex items-center">
-                  {renderLetterPattern(secretDrawObjective || clueText)}
+                  {renderLetterPattern()}
                 </div>
               </div>
             </div>
