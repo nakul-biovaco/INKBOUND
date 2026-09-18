@@ -40,7 +40,7 @@ export class RoomService {
     const roomId = generateUUID();
 
     const defaultSettings: RoomSettings = {
-      turnDuration: 40,
+      turnDuration: 120,
       distorterEnabled: true,
       selectedCaseId: 'midnight_museum_heist',
       allowQuestioning: true,

@@ -61,7 +61,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [activePlayerMenu, setActivePlayerMenu] = useState<string | null>(null);
 
   const [rounds, setRounds] = useState<number>(1);
-  const [drawingTime, setDrawingTime] = useState<number>(room.settings.turnDuration || 40);
+  const [drawingTime, setDrawingTime] = useState<number>(room.settings.turnDuration || 120);
   const initialCaseId = room.settings?.selectedCaseId && room.settings.selectedCaseId !== 'midnight_museum'
     ? room.settings.selectedCaseId
     : 'all';
@@ -514,6 +514,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                     <option value={30}>30 seconds</option>
                     <option value={40}>40 seconds</option>
                     <option value={60}>60 seconds</option>
+                    <option value={80}>80 seconds</option>
+                    <option value={120}>120 seconds (Default)</option>
+                    <option value={160}>160 seconds</option>
+                    <option value={180}>180 seconds</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>

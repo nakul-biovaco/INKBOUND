@@ -5,7 +5,6 @@ import {
   RotateCcw,
   RotateCw,
   Trash2,
-  Send,
   Lightbulb,
   Crosshair,
   Eye,
@@ -34,13 +33,13 @@ import { SoundService } from '../../services/soundService';
 interface DrawingCanvasProps {
   gameState: AuthoritativeGameState;
   currentUser: Player;
-  secretClue: PlayerSecretClue | null;
+  secretClue?: PlayerSecretClue | null;
   secretDrawObjective?: string | null;
   secretDrawHint?: string | null;
   publicHint?: string | null;
   roomCode?: string;
   channel: RoomChannelManager;
-  onSubmitDrawing: (previewDataUrl: string, strokes: Stroke[]) => void;
+  onSubmitDrawing?: (previewDataUrl: string, strokes: Stroke[]) => void;
   onLeaveRoom?: () => void;
 }
 
@@ -61,7 +60,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   publicHint,
   roomCode,
   channel,
-  onSubmitDrawing,
   onLeaveRoom,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,8 +71,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(30);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
 
   // Live Guesses state
   const [guessInput, setGuessInput] = useState<string>('');
@@ -297,7 +294,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
-    if (!isCurrentDrawer || isSubmitting) return;
+    if (!isCurrentDrawer) return;
 
     const pt = getCoordinates(e);
     if (!pt) return;
@@ -392,7 +389,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (!canvas) return;
 
     const onTouchStart = (e: TouchEvent) => {
-      if (!isCurrentDrawer || isSubmitting) return;
+      if (!isCurrentDrawer) return;
       if (e.cancelable) e.preventDefault();
       handlePointerDown(e);
     };
@@ -420,7 +417,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       canvas.removeEventListener('touchend', onTouchEnd);
       canvas.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [isCurrentDrawer, isSubmitting, currentTool, currentColor, strokeWidth, gameState.id, currentUser.id]);
+  }, [isCurrentDrawer, currentTool, currentColor, strokeWidth, gameState.id, currentUser.id]);
 
   const handleClear = () => {
     if (!isCurrentDrawer) return;
@@ -495,24 +492,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       stroke: restored,
     });
   };
-
-  const handleSubmit = () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    const canvas = canvasRef.current;
-    const previewDataUrl = canvas ? canvas.toDataURL('image/png') : '';
-    onSubmitDrawing(previewDataUrl, strokes);
-
-    // Auto-safety fallback: never keep drawer stuck on "Submitting..."
-    setTimeout(() => {
-      setIsSubmitting(false);
-    }, 3000);
-  };
-
-  useEffect(() => {
-    setIsSubmitting(false);
-  }, [gameState.turnIndex, gameState.currentTurnPlayerId, gameState.status]);
 
   const formattedTimer = `00:${remainingSeconds.toString().padStart(2, '0')}`;
 
@@ -875,20 +854,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
           </div>
 
-          {/* 5. SUBMIT DRAWING BUTTON (ONLY FOR CURRENT DRAWER) */}
-          {isCurrentDrawer && (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full py-3 rounded-2xl text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#991b1b] hover:from-[#b91c1c] hover:via-[#ef4444] hover:to-[#b91c1c] shadow-[0_4px_20px_rgba(220,38,38,0.45)] transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>{isSubmitting ? 'Submitting...' : 'Submit Drawing'}</span>
-            </button>
-          )}
-
-          {/* 6. COMPACT ROUND ROSTER (NO EMPTY BOXES PUSHING PAGE DOWN!) */}
+          {/* 5. COMPACT ROUND ROSTER (NO EMPTY BOXES PUSHING PAGE DOWN!) */}
           <div className="space-y-1.5 pt-1">
             <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
               <span className="flex items-center gap-1.5">

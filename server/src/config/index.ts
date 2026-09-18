@@ -14,9 +14,9 @@ export const config = {
   gameplay: {
     minPlayersToStart: 1, // 1 for instant solo play & testing, standard multiplayer supported
     defaultMaxPlayers: 8,
-    defaultDrawingTimeSeconds: 80,
+    defaultDrawingTimeSeconds: 120,
     defaultPromptSelectionSeconds: 15,
-    defaultStoryRevealSeconds: 8,
+    defaultStoryRevealSeconds: 3.5,
     reconnectGracePeriodSeconds: 45,
     drawerDisconnectGracePeriodSeconds: 30,
     guessRateLimitPerSecond: 2,

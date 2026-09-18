@@ -458,38 +458,31 @@ export const Game: React.FC<GameProps> = ({
         </div>
       )}
 
-      {/* STORY REVEAL OVERLAY */}
+      {/* STORY REVEAL FLOATING BANNER (NON-BLOCKING) */}
       {storyRevealData && (
-        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-[#0e131f] border border-amber-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-fadeIn text-center space-y-4">
-            <button
-              onClick={() => setStoryRevealData(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-700 transition-colors"
-              title="Close"
-            >
-              ×
-            </button>
-            <div className="text-xs font-mono uppercase text-amber-400 tracking-widest font-bold">
-              Investigation Discovery #{storyRevealData.solvedCount}
+        <div
+          onClick={() => setStoryRevealData(null)}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-950/95 border border-amber-500 text-amber-100 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn backdrop-blur-md cursor-pointer hover:bg-amber-900/95 transition-all max-w-xl text-left"
+        >
+          <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider font-bold">
+              Clue Discovered #{storyRevealData.solvedCount}
             </div>
-            <h2 className="text-xl sm:text-2xl font-serif font-black text-white">
-              Story Reveal
-            </h2>
-            <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-2xl font-serif text-sm sm:text-base text-slate-200 leading-relaxed italic">
+            <div className="text-xs font-serif text-white italic truncate">
               "{storyRevealData.revealedText}"
             </div>
-            <div className="flex items-center justify-center gap-4 pt-2">
-              <span className="text-xs font-mono text-slate-400">
-                Advancing to next investigator...
-              </span>
-              <button
-                onClick={() => setStoryRevealData(null)}
-                className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-mono rounded-lg transition-colors"
-              >
-                Dismiss (×)
-              </button>
-            </div>
           </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setStoryRevealData(null);
+            }}
+            className="text-amber-400 hover:text-white font-bold text-base ml-2 shrink-0 leading-none"
+            title="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -593,7 +586,7 @@ export const Game: React.FC<GameProps> = ({
       )}
 
       {/* 1. DYNAMIC STORY SELECTION & CASE DOSSIER PHASE */}
-      {(gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO' || (gameState.status as string) === 'COUNTDOWN' || isStorySelection || selectedStoryBanner) && gameState.status !== 'PLAYER_DRAWING' && gameState.status !== 'FINAL_THEORY' && gameState.status !== 'RESULTS' && (
+      {(gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO' || (gameState.status as string) === 'COUNTDOWN' || isStorySelection) && gameState.status !== 'PLAYER_DRAWING' && gameState.status !== 'FINAL_THEORY' && gameState.status !== 'RESULTS' && (
         <div className="relative z-10 flex flex-col min-h-screen justify-between">
           <GameHeader
             currentUser={currentUser}

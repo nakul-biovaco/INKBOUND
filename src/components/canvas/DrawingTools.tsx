@@ -10,7 +10,6 @@ import {
   RotateCcw,
   RotateCw,
   Trash2,
-  CheckCircle2,
 } from 'lucide-react';
 import { DrawingTool } from '../../types/game';
 import { NOIR_PALETTE } from '../../services/drawingService';
@@ -27,7 +26,7 @@ interface DrawingToolsProps {
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
-  onSubmit: () => void;
+  onSubmit?: () => void;
   isSubmitting?: boolean;
 }
 
@@ -43,8 +42,6 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
   onUndo,
   onRedo,
   onClear,
-  onSubmit,
-  isSubmitting = false,
 }) => {
   const tools: { id: DrawingTool; label: string; icon: React.ReactNode }[] = [
     { id: 'pencil', label: 'Pencil', icon: <Pen className="w-4 h-4" /> },
@@ -146,16 +143,6 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
           className="p-2 rounded-lg bg-noir-900/80 border border-noir-800 text-noir-400 hover:text-rose-400 hover:bg-rose-950/20 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
-        </button>
-
-        {/* Submit Drawing Button */}
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-case-amber to-amber-500 hover:from-amber-400 hover:to-amber-500 text-noir-950 font-bold rounded-lg shadow-amber-glow transition-all transform active:scale-95 disabled:opacity-50 w-full sm:w-auto justify-center"
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{isSubmitting ? 'Submitting...' : 'Submit Evidence'}</span>
         </button>
       </div>
     </div>

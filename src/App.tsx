@@ -274,7 +274,7 @@ export const App: React.FC = () => {
           maxPlayers: serverRoom.maxPlayers || 8,
           status: serverRoom.status === 'IN_GAME' ? 'IN_GAME' : 'WAITING',
           settings: {
-            turnDuration: serverRoom.settings?.drawingTimeLimit || 40,
+            turnDuration: serverRoom.settings?.drawingTimeLimit || 120,
             distorterEnabled: false,
             selectedCaseId:
               serverRoom.settings?.storyId && serverRoom.settings.storyId !== 'midnight_museum'
@@ -690,7 +690,7 @@ export const App: React.FC = () => {
         maxPlayers: serverRoom.maxPlayers || 8,
         status: serverRoom.status === 'IN_GAME' ? 'IN_GAME' : 'WAITING',
         settings: {
-          turnDuration: serverRoom.settings?.drawingTimeLimit || 40,
+          turnDuration: serverRoom.settings?.drawingTimeLimit || 120,
           distorterEnabled: false,
           selectedCaseId:
             serverRoom.settings?.storyId && serverRoom.settings.storyId !== 'midnight_museum'
