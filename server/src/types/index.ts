@@ -8,14 +8,18 @@ export const GameStatus = {
   COUNTDOWN: 'COUNTDOWN',
   STORY_SELECTION: 'STORY_SELECTION',
   STORY_SELECTED: 'STORY_SELECTED',
+  CASE_INTRO: 'CASE_INTRO',
   ROUND_START: 'ROUND_START',
   PROMPT_SELECTION: 'PROMPT_SELECTION',
   DRAWING: 'DRAWING',
   GUESSING: 'GUESSING',
   CLUE_SOLVED: 'CLUE_SOLVED',
+  EVIDENCE_DISCOVERED: 'EVIDENCE_DISCOVERED',
   STORY_REVEAL: 'STORY_REVEAL',
   NEXT_TURN: 'NEXT_TURN',
+  DISCUSSION: 'DISCUSSION',
   FINAL_INVESTIGATION: 'FINAL_INVESTIGATION',
+  TRUTH_REVEAL: 'TRUTH_REVEAL',
   ENDING: 'ENDING',
   GAME_COMPLETE: 'GAME_COMPLETE',
 } as const;
@@ -24,17 +28,21 @@ export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 export const VALID_TRANSITIONS: Record<GameStatus, GameStatus[]> = {
   LOBBY: ['COUNTDOWN'],
-  COUNTDOWN: ['STORY_SELECTION', 'ROUND_START', 'LOBBY'],
+  COUNTDOWN: ['STORY_SELECTION', 'STORY_SELECTED', 'ROUND_START', 'LOBBY'],
   STORY_SELECTION: ['STORY_SELECTED', 'LOBBY'],
-  STORY_SELECTED: ['ROUND_START'],
-  ROUND_START: ['PROMPT_SELECTION'],
+  STORY_SELECTED: ['ROUND_START', 'CASE_INTRO'],
+  CASE_INTRO: ['ROUND_START'],
+  ROUND_START: ['DRAWING', 'PROMPT_SELECTION'],
   PROMPT_SELECTION: ['DRAWING', 'NEXT_TURN'],
   DRAWING: ['GUESSING', 'CLUE_SOLVED', 'NEXT_TURN'],
   GUESSING: ['CLUE_SOLVED', 'NEXT_TURN'],
-  CLUE_SOLVED: ['STORY_REVEAL'],
-  STORY_REVEAL: ['NEXT_TURN', 'FINAL_INVESTIGATION'],
-  NEXT_TURN: ['ROUND_START', 'PROMPT_SELECTION', 'FINAL_INVESTIGATION'],
-  FINAL_INVESTIGATION: ['ENDING'],
+  CLUE_SOLVED: ['STORY_REVEAL', 'EVIDENCE_DISCOVERED'],
+  EVIDENCE_DISCOVERED: ['NEXT_TURN', 'DISCUSSION', 'FINAL_INVESTIGATION'],
+  STORY_REVEAL: ['NEXT_TURN', 'FINAL_INVESTIGATION', 'EVIDENCE_DISCOVERED'],
+  NEXT_TURN: ['ROUND_START', 'DRAWING', 'PROMPT_SELECTION', 'FINAL_INVESTIGATION', 'DISCUSSION'],
+  DISCUSSION: ['ROUND_START', 'DRAWING', 'NEXT_TURN', 'FINAL_INVESTIGATION'],
+  FINAL_INVESTIGATION: ['TRUTH_REVEAL', 'ENDING'],
+  TRUTH_REVEAL: ['ENDING'],
   ENDING: ['GAME_COMPLETE'],
   GAME_COMPLETE: ['LOBBY', 'COUNTDOWN', 'STORY_SELECTION'],
 };
@@ -57,6 +65,7 @@ export const ErrorCode = {
   GAME_FINISHED: 'GAME_FINISHED',
   PLAYER_NOT_FOUND: 'PLAYER_NOT_FOUND',
   NOT_ENOUGH_PLAYERS: 'NOT_ENOUGH_PLAYERS',
+  NOT_ALL_READY: 'NOT_ALL_READY',
   ALREADY_IN_ROOM: 'ALREADY_IN_ROOM',
   INVALID_PAYLOAD: 'INVALID_PAYLOAD',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
@@ -89,6 +98,13 @@ export interface StrokeChunk {
 // ==========================================
 // 4. STORY DEFINITION SCHEMA
 // ==========================================
+
+/** Visual category for investigation prompt type classification */
+export type PromptType = 'OBJECT' | 'LOCATION' | 'PERSON' | 'ACTION' | 'MEMORY' | 'EVIDENCE' | 'EVENT' | 'SCENE' | 'SUSPECT';
+
+/** Category of the visual element to draw */
+export type VisualCategory = 'OBJECT' | 'PERSON' | 'PLACE' | 'ACTION' | 'DOCUMENT' | 'TOOL' | 'VEHICLE' | 'ANIMAL' | 'ABSTRACT';
+
 export interface StoryEvent {
   eventId: string;
   act: number;
@@ -107,6 +123,50 @@ export interface StoryEvent {
   timeLimitSeconds?: number;
   basePoints?: number;
   choices?: Array<{ text: string; isCanon: boolean }>;
+  // === NEW OPTIONAL FIELDS (backward-compatible) ===
+  /** Narrative scene prompt shown privately to the drawer */
+  drawerPrompt?: string;
+  /** Narrative context for the scene (shown before drawing begins) */
+  narrativeContext?: string;
+  /** Text revealed when this evidence is discovered */
+  evidenceReveal?: string;
+  /** Investigation prompt type (OBJECT, PERSON, LOCATION, etc.) */
+  promptType?: PromptType;
+  /** Visual category for the canonical answer */
+  visualCategory?: VisualCategory;
+  /** Story consequence text after discovery */
+  storyConsequence?: string;
+  /** Whether this is a key plot event that triggers discussion */
+  isKeyEvent?: boolean;
+  /** Public investigation objective shown to guessers (explains WHAT to deduce without leaking answer) */
+  investigationObjective?: string;
+}
+
+/**
+ * Extended investigation event produced by InvestigationEventAdapter.
+ * Superset of StoryEvent with guaranteed narrative fields.
+ */
+export interface InvestigationEvent extends StoryEvent {
+  /** Always populated: narrative scene prompt for the drawer */
+  drawerPrompt: string;
+  /** Always populated: narrative context shown to all before investigation */
+  narrativeContext: string;
+  /** Always populated: text revealed when evidence is discovered */
+  evidenceReveal: string;
+  /** Always populated: investigation prompt type */
+  promptType: PromptType;
+  /** Always populated: visual category */
+  visualCategory: VisualCategory;
+  /** Canonical answer (same as drawingObjective) */
+  canonicalAnswer: string;
+  /** All accepted answer variations */
+  acceptedAnswers: string[];
+  /** Story consequence after discovery */
+  storyConsequence: string;
+  /** Whether this triggers a discussion break */
+  isKeyEvent: boolean;
+  /** Public investigation objective shown to guessers */
+  investigationObjective: string;
 }
 
 export interface StoryEnding {
@@ -115,6 +175,8 @@ export interface StoryEnding {
   conditionDescription: string;
   requiredVariables: Record<string, boolean | number | string>;
   narrativeText: string;
+  /** Optional verdict classification */
+  verdict?: 'MASTER_DETECTIVE' | 'PARTIAL_SOLUTION' | 'COLD_CASE' | 'WRONG_ACCUSATION' | 'DISTORTED_TRUTH' | 'SOLVED';
 }
 
 export interface StoryDefinition {
@@ -141,6 +203,8 @@ export interface PromptOption {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   isDistractor: boolean;
   eventId?: string;
+  /** Narrative investigation task description (new model) */
+  investigationTask?: string;
 }
 
 // ==========================================
@@ -170,6 +234,7 @@ export interface RoomSettings {
   roundsPerGame: number;
   storyId: string;
   isPublic?: boolean;
+  isQuickMatch?: boolean;
 }
 
 export interface Room {
@@ -182,6 +247,7 @@ export interface Room {
   createdAt: number;
   settings: RoomSettings;
   isPublic?: boolean;
+  isQuickMatch?: boolean;
 }
 
 // ==========================================
@@ -196,6 +262,67 @@ export interface SolvedEventRecord {
   pointsAwardedSolver: number;
   pointsAwardedDrawer: number;
   revealedText: string;
+  /** Evidence title for the evidence board */
+  evidenceTitle?: string;
+  /** Narrative evidence reveal text */
+  evidenceReveal?: string;
+}
+
+// ==========================================
+// 6a. CASE RUNTIME TYPES
+// ==========================================
+
+/** A narrative passage revealed to all players during the case */
+export interface NarrativePassage {
+  id: string;
+  text: string;
+  type: 'INTRO' | 'SCENE' | 'EVIDENCE' | 'REVELATION' | 'CONCLUSION';
+  timestamp: number;
+  eventId?: string;
+}
+
+/** An evidence card displayed on the Investigation Board */
+export interface EvidenceCard {
+  id: string;
+  title: string;
+  description: string;
+  discoveredBy: string;
+  discoveredByName: string;
+  drawnBy: string;
+  drawnByName: string;
+  scene: string;
+  timestamp: number;
+  category: string;
+  eventId: string;
+  turnIndex: number;
+}
+
+/** A public suspect profile (no secrets exposed) */
+export interface SuspectEntry {
+  id: string;
+  name: string;
+  role: string;
+  personality: string;
+  publicStatement: string;
+  avatar: string;
+  connection: string;
+}
+
+/** Case progress tracker */
+export interface CaseProgress {
+  totalEvents: number;
+  discoveredEvents: number;
+  percentage: number;
+  caseTitle: string;
+  caseSetting?: string;
+  caseGenre?: string;
+}
+
+/** Discussion vote from a player */
+export interface DiscussionVote {
+  playerId: string;
+  optionIndex: number;
+  timestamp: number;
 }
 
 export interface AuthoritativeGameSession {
@@ -235,6 +362,31 @@ export interface AuthoritativeGameSession {
     nextDrawerName: string;
     nextTurnInSeconds: number;
   } | null;
+  // === NEW CASE-MODEL FIELDS ===
+  /** Narrative passages revealed so far (Story So Far) */
+  narrativeLog: NarrativePassage[];
+  /** Discovered evidence cards */
+  evidenceBoard: EvidenceCard[];
+  /** Public suspect profiles */
+  suspects: SuspectEntry[];
+  /** Case progress tracking */
+  caseProgress: CaseProgress | null;
+  /** Discussion votes for current discussion */
+  discussionVotes: DiscussionVote[];
+  /** Discussion options currently being voted on */
+  discussionOptions: string[] | null;
+  /** Sanitized story context for current turn (explains WHY investigation is happening) */
+  storyContext?: string | null;
+  /** Current investigation objective for current turn */
+  investigationObjective?: string | null;
+  /** Sanitized narrative clue hint guiding deduction vocabulary without answer leak */
+  clueHint?: string | null;
+  /** Active hint for the clue */
+  hint?: string | null;
+  /** Active category for the clue */
+  category?: string | null;
+  /** Progressively revealed letters in each word (skribbl.io style) */
+  revealedLetters?: Array<Array<string | null>> | null;
 }
 
 // ==========================================
@@ -256,16 +408,46 @@ export interface PublicGameState {
   storyVariables: Record<string, boolean | number | string>;
   drawingStrokeCount: number;
   hint?: string | null;
+  /** Sanitized narrative clue hint guiding deduction vocabulary without answer leak */
+  clueHint?: string | null;
+  /** @deprecated Use category-based hints instead */
   wordLengths?: number[] | null;
+  /** @deprecated Use category-based hints instead */
   firstLetters?: string[] | null;
   category?: string | null;
+  /** Sanitized story/scene context explaining WHY current investigation is happening (no answer leaks) */
+  storyContext?: string | null;
+  /** Current investigation objective for the room/guessers (e.g. what detectives are trying to deduce) */
+  investigationObjective?: string | null;
+  /** Progressively revealed letters in each word (skribbl.io style) */
+  revealedLetters?: Array<Array<string | null>> | null;
+  // === NEW CASE-MODEL PUBLIC FIELDS ===
+  /** Narrative passages revealed so far */
+  narrativeLog?: NarrativePassage[];
+  /** Discovered evidence cards */
+  evidenceBoard?: EvidenceCard[];
+  /** Public suspect profiles */
+  suspects?: SuspectEntry[];
+  /** Case progress (percentage, title, etc.) */
+  caseProgress?: CaseProgress | null;
+  /** Current discussion options (when in DISCUSSION state) */
+  discussionOptions?: string[] | null;
+  /** Current discussion votes */
+  discussionVotes?: DiscussionVote[];
 }
 
 export interface PrivateDrawerState {
   options: PromptOption[] | null;
   selectedObjective: string | null;
+  objective?: string | null;
   hint: string | null;
   visualElements: string[] | null;
+  /** Narrative scene prompt (new model) */
+  drawerPrompt?: string | null;
+  /** Canonical answer word(s) so drawer knows what to draw */
+  canonicalAnswer?: string | null;
+  /** Story scene context explaining why it matters to the case */
+  storyContext?: string | null;
 }
 
 // ==========================================
@@ -291,12 +473,20 @@ export const WSClientEvent = {
   CHAT_MESSAGE: 'CHAT_MESSAGE',
   RECONNECT: 'RECONNECT',
   PING: 'PING',
+  VOTE_KICK: 'VOTE_KICK',
+  REQUEST_SECRET_OBJECTIVE: 'REQUEST_SECRET_OBJECTIVE',
+  // === NEW CASE-MODEL CLIENT EVENTS ===
+  SUBMIT_DISCUSSION_VOTE: 'SUBMIT_DISCUSSION_VOTE',
+  REQUEST_CASE_FILE: 'REQUEST_CASE_FILE',
+  SKIP_NARRATIVE: 'SKIP_NARRATIVE',
 } as const;
 
 export const WSServerEvent = {
   ROOM_STATE: 'ROOM_STATE',
   PLAYER_JOINED: 'PLAYER_JOINED',
   PLAYER_LEFT: 'PLAYER_LEFT',
+  PLAYER_KICKED: 'PLAYER_KICKED',
+  VOTE_KICK_UPDATE: 'VOTE_KICK_UPDATE',
   PLAYER_RECONNECTED: 'PLAYER_RECONNECTED',
   CHAT_MESSAGE: 'CHAT_MESSAGE',
   GAME_STARTING: 'GAME_STARTING',
@@ -307,6 +497,7 @@ export const WSServerEvent = {
   PROMPT_OPTIONS: 'PROMPT_OPTIONS',
   SECRET_DRAW_OBJECTIVE: 'SECRET_DRAW_OBJECTIVE',
   DRAWING_STARTED: 'DRAWING_STARTED',
+  HINT_LETTER_REVEALED: 'HINT_LETTER_REVEALED',
   DRAW_STROKE: 'DRAW_STROKE',
   DRAW_CLEAR: 'DRAW_CLEAR',
   PROMPT_SELECTED: 'PROMPT_SELECTED',
@@ -324,6 +515,17 @@ export const WSServerEvent = {
   PONG: 'PONG',
   ERROR: 'ERROR',
   GAME_ERROR: 'GAME_ERROR',
+  // === NEW CASE-MODEL SERVER EVENTS ===
+  CASE_INTRO: 'CASE_INTRO',
+  NARRATIVE_PASSAGE: 'NARRATIVE_PASSAGE',
+  EVIDENCE_CARD: 'EVIDENCE_CARD',
+  EVIDENCE_DISCOVERED: 'EVIDENCE_DISCOVERED',
+  DISCUSSION_STARTED: 'DISCUSSION_STARTED',
+  DISCUSSION_VOTE: 'DISCUSSION_VOTE',
+  DISCUSSION_RESULT: 'DISCUSSION_RESULT',
+  TRUTH_REVEAL: 'TRUTH_REVEAL',
+  CASE_FILE: 'CASE_FILE',
+  CASE_PROGRESS: 'CASE_PROGRESS',
 } as const;
 
 // ==========================================
@@ -395,3 +597,12 @@ export const ReconnectSchema = z.object({
   playerId: z.string(),
   reconnectToken: z.string(),
 });
+
+// === NEW CASE-MODEL ZOD SCHEMAS ===
+export const SubmitDiscussionVoteSchema = z.object({
+  optionIndex: z.number().int().min(0).max(4),
+});
+
+export const RequestCaseFileSchema = z.object({});
+
+export const SkipNarrativeSchema = z.object({});

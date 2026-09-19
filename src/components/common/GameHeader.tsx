@@ -124,12 +124,14 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         return 0;
       case 'DRAWING_SUBMITTED':
       case 'EVIDENCE_REVEAL':
+      case 'EVIDENCE_DISCOVERED':
       case 'NEXT_PLAYER':
         return 1;
       case 'ALL_TURNS_COMPLETE':
       case 'INVESTIGATION':
       case 'QUESTIONING':
       case 'TIMELINE_BUILDING':
+      case 'DISCUSSION':
         return 2;
       case 'FINAL_THEORY':
         return 3;

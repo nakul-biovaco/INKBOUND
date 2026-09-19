@@ -25,9 +25,6 @@ export class Serializer {
     const cleanObj = session.selectedEvent
       ? MarkdownStoryParser.cleanToClueWord(session.selectedEvent.drawingObjective)
       : '';
-    const words = cleanObj ? cleanObj.split(/\s+/).filter(Boolean).slice(0, 2) : [];
-    const wordLengths = words.length > 0 ? words.map((w) => w.length) : null;
-    const firstLetters = words.length > 0 ? words.map((w) => w.charAt(0).toUpperCase()) : null;
 
     let category = 'Crime Scene Evidence';
     const combined = ((session.selectedEvent?.hint || '') + ' ' + cleanObj).toLowerCase();
@@ -57,11 +54,22 @@ export class Serializer {
       scores,
       solvedEvents: session.solvedEvents,
       storyVariables: session.storyVariables,
-      drawingStrokeCount: session.drawingStrokes.length,
-      hint: session.selectedEvent ? session.selectedEvent.hint : null,
-      wordLengths,
-      firstLetters,
+      drawingStrokeCount: session.drawingStrokes ? session.drawingStrokes.length : 0,
+      hint: session.clueHint || (session.selectedEvent ? session.selectedEvent.hint : null),
+      clueHint: session.clueHint || (session.selectedEvent ? session.selectedEvent.hint : null),
       category,
+      wordLengths: cleanObj ? cleanObj.split(/\s+/).filter(Boolean).map((w) => w.length) : null,
+      firstLetters: cleanObj ? cleanObj.split(/\s+/).filter(Boolean).map((w) => w[0]?.toUpperCase() || '') : null,
+      // Case model fields
+      narrativeLog: session.narrativeLog || [],
+      evidenceBoard: session.evidenceBoard || [],
+      suspects: session.suspects || [],
+      caseProgress: session.caseProgress || null,
+      discussionOptions: session.discussionOptions || null,
+      discussionVotes: session.discussionVotes || [],
+      storyContext: session.storyContext || null,
+      investigationObjective: session.investigationObjective || null,
+      revealedLetters: session.revealedLetters || null,
     };
   }
 
@@ -70,11 +78,17 @@ export class Serializer {
    */
   public static serializePrivateDrawerState(session: AuthoritativeGameSession): PrivateDrawerState {
     const isSelecting = session.state === GameStatus.PROMPT_SELECTION;
+    const cleanObjective = session.selectedEvent ? session.selectedEvent.drawingObjective : null;
     return {
       options: isSelecting ? session.activePromptOptions : [],
-      selectedObjective: session.selectedEvent ? session.selectedEvent.drawingObjective : null,
+      selectedObjective: cleanObjective,
+      objective: cleanObjective,
       hint: session.selectedEvent ? session.selectedEvent.hint : null,
       visualElements: session.selectedEvent ? session.selectedEvent.visualElements : null,
+      // Case model: narrative drawer prompt + canonical answer
+      drawerPrompt: session.selectedEvent?.drawerPrompt || null,
+      canonicalAnswer: cleanObjective,
+      storyContext: session.storyContext || null,
     };
   }
 
@@ -91,6 +105,7 @@ export class Serializer {
       rounds: rawSettings.roundsPerGame || rawSettings.rounds || 1,
       storyId: rawSettings.storyId || rawSettings.selectedCaseId || 'all',
       selectedCaseId: rawSettings.storyId || rawSettings.selectedCaseId || 'all',
+      isQuickMatch: Boolean(rawSettings.isQuickMatch || room.isQuickMatch),
     };
 
     return {

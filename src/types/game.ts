@@ -10,6 +10,8 @@ export type GameStatus =
   | 'PLAYER_DRAWING'
   | 'DRAWING_SUBMITTED'
   | 'EVIDENCE_REVEAL'
+  | 'EVIDENCE_DISCOVERED'
+  | 'DISCUSSION'
   | 'NEXT_PLAYER'
   | 'ALL_TURNS_COMPLETE'
   | 'INVESTIGATION'
@@ -207,4 +209,73 @@ export interface AuthoritativeGameState {
   theories: { [playerId: string]: TheorySubmission };
   scores: { [playerId: string]: GameScoreResult };
   distorterId: string | null; // Hidden on client until TRUTH_REVEAL
+  // === CASE MODEL FIELDS ===
+  narrativeLog?: NarrativePassage[];
+  caseEvidenceBoard?: CaseEvidenceCard[];
+  suspects?: SuspectEntry[];
+  caseProgress?: CaseProgress | null;
+  discussionOptions?: string[] | null;
+  discussionVotes?: DiscussionVote[];
+  storyContext?: string | null;
+  investigationObjective?: string | null;
+  clueHint?: string | null;
+  category?: string | null;
+  revealedLetters?: Array<Array<string | null>> | null;
+}
+
+// ==========================================
+// CASE MODEL TYPES (from server evolution)
+// ==========================================
+
+/** A narrative passage revealed to all players during the case */
+export interface NarrativePassage {
+  id: string;
+  text: string;
+  type: 'INTRO' | 'SCENE' | 'EVIDENCE' | 'REVELATION' | 'CONCLUSION';
+  timestamp: number;
+  eventId?: string;
+}
+
+/** An evidence card from the case investigation board */
+export interface CaseEvidenceCard {
+  id: string;
+  title: string;
+  description: string;
+  discoveredBy: string;
+  discoveredByName: string;
+  drawnBy: string;
+  drawnByName: string;
+  scene: string;
+  timestamp: number;
+  category: string;
+  eventId: string;
+  turnIndex: number;
+}
+
+/** A public suspect profile (no secrets exposed) */
+export interface SuspectEntry {
+  id: string;
+  name: string;
+  role: string;
+  personality: string;
+  publicStatement: string;
+  avatar: string;
+  connection: string;
+}
+
+/** Case progress tracker */
+export interface CaseProgress {
+  totalEvents: number;
+  discoveredEvents: number;
+  percentage: number;
+  caseTitle: string;
+  caseSetting?: string;
+  caseGenre?: string;
+}
+
+/** Discussion vote from a player */
+export interface DiscussionVote {
+  playerId: string;
+  optionIndex: number;
+  timestamp: number;
 }

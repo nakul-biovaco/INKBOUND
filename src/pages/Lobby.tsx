@@ -21,6 +21,7 @@ import { GameService } from '../services/gameService';
 import { buildInviteUrl } from '../utils/inviteCrypto';
 import { SoundService } from '../services/soundService';
 import { getStoryArtwork } from '../utils/storyArtwork';
+import { BackendClient } from '../realtime/backendClient';
 
 interface LobbyProps {
   room: Room;
@@ -91,6 +92,41 @@ export const Lobby: React.FC<LobbyProps> = ({
   const currentArtwork = getStoryArtwork(activeGenre.title, '', selectedCase);
   const isHost = currentUser.id === room.hostId || currentUser.isHost;
 
+  const [kickVotes, setKickVotes] = useState<
+    Record<string, { currentVotes: number; requiredVotes: number; voterIds: string[] }>
+  >({});
+
+  const backend = BackendClient.getInstance();
+
+  useEffect(() => {
+    const unsubVoteKick = backend.on('VOTE_KICK_UPDATE', (payload: any) => {
+      if (payload?.targetPlayerId) {
+        setKickVotes((prev) => ({
+          ...prev,
+          [payload.targetPlayerId]: {
+            currentVotes: payload.currentVotes,
+            requiredVotes: payload.requiredVotes,
+            voterIds: payload.voterIds || [],
+          },
+        }));
+      }
+    });
+
+    const unsubPlayerKicked = backend.on('PLAYER_KICKED', (payload: any) => {
+      if (payload?.targetPlayerId) {
+        setKickVotes((prev) => {
+          const next = { ...prev };
+          delete next[payload.targetPlayerId];
+          return next;
+        });
+      }
+    });
+
+    return () => {
+      unsubVoteKick();
+      unsubPlayerKicked();
+    };
+  }, [backend]);
 
   const handleCopy = () => {
     SoundService.playClick();
@@ -112,6 +148,13 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   const maxSlots = 8;
   const waitingSlotsCount = Math.max(0, maxSlots - displayPlayers.length);
+
+  // Ready state rules for starting game: In hosted/create rooms, ALL non-host players MUST be ready!
+  const isQuickMatch = Boolean(room.settings?.isQuickMatch || room.isQuickMatch);
+  const nonHostPlayers = displayPlayers.filter((p) => p.id !== room.hostId && !p.isHost);
+  const unreadyPlayers = nonHostPlayers.filter((p) => !p.isReady);
+  const allNonHostReady = isQuickMatch || unreadyPlayers.length === 0;
+  const canStart = displayPlayers.length >= 2 && allNonHostReady;
 
   return (
     <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
@@ -337,29 +380,67 @@ export const Lobby: React.FC<LobbyProps> = ({
                       </div>
                     </div>
 
-                    {/* Bottom on Mobile / Right on Desktop: Status Badge + Options Menu */}
-                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 border-[#bfa98e]/40 pt-1.5 sm:pt-0">
+                    {/* Bottom on Mobile / Right on Desktop: Status Badge + Vote Kick + Options Menu */}
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 shrink-0 border-t sm:border-t-0 border-[#bfa98e]/40 pt-1.5 sm:pt-0 flex-wrap">
                       {p.isReady ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-black text-emerald-950 bg-emerald-100 border-2 border-emerald-800 font-mono shadow-xs whitespace-nowrap -rotate-1">
-                          ✓ READY ON DUTY
+                        <span className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded text-[9px] sm:text-[10px] font-black text-emerald-950 bg-emerald-100 border-2 border-emerald-800 font-mono shadow-xs whitespace-nowrap -rotate-1">
+                          ✓ READY
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold text-[#6e533d] bg-[#ede1cf] border border-[#bfa98e] font-mono shadow-xs whitespace-nowrap">
+                        <span className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded text-[9px] sm:text-[10px] font-bold text-[#6e533d] bg-[#ede1cf] border border-[#bfa98e] font-mono shadow-xs whitespace-nowrap">
                           ⏳ PREPARING
                         </span>
                       )}
 
+                      {/* Vote to Kick button (75% majority kicks player) */}
+                      {!isCurrent && (() => {
+                        const playerKickInfo = kickVotes[p.id];
+                        const hasVoted = playerKickInfo?.voterIds?.includes(currentUser.id);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              SoundService.playClick();
+                              backend.voteKick(p.id);
+                            }}
+                            className={`px-2 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-mono font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                              hasVoted
+                                ? 'bg-amber-200 text-amber-950 border-amber-600 shadow-xs'
+                                : 'bg-[#ede1cf] hover:bg-red-50 text-[#543b27] hover:text-red-900 border-[#b89e7c] hover:border-red-800'
+                            }`}
+                            title="Vote to kick (75% majority will automatically dismiss this player)"
+                          >
+                            <span>⚖️</span>
+                            <span>
+                              {hasVoted ? 'Voted Kick' : 'Vote Kick'}
+                              {playerKickInfo && playerKickInfo.currentVotes > 0 ? ` (${playerKickInfo.currentVotes}/${playerKickInfo.requiredVotes})` : ''}
+                            </span>
+                          </button>
+                        );
+                      })()}
+
                       <div className="relative">
                         <button
                           onClick={() => setActivePlayerMenu(activePlayerMenu === p.id ? null : p.id)}
-                          className="text-[#7a5e45] hover:text-[#1a110a] transition-colors p-1.5 rounded-lg hover:bg-[#ede1cf] border border-transparent hover:border-[#b89e7c] cursor-pointer"
+                          className="text-[#7a5e45] hover:text-[#1a110a] transition-colors p-1 rounded-lg hover:bg-[#ede1cf] border border-transparent hover:border-[#b89e7c] cursor-pointer"
                           title="Personnel dossier options"
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          <MoreHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
 
                         {activePlayerMenu === p.id && (
-                          <div className="absolute right-0 top-8 z-50 bg-[#fffdf9] border-2 border-[#8c6d48] rounded-xl p-1.5 shadow-2xl min-w-[140px] space-y-1 font-mono">
+                          <div className="absolute right-0 top-8 z-50 bg-[#fffdf9] border-2 border-[#8c6d48] rounded-xl p-1.5 shadow-2xl min-w-[150px] space-y-1 font-mono">
+                            {!isCurrent && (
+                              <button
+                                onClick={() => {
+                                  backend.voteKick(p.id);
+                                  setActivePlayerMenu(null);
+                                }}
+                                className="w-full text-left px-2.5 py-1.5 text-xs text-red-900 hover:bg-red-100 rounded-lg flex items-center gap-1.5 cursor-pointer font-bold"
+                              >
+                                <span>⚖️</span> Vote to Kick ({kickVotes[p.id]?.currentVotes || 0}/{kickVotes[p.id]?.requiredVotes || Math.max(1, Math.ceil((displayPlayers.length - 1) * 0.75))})
+                              </button>
+                            )}
                             {isHost && p.id !== currentUser.id && onPromoteHost && (
                               <button
                                 onClick={() => {
@@ -379,7 +460,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                                 }}
                                 className="w-full text-left px-2.5 py-1.5 text-xs text-red-900 hover:bg-red-100 rounded-lg flex items-center gap-1.5 cursor-pointer font-bold"
                               >
-                                <span>✕</span> Dismiss from Case
+                                <span>✕</span> Dismiss Directly
                               </button>
                             )}
                             <button
@@ -478,7 +559,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                     SoundService.playStamp();
                     onStartGame();
                   }}
-                  disabled={displayPlayers.length < 2}
+                  disabled={!canStart}
                   className="w-full py-4 px-6 rounded-2xl bg-[#8a1c1c] hover:bg-[#9e2222] disabled:opacity-40 text-white font-mono font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg border-2 border-[#541010] active:scale-98"
                 >
                   <Play className="w-4 h-4 fill-white" />
@@ -500,11 +581,19 @@ export const Lobby: React.FC<LobbyProps> = ({
             )}
 
             <div className="text-center text-[11px] font-mono text-[#5c422e]">
-              {displayPlayers.length < 2
-                ? 'Need at least 2 detectives to commence (enlist squad or deploy Bureau Bot)'
-                : isHost
-                ? 'Ready to proceed! Click Commence Investigation when detectives are prepared.'
-                : 'Awaiting the Chief Investigator to launch the case docket...'}
+              {displayPlayers.length < 2 ? (
+                'Need at least 2 detectives to commence (enlist squad or deploy Bureau Bot)'
+              ) : !allNonHostReady ? (
+                <span className="inline-flex items-center gap-1 text-red-800 font-bold bg-red-100/90 border border-red-700/60 px-2.5 py-1 rounded-lg">
+                  ⚠️ Waiting for all squad detectives to be ready ({unreadyPlayers.map((p) => p.nickname).join(', ')} not ready)
+                </span>
+              ) : isHost ? (
+                <span className="text-emerald-900 font-bold bg-emerald-100/90 border border-emerald-700/60 px-2.5 py-1 rounded-lg">
+                  ✓ All detectives are on duty & ready! Click Commence Investigation.
+                </span>
+              ) : (
+                'Awaiting the Chief Investigator to launch the case docket...'
+              )}
             </div>
           </div>
         </div>

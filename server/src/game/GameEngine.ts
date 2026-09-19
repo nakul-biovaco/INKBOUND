@@ -1,8 +1,10 @@
 import { config } from '../config/index.js';
 import {
   AuthoritativeGameSession,
+  DiscussionVote,
   ErrorCode,
   GameStatus,
+  InvestigationEvent,
   Player,
   PromptOption,
   Room,
@@ -27,6 +29,9 @@ import { MarkdownStoryParser } from '../story/MarkdownStoryParser.js';
 import { IdGenerator } from '../utils/idGenerator.js';
 import { createLogger } from '../utils/logger.js';
 import { stateStore } from '../redis/StateStore.js';
+import { CaseRuntime } from '../story/CaseRuntime.js';
+import { InvestigationEventAdapter } from '../story/InvestigationEventAdapter.js';
+import { InvestigationPromptGenerator } from '../story/InvestigationPromptGenerator.js';
 
 const logger = createLogger('GameEngine');
 
@@ -41,8 +46,11 @@ export class GameEngine {
   private timerManager: TimerManager;
   private turnManager: TurnManager;
   private storyEngine: StoryEngine | null = null;
+  private caseRuntime: CaseRuntime | null = null;
   private broadcastCallback: GameEngineCallback | null = null;
   private drawerDisconnectTimeout: NodeJS.Timeout | null = null;
+  private currentInvestigationEvent: InvestigationEvent | null = null;
+  private hintTimeouts: NodeJS.Timeout[] = [];
 
   constructor(room: Room, story: StoryDefinition | null, broadcastCallback: GameEngineCallback) {
     this.roomId = room.roomId;
@@ -79,6 +87,17 @@ export class GameEngine {
       usedWordObjectives: [],
       offeredPromptHistory: [],
       lastRoundOutcome: null,
+      // Case model fields
+      narrativeLog: [],
+      evidenceBoard: [],
+      suspects: [],
+      caseProgress: null,
+      discussionVotes: [],
+      discussionOptions: null,
+      storyContext: null,
+      investigationObjective: null,
+      clueHint: null,
+      revealedLetters: null,
     };
 
     GameEngine.sessions.set(this.roomId, this);
@@ -92,8 +111,16 @@ export class GameEngine {
     const engine = this.sessions.get(roomId);
     if (engine) {
       engine.timerManager.cancelTimer();
+      engine.clearHintTimeouts();
       this.sessions.delete(roomId);
     }
+  }
+
+  private clearHintTimeouts(): void {
+    for (const t of this.hintTimeouts) {
+      clearTimeout(t);
+    }
+    this.hintTimeouts = [];
   }
 
   public getSession(): AuthoritativeGameSession {
@@ -117,17 +144,71 @@ export class GameEngine {
       throw err;
     }
 
+    // For custom hosted rooms (not quick match / online matchmaking), ALL non-host players must be ready!
+    const isQuickMatch = Boolean((room.settings as any)?.isQuickMatch || (room as any)?.isQuickMatch);
+    if (!isQuickMatch) {
+      const nonHostPlayers = room.players.filter(
+        (p) => p.playerId !== hostPlayerId && !p.isHost && p.isConnected
+      );
+      const unreadyPlayers = nonHostPlayers.filter((p) => !p.isReady);
+      if (unreadyPlayers.length > 0) {
+        const names = unreadyPlayers.map((p) => p.displayName).join(', ');
+        const err = new Error(
+          `Cannot commence investigation: All detectives must be ready! Waiting for: ${names}`
+        );
+        (err as any).code = ErrorCode.NOT_ALL_READY;
+        throw err;
+      }
+    }
+
     this.stateMachine.transition(GameStatus.COUNTDOWN);
     this.session.state = GameStatus.COUNTDOWN;
     RoomManager.updateRoomStatus(this.roomId, 'IN_GAME');
 
     this.emit('GAME_STARTING', { countdownSeconds: 1 });
 
-    // 1-second countdown before story selection
+    // 1-second countdown before starting directly into the case
     this.timerManager.startTimer('lobby_countdown', 1, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      this.beginStorySelection();
+      this.startDirectGame();
     });
+  }
+
+  /**
+   * Starts game directly into the investigation without 15s option chooser delay
+   */
+  public startDirectGame(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+    const room = RoomManager.getRoomOrThrow(this.roomId);
+    StoryLibrary.ensureInitialized();
+
+    const rawGenre =
+      (room.settings as any)?.genre ||
+      (room.settings as any)?.storyGenre ||
+      (room.settings as any)?.selectedCaseId ||
+      room.settings?.storyId;
+    const genreSetting = rawGenre && rawGenre !== 'midnight_museum' ? rawGenre : 'all';
+
+    let selectedStory: StoryDefinition | null = null;
+    if (genreSetting && genreSetting !== 'all') {
+      selectedStory = StoryLibrary.getStory(genreSetting);
+    }
+    if (!selectedStory) {
+      const options = StorySelector.getRandomStories(1, genreSetting || 'all');
+      if (options.length > 0) {
+        selectedStory = StoryLibrary.getStory(options[0].storyId);
+      }
+    }
+    if (!selectedStory) {
+      selectedStory = StoryLibrary.getStory('story_01_the_midnight_museum') || StoryLibrary.getAllStories()[0];
+    }
+
+    logger.info('Starting game directly with selected case', {
+      storyId: selectedStory.id,
+      title: selectedStory.title,
+    });
+
+    this.lockAndStartStory(selectedStory);
   }
 
   /**
@@ -228,26 +309,26 @@ export class GameEngine {
     this.session.state = GameStatus.STORY_SELECTED;
     this.session.storyId = story.id;
     this.storyEngine = new StoryEngine(story);
+    this.caseRuntime = new CaseRuntime(story);
     this.session.storyVariables = this.storyEngine.getVariables();
 
-    const overviewSeconds = 10;
+    // Initialize case model data
+    this.session.suspects = this.caseRuntime.getSuspects();
+    this.session.caseProgress = this.caseRuntime.getCaseProgress();
 
-    // Broadcast chosen story with overview reading time to everyone in the room
+    // Broadcast chosen story to everyone in the room
     this.emit('STORY_SELECTED', {
       storyId: story.id,
       title: story.title,
       genre: story.genre,
       difficulty: story.difficulty,
       description: story.description,
-      overviewSeconds,
+      overviewSeconds: 0,
     });
 
-    // Move to round start after 10-second case dossier overview reading
-    this.timerManager.startTimer('story_selected_delay', overviewSeconds, () => {
-      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      this.turnManager.randomizeFirstDrawer();
-      this.beginTurn();
-    });
+    // Directly start the first investigation turn without any 15-20s choosing timer or 12s delay!
+    this.turnManager.randomizeFirstDrawer();
+    this.beginTurn();
   }
 
   /**
@@ -280,173 +361,90 @@ export class GameEngine {
       this.session.storyVariables = this.storyEngine.getVariables();
     }
 
-    // Deduplication check: exclude solved, retired/attempted, and previously used/offered words
-    const solvedSet = new Set(this.session.solvedEvents.map((e) => e.eventId));
-    const retiredSet = new Set(this.session.retiredEventIds || []);
-    const usedWordSet = new Set((this.session.usedWordObjectives || []).map((w) => w.toLowerCase().trim()));
-    const offeredWordSet = new Set((this.session.offeredPromptHistory || []).map((w) => w.toLowerCase().trim()));
+    // Deduplication & sequential story progression: get next chronological event directly
+    let selectedEvent: StoryEvent | null = null;
+    let investigationEvent: InvestigationEvent | null = null;
 
-    const promptChoices = this.storyEngine.generateThreePromptChoices(
-      this.session.currentAct,
-      solvedSet,
-      retiredSet,
-      usedWordSet,
-      offeredWordSet
-    );
-
-    if (!promptChoices) {
-      // If no events in current act, check if there's a next act
-      if (this.session.currentAct < 3) {
-        this.session.currentAct++;
-        logger.info(`Advancing to Act ${this.session.currentAct}`);
-        return this.beginTurn();
-      } else {
-        // Story completed, enter final investigation
-        return this.startFinalInvestigation();
-      }
+    if (this.caseRuntime) {
+      investigationEvent = this.caseRuntime.getChronologicalEvent(
+        this.session.turnIndex,
+        this.session.retiredEventIds
+      );
+      selectedEvent = investigationEvent;
     }
 
-    this.session.activePromptOptions = promptChoices.options;
-    this.session.selectedEvent = promptChoices.targetEvent;
+    if (!selectedEvent) {
+      const solvedSet = new Set(this.session.solvedEvents.map((e) => e.eventId));
+      const retiredSet = new Set(this.session.retiredEventIds || []);
+      const usedWordSet = new Set((this.session.usedWordObjectives || []).map((w) => w.toLowerCase().trim()));
+      const offeredWordSet = new Set((this.session.offeredPromptHistory || []).map((w) => w.toLowerCase().trim()));
 
-    this.stateMachine.transition(GameStatus.PROMPT_SELECTION);
-    this.session.state = GameStatus.PROMPT_SELECTION;
+      const promptChoices = this.storyEngine.generateThreePromptChoices(
+        this.session.currentAct,
+        solvedSet,
+        retiredSet,
+        usedWordSet,
+        offeredWordSet
+      );
 
-    const selectionSeconds = room.settings.promptSelectionTimeLimit || config.gameplay.defaultPromptSelectionSeconds;
-    const { startedAt, endsAt } = this.timerManager.startTimer('prompt_selection', selectionSeconds, () => {
-      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      // Auto-pick option 0 if drawer timed out
-      this.autoSelectPrompt();
-    });
-
-    this.session.roundStartedAt = startedAt;
-    this.session.roundEndsAt = endsAt;
-
-    const cleanObjective = this.session.selectedEvent?.drawingObjective
-      ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
-      : 'Mystery Clue';
-    const words = cleanObjective.split(/\s+/).filter(Boolean).slice(0, 2);
-    const wordLengths = words.map((w) => w.length);
-    const firstLetters = words.map((w) => w.charAt(0).toUpperCase());
-
-    let category = 'Crime Scene Evidence';
-    const combined = ((this.session.selectedEvent?.hint || '') + ' ' + cleanObjective).toLowerCase();
-    if (combined.includes('photo') || combined.includes('video') || combined.includes('diary') || combined.includes('letter') || combined.includes('note')) {
-      category = 'Personal Memory & Record';
-    } else if (combined.includes('key') || combined.includes('cutter') || combined.includes('knife') || combined.includes('poison') || combined.includes('gun') || combined.includes('safe') || combined.includes('lock')) {
-      category = 'Crime Tool & Evidence';
-    } else if (combined.includes('fare') || combined.includes('train') || combined.includes('car') || combined.includes('ticket') || combined.includes('station') || combined.includes('passenger')) {
-      category = 'Transit & Travel';
-    } else if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money') || combined.includes('gold')) {
-      category = 'Valuable Property';
-    } else if (this.session.selectedEvent?.hint) {
-      category = this.session.selectedEvent.hint;
-    }
-
-    // Broadcast turn started to everyone (without leaking secret clue text!)
-    this.emit('TURN_STARTED', {
-      drawerPlayerId: this.session.currentDrawerId,
-      turnIndex: this.session.turnIndex,
-      roundStartedAt: startedAt,
-      roundEndsAt: endsAt,
-      timeLimitSeconds: selectionSeconds,
-      hint: category,
-      category,
-      wordLengths,
-      firstLetters,
-      storyId: this.session.storyId,
-    });
-
-    // Unicast 3 secret options ONLY to the active drawer
-    this.emit(
-      'PROMPT_OPTIONS',
-      {
-        options: this.session.activePromptOptions,
-        timeLimitSeconds: selectionSeconds,
-      },
-      this.session.currentDrawerId
-    );
-  }
-
-  /**
-   * Drawer selects one of the 3 prompt options
-   */
-  public selectPrompt(playerId: string, optionIndex: number): void {
-    AuthService.assertDrawer(playerId, this.session.currentDrawerId);
-
-    if (this.session.state !== GameStatus.PROMPT_SELECTION) {
-      logger.warn('selectPrompt received outside PROMPT_SELECTION phase, safely ignored', {
-        state: this.session.state,
-      });
-      return;
-    }
-
-    if (!this.session.activePromptOptions || !this.session.selectedEvent) {
-      const err = new Error('No active prompt options available');
-      (err as any).code = ErrorCode.INVALID_PROMPT;
-      throw err;
-    }
-
-    const chosenOption = this.session.activePromptOptions.find((o) => o.optionIndex === optionIndex) || this.session.activePromptOptions[0];
-    if (chosenOption && this.session.selectedEvent) {
-      this.session.selectedEvent = {
-        ...this.session.selectedEvent,
-        drawingObjective: chosenOption.previewText,
-        acceptedConcepts: Array.from(
-          new Set([
-            chosenOption.previewText.toLowerCase(),
-            ...this.session.selectedEvent.acceptedConcepts,
-          ])
-        ),
-      };
-
-      // Authoritative deduplication: permanently retire chosen clue and event for this entire match
-      const cleanObj = chosenOption.previewText.toLowerCase().trim();
-      if (!this.session.usedWordObjectives.includes(cleanObj)) {
-        this.session.usedWordObjectives.push(cleanObj);
-      }
-      if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
-        this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
-      }
-      // Record all 3 offered options so they don't immediately repeat as distractors for next drawer
-      for (const opt of this.session.activePromptOptions) {
-        const optClean = opt.previewText.toLowerCase().trim();
-        if (!this.session.offeredPromptHistory.includes(optClean)) {
-          this.session.offeredPromptHistory.push(optClean);
+      if (!promptChoices) {
+        // If no events in current act, check if there's a next act
+        if (this.session.currentAct < 3) {
+          this.session.currentAct++;
+          logger.info(`Advancing to Act ${this.session.currentAct}`);
+          return this.beginTurn();
+        } else {
+          // Story completed, enter final investigation
+          return this.startFinalInvestigation();
         }
       }
+
+      selectedEvent = promptChoices.targetEvent;
     }
 
-    this.emit('PROMPT_SELECTED', {
+    this.session.selectedEvent = selectedEvent;
+    this.session.activePromptOptions = []; // No distractor prompt choices needed!
+
+    // Enrich with investigation event if CaseRuntime is available, or fallback adapter
+    if (this.caseRuntime && investigationEvent) {
+      this.currentInvestigationEvent = investigationEvent;
+      this.session.selectedEvent.drawerPrompt = investigationEvent.drawerPrompt;
+    } else if (this.session.selectedEvent) {
+      const adapted = InvestigationEventAdapter.adapt(
+        this.session.selectedEvent,
+        null,
+        this.session.storyId || 'Investigation',
+        'Mystery'
+      );
+      this.currentInvestigationEvent = adapted;
+      this.session.selectedEvent.drawerPrompt = adapted.drawerPrompt;
+    }
+
+    // Authoritative deduplication: immediately record event and word as retired/used
+    if (this.session.selectedEvent && !this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
+      this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
+    }
+    const cleanWord = MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective).toLowerCase().trim();
+    if (!this.session.usedWordObjectives.includes(cleanWord)) {
+      this.session.usedWordObjectives.push(cleanWord);
+    }
+
+    logger.info('Beginning chronological story turn directly into drawing', {
       turnIndex: this.session.turnIndex,
-      optionIndex,
+      eventId: this.session.selectedEvent.eventId,
+      objective: this.session.selectedEvent.drawingObjective,
+      drawerPlayerId: this.session.currentDrawerId,
     });
 
-    this.timerManager.cancelTimer();
+    // Directly start drawing phase without any intermediate prompt selection modal
     this.startDrawingPhase();
   }
 
-  private autoSelectPrompt(): void {
-    if (this.session.state === GameStatus.PROMPT_SELECTION) {
-      logger.info('Auto-selecting prompt for drawer due to timeout');
-      const firstOpt = this.session.activePromptOptions?.[0];
-      if (firstOpt && this.session.selectedEvent) {
-        const cleanObj = firstOpt.previewText.toLowerCase().trim();
-        if (!this.session.usedWordObjectives.includes(cleanObj)) {
-          this.session.usedWordObjectives.push(cleanObj);
-        }
-        if (!this.session.retiredEventIds.includes(this.session.selectedEvent.eventId)) {
-          this.session.retiredEventIds.push(this.session.selectedEvent.eventId);
-        }
-        for (const opt of this.session.activePromptOptions || []) {
-          const optClean = opt.previewText.toLowerCase().trim();
-          if (!this.session.offeredPromptHistory.includes(optClean)) {
-            this.session.offeredPromptHistory.push(optClean);
-          }
-        }
-      }
-      this.startDrawingPhase();
-    }
+  /**
+   * Safe no-op for any legacy clients attempting selectPrompt
+   */
+  public selectPrompt(playerId: string, optionIndex: number): void {
+    logger.info('selectPrompt called (no-op in chronological story flow)', { playerId, optionIndex });
   }
 
   private startDrawingPhase(): void {
@@ -463,24 +461,9 @@ export class GameEngine {
     this.session.roundStartedAt = startedAt;
     this.session.roundEndsAt = endsAt;
 
-    // Send secret objective to Drawer
-    this.emit(
-      'SECRET_DRAW_OBJECTIVE',
-      {
-        objective: this.session.selectedEvent!.drawingObjective,
-        hint: this.session.selectedEvent!.hint,
-        visualElements: this.session.selectedEvent!.visualElements,
-        timeLimitSeconds: drawSeconds,
-      },
-      this.session.currentDrawerId!
-    );
-
     const cleanObjective = this.session.selectedEvent?.drawingObjective
       ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
       : 'Mystery Clue';
-    const words = cleanObjective.split(/\s+/).filter(Boolean).slice(0, 2);
-    const wordLengths = words.map((w) => w.length);
-    const firstLetters = words.map((w) => w.charAt(0).toUpperCase());
 
     let category = 'Crime Scene Evidence';
     const combined = ((this.session.selectedEvent?.hint || '') + ' ' + cleanObjective).toLowerCase();
@@ -492,20 +475,162 @@ export class GameEngine {
       category = 'Transit & Travel';
     } else if (combined.includes('diamond') || combined.includes('painting') || combined.includes('coin') || combined.includes('briefcase') || combined.includes('money') || combined.includes('gold')) {
       category = 'Valuable Property';
+    } else if (this.session.selectedEvent?.hint) {
+      category = this.session.selectedEvent.hint;
     }
 
-    // Broadcast drawing started to all guessers
+    const drawerPrompt = this.currentInvestigationEvent?.drawerPrompt
+      || this.session.selectedEvent?.drawerPrompt
+      || 'You examine the crime scene carefully and discover a key piece of evidence. Draw what you discovered.';
+
+    this.clearHintTimeouts();
+
+    const words = cleanObjective.split(/\s+/).filter(Boolean);
+    const wordLengths = words.map((w) => w.length);
+    const firstLetters = words.map((w) => w[0]?.toUpperCase() || '');
+
+    const revealedLetters: Array<Array<string | null>> = words.map((w) =>
+      new Array(w.length).fill(null)
+    );
+
+    // Plan progressive reveal steps (skribbl.io style: dynamic reveals at distributed positions over time)
+    interface HintRevealStep {
+      wordIndex: number;
+      charIndex: number;
+      letter: string;
+      triggerAtSecond: number;
+    }
+    const revealSteps: HintRevealStep[] = [];
+
+    words.forEach((w, wIdx) => {
+      const L = w.length;
+      if (L <= 2) return;
+      const maxReveals = Math.min(L - 1, Math.max(1, Math.floor(L / 2)));
+      const chosenIndices: number[] = [0];
+
+      if (maxReveals >= 2 && L >= 4) {
+        const mid = Math.floor(L / 2);
+        if (!chosenIndices.includes(mid)) chosenIndices.push(mid);
+      }
+      if (maxReveals >= 3 && L >= 6) {
+        const later = L - 1;
+        if (!chosenIndices.includes(later)) chosenIndices.push(later);
+      }
+      if (maxReveals >= 4 && L >= 8) {
+        const earlier = 2;
+        if (!chosenIndices.includes(earlier)) chosenIndices.push(earlier);
+      }
+
+      chosenIndices.forEach((cIdx) => {
+        revealSteps.push({
+          wordIndex: wIdx,
+          charIndex: cIdx,
+          letter: w[cIdx].toUpperCase(),
+          triggerAtSecond: 0,
+        });
+      });
+    });
+
+    const totalSteps = revealSteps.length;
+    const minPercent = 0.15;
+    const maxPercent = 0.82;
+    revealSteps.forEach((step, idx) => {
+      const fraction = totalSteps === 1
+        ? 0.35
+        : minPercent + ((maxPercent - minPercent) * idx) / (totalSteps - 1);
+      step.triggerAtSecond = Math.max(8, Math.round(drawSeconds * fraction));
+    });
+
+    revealSteps.sort((a, b) => a.triggerAtSecond - b.triggerAtSecond);
+
+    revealSteps.forEach((step) => {
+      const delayMs = step.triggerAtSecond * 1000;
+      const t = setTimeout(() => {
+        if (!GameEngine.getEngine(this.roomId) || !this.stateMachine.isDrawingActive()) return;
+        if (!this.session.revealedLetters) return;
+
+        this.session.revealedLetters[step.wordIndex][step.charIndex] = step.letter;
+        this.emit('HINT_LETTER_REVEALED', {
+          revealedLetters: this.session.revealedLetters,
+          wordIndex: step.wordIndex,
+          charIndex: step.charIndex,
+          letter: step.letter,
+        });
+      }, delayMs);
+      this.hintTimeouts.push(t);
+    });
+
+    this.session.revealedLetters = revealedLetters;
+
+    // Build sanitized story context & detective objective (Information Balance Rule)
+    const rawStoryContext = this.currentInvestigationEvent?.narrativeContext
+      || this.session.selectedEvent?.narrativeContext
+      || this.session.selectedEvent?.narrativeDescription
+      || 'Detectives are investigating the crime scene for unexplained evidence.';
+
+    const storyContext = InvestigationPromptGenerator.sanitizeForPrompt(
+      rawStoryContext,
+      cleanObjective,
+      this.currentInvestigationEvent?.acceptedAnswers
+    );
+
+    const investigationObjective = this.currentInvestigationEvent?.investigationObjective
+      || InvestigationEventAdapter.generateInvestigationObjective(
+        this.currentInvestigationEvent?.promptType || 'OBJECT',
+        this.caseRuntime?.getCaseProgress()?.caseSetting
+      );
+
+    const rawClueHint = this.currentInvestigationEvent?.hint
+      || this.session.selectedEvent?.hint
+      || null;
+
+    const clueHint = rawClueHint
+      ? InvestigationPromptGenerator.sanitizeForPrompt(
+          rawClueHint,
+          cleanObjective,
+          this.currentInvestigationEvent?.acceptedAnswers
+        )
+      : null;
+
+    this.session.storyContext = storyContext;
+    this.session.investigationObjective = investigationObjective;
+    this.session.clueHint = clueHint;
+    this.session.hint = clueHint || category;
+    this.session.category = category;
+
+    // Send secret objective to Drawer — includes contextual drawing prompt + canonical answer + story context
+    this.emit(
+      'SECRET_DRAW_OBJECTIVE',
+      {
+        objective: this.session.selectedEvent!.drawingObjective,
+        hint: this.session.selectedEvent!.hint,
+        visualElements: this.session.selectedEvent!.visualElements,
+        timeLimitSeconds: drawSeconds,
+        drawerPrompt,
+        canonicalAnswer: this.session.selectedEvent!.drawingObjective,
+        narrativeContext: this.currentInvestigationEvent?.narrativeContext || null,
+        storyContext,
+      },
+      this.session.currentDrawerId!
+    );
+
+    // Broadcast drawing started to all guessers with story context, investigation objective, clue hint, and letter hints
     this.emit('DRAWING_STARTED', {
       drawerPlayerId: this.session.currentDrawerId,
       turnIndex: this.session.turnIndex,
       roundStartedAt: startedAt,
       roundEndsAt: endsAt,
       timeLimitSeconds: drawSeconds,
-      hint: category,
+      hint: clueHint || category,
+      clueHint,
+      category,
+      storyContext,
+      investigationObjective,
       wordLengths,
       firstLetters,
-      category,
+      revealedLetters,
       storyId: this.session.storyId,
+      caseProgress: this.caseRuntime?.getCaseProgress() || null,
     });
   }
 
@@ -564,6 +689,10 @@ export class GameEngine {
       if (
         this.session.state === GameStatus.CLUE_SOLVED ||
         this.session.state === GameStatus.STORY_REVEAL ||
+        this.session.state === GameStatus.EVIDENCE_DISCOVERED ||
+        this.session.state === GameStatus.DISCUSSION ||
+        this.session.state === GameStatus.CASE_INTRO ||
+        this.session.state === GameStatus.TRUTH_REVEAL ||
         this.session.state === GameStatus.NEXT_TURN
       ) {
         this.emit(
@@ -616,6 +745,7 @@ export class GameEngine {
 
   private async handleCorrectSolve(solver: Player, lockToken: string): Promise<void> {
     this.timerManager.cancelTimer();
+    this.clearHintTimeouts();
     this.stateMachine.transition(GameStatus.CLUE_SOLVED);
     this.session.state = GameStatus.CLUE_SOLVED;
 
@@ -647,6 +777,8 @@ export class GameEngine {
       pointsAwardedSolver: scoreAward.solverPoints,
       pointsAwardedDrawer: scoreAward.drawerPoints,
       revealedText: this.session.selectedEvent!.consequenceReveal,
+      evidenceTitle: this.session.selectedEvent!.drawingObjective,
+      evidenceReveal: this.currentInvestigationEvent?.evidenceReveal || this.session.selectedEvent!.consequenceReveal,
     };
 
     this.session.solvedEvents.push(solvedRecord);
@@ -654,7 +786,29 @@ export class GameEngine {
     // Apply story variables
     this.session.storyVariables = this.storyEngine!.applyEventConsequence(this.session.selectedEvent!);
 
-    // Broadcast clue solved
+    // Record evidence in CaseRuntime
+    if (this.caseRuntime && this.currentInvestigationEvent) {
+      const { evidenceCard, narrativePassage } = this.caseRuntime.recordEvidenceDiscovery(
+        this.currentInvestigationEvent,
+        solver.playerId,
+        solver.displayName,
+        drawer.playerId,
+        drawer.displayName,
+        this.session.turnIndex
+      );
+
+      // Update session state
+      this.session.evidenceBoard = this.caseRuntime.getEvidenceBoard();
+      this.session.narrativeLog = this.caseRuntime.getNarrativeLog();
+      this.session.caseProgress = this.caseRuntime.getCaseProgress();
+
+      // Emit evidence card to all players
+      this.emit('EVIDENCE_CARD', { evidenceCard });
+      this.emit('NARRATIVE_PASSAGE', { passage: narrativePassage });
+      this.emit('CASE_PROGRESS', { caseProgress: this.session.caseProgress });
+    }
+
+    // Broadcast clue solved (keep existing event for backward compat)
     this.emit('CLUE_SOLVED', {
       solverPlayerId: solver.playerId,
       solverName: solver.displayName,
@@ -667,7 +821,7 @@ export class GameEngine {
 
     await stateStore.releaseLock(`lock:solve:${this.roomId}:${this.session.turnIndex}`, lockToken);
 
-    // Transition to story reveal after brief 1s pause
+    // Transition to evidence discovered / story reveal after brief 1s pause
     this.timerManager.startTimer('solve_transition', 1, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
       this.showStoryReveal(solvedRecord);
@@ -676,14 +830,40 @@ export class GameEngine {
 
   private showStoryReveal(record: SolvedEventRecord): void {
     if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-    this.stateMachine.transition(GameStatus.STORY_REVEAL);
-    this.session.state = GameStatus.STORY_REVEAL;
+
+    // Use EVIDENCE_DISCOVERED state when CaseRuntime is active, otherwise fallback to STORY_REVEAL
+    const useEvidenceState = !!this.caseRuntime;
+    if (useEvidenceState) {
+      this.stateMachine.transition(GameStatus.EVIDENCE_DISCOVERED);
+      this.session.state = GameStatus.EVIDENCE_DISCOVERED;
+    } else {
+      this.stateMachine.transition(GameStatus.STORY_REVEAL);
+      this.session.state = GameStatus.STORY_REVEAL;
+    }
 
     const room = RoomManager.getRoomOrThrow(this.roomId);
     const solver = room.players.find((p) => p.playerId === record.solverPlayerId);
     const drawer = room.players.find((p) => p.playerId === record.drawerPlayerId);
     const revealSeconds = config.gameplay.defaultStoryRevealSeconds;
 
+    // Emit EVIDENCE_DISCOVERED for the new model (with narrative reveal)
+    if (useEvidenceState) {
+      this.emit('EVIDENCE_DISCOVERED', {
+        eventId: record.eventId,
+        evidenceTitle: record.evidenceTitle || record.revealedText,
+        evidenceReveal: record.evidenceReveal || record.revealedText,
+        revealedText: record.revealedText,
+        storyVariables: this.session.storyVariables,
+        solvedCount: this.session.solvedEvents.length,
+        solverName: solver?.displayName || 'Detective',
+        drawerName: drawer?.displayName || 'The Artist',
+        storyTitle: this.storyEngine?.getStory()?.title || this.session.storyId || 'Case Mystery',
+        revealSeconds,
+        caseProgress: this.session.caseProgress,
+      });
+    }
+
+    // Also emit existing STORY_REVEAL for backward compat
     this.emit('STORY_REVEAL', {
       eventId: record.eventId,
       revealedText: record.revealedText,
@@ -698,20 +878,30 @@ export class GameEngine {
 
     this.timerManager.startTimer('story_reveal', revealSeconds, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      const cleanWord = this.session.selectedEvent?.drawingObjective
-        ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
-        : 'Mystery Clue';
+      this.continueAfterEvidenceReveal(record, solver?.displayName);
+    });
+  }
+
+  private continueAfterEvidenceReveal(record: SolvedEventRecord, solverName?: string): void {
+    const cleanWord = this.session.selectedEvent?.drawingObjective
+      ? MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective)
+      : 'Mystery Clue';
+
+    if (this.caseRuntime && this.currentInvestigationEvent && this.caseRuntime.shouldTriggerDiscussion(this.currentInvestigationEvent)) {
+      this.startDiscussion();
+    } else {
       this.advanceToNextTurn(
         true,
         cleanWord,
         record.solverPlayerId,
-        solver?.displayName,
+        solverName,
         { solverPoints: record.pointsAwardedSolver, drawerPoints: record.pointsAwardedDrawer }
       );
-    });
+    }
   }
 
   private handleRoundTimeout(): void {
+    this.clearHintTimeouts();
     logger.info('Round timed out without solve', { turnIndex: this.session.turnIndex });
     if (this.session.selectedEvent) {
       const cleanWord = MarkdownStoryParser.cleanToClueWord(this.session.selectedEvent.drawingObjective);
@@ -841,8 +1031,11 @@ export class GameEngine {
     const investigationSeconds = 60;
     this.timerManager.startTimer('final_investigation', investigationSeconds, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      this.resolveEnding();
+      this.startTruthReveal();
     });
+
+    // Enrich final investigation with case data
+    const caseData = this.caseRuntime?.getFinalInvestigationData();
 
     this.emit('FINAL_INVESTIGATION', {
       storyId: this.session.storyId,
@@ -850,6 +1043,12 @@ export class GameEngine {
       solvedEvents: this.session.solvedEvents,
       storyVariables: this.session.storyVariables,
       timeLimitSeconds: investigationSeconds,
+      // Case model enrichments
+      investigationPrompt: caseData?.prompt || 'Who is responsible? Submit your final theory.',
+      suspects: caseData?.suspects || this.session.suspects,
+      evidenceBoard: caseData?.evidenceBoard || this.session.evidenceBoard,
+      narrativeLog: caseData?.narrativeLog || this.session.narrativeLog,
+      caseProgress: caseData?.caseProgress || this.session.caseProgress,
     });
   }
 
@@ -872,12 +1071,58 @@ export class GameEngine {
 
     logger.info(`Final theory submitted by ${player.displayName}`, { answer, confidence });
 
-    // If all online players submitted, resolve ending early
+    // If all online players submitted, advance to truth reveal early
     const onlinePlayers = room.players.filter((p) => p.isConnected);
     if (Object.keys(this.session.finalTheories).length >= onlinePlayers.length) {
       this.timerManager.cancelTimer();
-      this.resolveEnding();
+      this.startTruthReveal();
     }
+  }
+
+  /**
+   * TRUTH_REVEAL: Shows the complete story truth before ending.
+   */
+  private startTruthReveal(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+    this.stateMachine.transition(GameStatus.TRUTH_REVEAL);
+    this.session.state = GameStatus.TRUTH_REVEAL;
+
+    const truthRevealSeconds = config.gameplay.defaultTruthRevealSeconds;
+
+    // Assemble complete truth from CaseRuntime
+    const truthData = this.caseRuntime?.assembleTruthReveal();
+
+    this.emit('TRUTH_REVEAL', {
+      storyId: this.session.storyId,
+      storyTitle: this.storyEngine?.getStory()?.title || this.session.storyId,
+      fullTruth: truthData?.fullTruth || 'The truth has been revealed.',
+      timeline: truthData?.timeline || [],
+      culprit: truthData?.culprit || 'Unknown',
+      motive: truthData?.motive || 'Unknown',
+      method: truthData?.method || 'Unknown',
+      discoveredEvidence: truthData?.discoveredEvidence || this.session.evidenceBoard,
+      missedEvents: truthData?.missedEvents || [],
+      correctTheory: truthData?.correctTheory || '',
+      finalTheories: this.session.finalTheories,
+      solvedEvents: this.session.solvedEvents,
+      timeLimitSeconds: truthRevealSeconds,
+    });
+
+    // Add conclusion narrative
+    if (this.caseRuntime) {
+      const conclusionPassage = {
+        id: `conclusion_${this.session.storyId}`,
+        text: truthData?.fullTruth || 'The case is now closed.',
+        type: 'CONCLUSION' as const,
+        timestamp: Date.now(),
+      };
+      this.session.narrativeLog = [...this.session.narrativeLog, conclusionPassage];
+    }
+
+    this.timerManager.startTimer('truth_reveal', truthRevealSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+      this.resolveEnding();
+    });
   }
 
   private resolveEnding(): void {
@@ -887,12 +1132,22 @@ export class GameEngine {
 
     let ending = this.storyEngine ? this.storyEngine.determineEnding() : null;
     if (!ending) {
+      // Determine verdict from case progress
+      const progress = this.caseRuntime?.getCaseProgress();
+      const verdict = progress && progress.percentage >= 80 ? 'MASTER_DETECTIVE'
+        : progress && progress.percentage >= 50 ? 'PARTIAL_SOLUTION'
+        : 'COLD_CASE';
+
       ending = {
         endingId: 'case_closed',
-        title: 'Case Closed',
-        summary: 'The detectives completed the investigation docket.',
-        verdict: 'SOLVED',
-      } as any;
+        title: verdict === 'MASTER_DETECTIVE' ? 'Master Detectives'
+          : verdict === 'PARTIAL_SOLUTION' ? 'Partial Solution'
+          : 'Cold Case',
+        conditionDescription: 'Based on investigation progress',
+        requiredVariables: {},
+        narrativeText: 'The detectives completed the investigation docket.',
+        verdict,
+      };
     }
     this.session.ending = ending;
 
@@ -914,11 +1169,142 @@ export class GameEngine {
       storyVariables: this.session.storyVariables,
       solvedEvents: this.session.solvedEvents,
       leaderboard: playerLeaderboard,
+      // Case model enrichments
+      evidenceBoard: this.session.evidenceBoard,
+      caseProgress: this.session.caseProgress,
     });
 
     this.stateMachine.transition(GameStatus.GAME_COMPLETE);
     this.session.state = GameStatus.GAME_COMPLETE;
     RoomManager.updateRoomStatus(this.roomId, 'COMPLETED');
+  }
+
+  // ==========================================
+  // DISCUSSION SYSTEM
+  // ==========================================
+
+  private startDiscussion(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+    if (!this.caseRuntime) return;
+
+    this.stateMachine.transition(GameStatus.DISCUSSION);
+    this.session.state = GameStatus.DISCUSSION;
+
+    this.caseRuntime.markDiscussionTriggered();
+    this.session.discussionVotes = [];
+
+    const solvedSet = new Set(this.session.solvedEvents.map((e) => e.eventId));
+    const retiredSet = new Set(this.session.retiredEventIds || []);
+    const options = this.caseRuntime.generateDiscussionOptions(solvedSet, retiredSet);
+    this.session.discussionOptions = options;
+
+    const discussionSeconds = config.gameplay.defaultDiscussionSeconds;
+
+    this.emit('DISCUSSION_STARTED', {
+      options,
+      timeLimitSeconds: discussionSeconds,
+      caseProgress: this.session.caseProgress,
+      evidenceBoard: this.session.evidenceBoard,
+    });
+
+    this.timerManager.startTimer('discussion', discussionSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+      this.resolveDiscussion();
+    });
+  }
+
+  public submitDiscussionVote(playerId: string, optionIndex: number): void {
+    if (this.session.state !== GameStatus.DISCUSSION) {
+      return;
+    }
+
+    // Remove any existing vote from this player
+    this.session.discussionVotes = this.session.discussionVotes.filter((v) => v.playerId !== playerId);
+    this.session.discussionVotes.push({ playerId, optionIndex, timestamp: Date.now() });
+
+    const room = RoomManager.getRoomOrThrow(this.roomId);
+    const player = room.players.find((p) => p.playerId === playerId);
+
+    this.emit('DISCUSSION_VOTE', {
+      playerId,
+      playerName: player?.displayName || 'Detective',
+      optionIndex,
+      totalVotes: this.session.discussionVotes.length,
+    });
+
+    // If all online players voted, resolve early
+    const onlinePlayers = room.players.filter((p) => p.isConnected);
+    if (this.session.discussionVotes.length >= onlinePlayers.length) {
+      this.timerManager.cancelTimer();
+      this.resolveDiscussion();
+    }
+  }
+
+  private resolveDiscussion(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+
+    // Tally votes
+    const voteCounts: Record<number, number> = {};
+    for (const vote of this.session.discussionVotes) {
+      voteCounts[vote.optionIndex] = (voteCounts[vote.optionIndex] || 0) + 1;
+    }
+
+    const winningOption = Object.entries(voteCounts)
+      .sort(([, a], [, b]) => b - a)[0];
+    const winningIndex = winningOption ? parseInt(winningOption[0]) : 0;
+    const winningText = this.session.discussionOptions?.[winningIndex] || 'Continue investigating';
+
+    this.emit('DISCUSSION_RESULT', {
+      winningOption: winningIndex,
+      winningText,
+      voteCounts,
+    });
+
+    // Clean up discussion state
+    this.session.discussionOptions = null;
+    this.session.discussionVotes = [];
+
+    // Continue to next turn
+    this.timerManager.startTimer('post_discussion', 2, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+      this.advanceToNextTurn(true);
+    });
+  }
+
+  /**
+   * Lets players skip cinematic CASE_INTRO / evidence / truth timers.
+   * Never blocks the game if called in an unexpected state.
+   */
+  public skipNarrative(playerId: string): void {
+    if (!playerId) return;
+
+    if (this.session.state === GameStatus.CASE_INTRO) {
+      this.timerManager.cancelTimer();
+      this.turnManager.randomizeFirstDrawer();
+      this.beginTurn();
+      return;
+    }
+
+    if (
+      this.session.state === GameStatus.EVIDENCE_DISCOVERED ||
+      this.session.state === GameStatus.STORY_REVEAL
+    ) {
+      this.timerManager.cancelTimer();
+      const last = this.session.solvedEvents[this.session.solvedEvents.length - 1];
+      if (last) {
+        const room = RoomManager.getRoom(this.roomId);
+        const solver = room?.players.find((p) => p.playerId === last.solverPlayerId);
+        this.continueAfterEvidenceReveal(last, solver?.displayName);
+      } else {
+        this.advanceToNextTurn(true);
+      }
+      return;
+    }
+
+    if (this.session.state === GameStatus.TRUTH_REVEAL) {
+      this.timerManager.cancelTimer();
+      this.resolveEnding();
+    }
   }
 
   public handlePlayerDisconnect(playerId: string): void {
@@ -1015,6 +1401,45 @@ export class GameEngine {
         {
           options: this.session.offeredStoryOptions,
           timeLimitSeconds: 20,
+        },
+        player.playerId
+      );
+    }
+
+    if (this.session.state === GameStatus.CASE_INTRO && this.caseRuntime) {
+      this.emit(
+        'CASE_INTRO',
+        {
+          ...this.caseRuntime.getCaseIntroData(),
+          timeLimitSeconds: Math.max(3, this.timerManager.getRemainingSeconds() || config.gameplay.defaultCaseIntroSeconds),
+        },
+        player.playerId
+      );
+    }
+
+    if (this.session.state === GameStatus.DISCUSSION && this.session.discussionOptions) {
+      this.emit(
+        'DISCUSSION_STARTED',
+        {
+          options: this.session.discussionOptions,
+          timeLimitSeconds: Math.max(3, this.timerManager.getRemainingSeconds() || config.gameplay.defaultDiscussionSeconds),
+          caseProgress: this.session.caseProgress,
+          evidenceBoard: this.session.evidenceBoard,
+        },
+        player.playerId
+      );
+    }
+
+    if (this.session.state === GameStatus.DRAWING && this.session.currentDrawerId === player.playerId) {
+      this.emit(
+        'SECRET_DRAW_OBJECTIVE',
+        {
+          objective: this.session.selectedEvent?.drawingObjective,
+          hint: this.session.selectedEvent?.hint,
+          visualElements: this.session.selectedEvent?.visualElements,
+          drawerPrompt: this.currentInvestigationEvent?.drawerPrompt || this.session.selectedEvent?.drawerPrompt || null,
+          canonicalAnswer: this.session.selectedEvent?.drawingObjective || null,
+          narrativeContext: this.currentInvestigationEvent?.narrativeContext || null,
         },
         player.playerId
       );

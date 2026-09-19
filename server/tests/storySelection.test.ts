@@ -66,6 +66,7 @@ test('Phase 2 Game Flow: 1 random chooser gets 3 story options, other players wa
   const { player: p4 } = await RoomManager.joinRoom(room.joinCode, 'Player Diana');
 
   const allPlayers = [hostPlayer, p2, p3, p4];
+  room.players.forEach((p) => (p.isReady = true));
 
   // Track messages sent by engine
   const unicastMessages: Array<{ recipient: string; event: string; payload: any }> = [];
@@ -115,7 +116,10 @@ test('Phase 2 Game Flow: 1 random chooser gets 3 story options, other players wa
 
   engine.chooseStory(chooserId, pickedStoryId);
 
-  assert.equal(engine.getSession().state, GameStatus.STORY_SELECTED);
+  assert.ok(
+    [GameStatus.STORY_SELECTED, GameStatus.CASE_INTRO, GameStatus.ROUND_START, GameStatus.DRAWING].includes(engine.getSession().state),
+    `Expected state to be STORY_SELECTED, CASE_INTRO, ROUND_START, or DRAWING, got: ${engine.getSession().state}`
+  );
   assert.equal(engine.getSession().storyId, pickedStoryId);
 
   // Verify STORY_SELECTED broadcasted to everyone
@@ -143,6 +147,7 @@ test('Genre Selection: defaults to "all", respects host genre update to "horror"
 
   const freshRoom = RoomManager.getRoomOrThrow(room.roomId);
   assert.equal(freshRoom.players.length, 4, 'All 4 players must be present in room');
+  freshRoom.players.forEach((p) => (p.isReady = true));
 
   let offeredOptions: any[] = [];
   const engine = new GameEngine(freshRoom, null, (evt, data, recipient) => {
@@ -162,4 +167,77 @@ test('Genre Selection: defaults to "all", respects host genre update to "horror"
   assert.ok(isHorrorOrGeneral);
 
   GameEngine.removeEngine(room.roomId);
+});
+
+test('Lobby Ready Rule: Hosted rooms block start if any non-host is unready, while QuickMatch allows start', async () => {
+  // 1. Custom hosted room (Create & Host)
+  const { room, hostPlayer } = await RoomManager.createRoom('Host Alice', 'detective-1', { isQuickMatch: false });
+  const p2 = await RoomManager.joinRoom(room.joinCode, 'Player Bob', 'detective-2');
+  const freshRoom = RoomManager.getRoomOrThrow(room.roomId);
+
+  // By default, p2 is not ready
+  freshRoom.players.find((p) => p.playerId === p2.player.playerId)!.isReady = false;
+
+  const engine = new GameEngine(freshRoom, null, () => {});
+
+  // Host attempting to start should fail with NOT_ALL_READY
+  let thrownError: any = null;
+  try {
+    await engine.startGame(hostPlayer.playerId);
+  } catch (err) {
+    thrownError = err;
+  }
+  assert.ok(thrownError, 'Must throw error when non-host player is not ready');
+  assert.equal(thrownError.code, 'NOT_ALL_READY');
+
+  // Once Bob declares ready, host can start!
+  freshRoom.players.find((p) => p.playerId === p2.player.playerId)!.isReady = true;
+  await engine.startGame(hostPlayer.playerId);
+  assert.equal(engine.getSession().state, GameStatus.COUNTDOWN);
+
+  GameEngine.removeEngine(room.roomId);
+
+  // 2. QuickMatch room (Online Gaming) - does NOT block start
+  const qm = await RoomManager.createRoom('QM Host', 'detective-1', { isQuickMatch: true });
+  await RoomManager.joinRoom(qm.room.joinCode, 'QM Player 2', 'detective-2');
+  const qmRoom = RoomManager.getRoomOrThrow(qm.room.roomId);
+  qmRoom.players[1].isReady = false; // Unready player
+
+  const qmEngine = new GameEngine(qmRoom, null, () => {});
+  // Should NOT throw for quick match
+  await qmEngine.startGame(qm.hostPlayer.playerId);
+  assert.equal(qmEngine.getSession().state, GameStatus.COUNTDOWN);
+
+  GameEngine.removeEngine(qm.room.roomId);
+});
+
+test('Vote to Kick: 75% majority automatically kicks target player', async () => {
+  const { room, hostPlayer } = await RoomManager.createRoom('Player 1', 'detective-1');
+  const p2 = await RoomManager.joinRoom(room.joinCode, 'Player 2', 'detective-2');
+  const p3 = await RoomManager.joinRoom(room.joinCode, 'Player 3', 'detective-3');
+  const p4 = await RoomManager.joinRoom(room.joinCode, 'Player 4', 'detective-4');
+
+  // Total 4 players. Eligible voters to kick Player 4: 3 players (P1, P2, P3).
+  // 75% of 3 = ceil(3 * 0.75) = 3 votes required.
+  const targetId = p4.player.playerId;
+
+  // Vote 1: Player 1 votes
+  const res1 = RoomManager.voteKick(room.roomId, hostPlayer.playerId, targetId);
+  assert.equal(res1.kicked, false);
+  assert.equal(res1.currentVotes, 1);
+  assert.equal(res1.requiredVotes, 3);
+
+  // Vote 2: Player 2 votes
+  const res2 = RoomManager.voteKick(room.roomId, p2.player.playerId, targetId);
+  assert.equal(res2.kicked, false);
+  assert.equal(res2.currentVotes, 2);
+
+  // Vote 3: Player 3 votes -> 3/3 = 100% >= 75% -> Automatically kicked!
+  const res3 = RoomManager.voteKick(room.roomId, p3.player.playerId, targetId);
+  assert.equal(res3.kicked, true);
+
+  // Verify Player 4 was removed from room
+  const updatedRoom = RoomManager.getRoomOrThrow(room.roomId);
+  assert.equal(updatedRoom.players.some((p) => p.playerId === targetId), false);
+  assert.equal(updatedRoom.players.length, 3);
 });

@@ -104,6 +104,8 @@ export class BackendClient {
   private isConnecting = false;
   private pingInterval: any = null;
   private shouldSendReconnectHandshake = false;
+  private lastSecretDrawObjective: any = null;
+  private lastDrawingStarted: any = null;
 
   private constructor() {
     try {
@@ -311,10 +313,60 @@ export class BackendClient {
       this.eventHandlers.set(event, set);
     }
     set.add(handler);
+
+    // Replay cached authoritative event if component subscribed after event arrived
+    if (event === 'SECRET_DRAW_OBJECTIVE' && this.lastSecretDrawObjective) {
+      try {
+        handler(this.lastSecretDrawObjective);
+      } catch (e) {
+        console.error('[BackendClient] Error in cached handler replay for SECRET_DRAW_OBJECTIVE', e);
+      }
+    }
+    if (event === 'DRAWING_STARTED' && this.lastDrawingStarted) {
+      try {
+        handler(this.lastDrawingStarted);
+      } catch (e) {
+        console.error('[BackendClient] Error in cached handler replay for DRAWING_STARTED', e);
+      }
+    }
+
     return () => set?.delete(handler);
   }
 
+  public getSecretDrawObjective(): any {
+    return this.lastSecretDrawObjective;
+  }
+
+  public requestSecretObjective(): void {
+    this.send('REQUEST_SECRET_OBJECTIVE', {});
+  }
+
   private emitLocal(event: string, payload: any): void {
+    if (event === 'SECRET_DRAW_OBJECTIVE' && payload) {
+      this.lastSecretDrawObjective = payload;
+    }
+    if (event === 'DRAWING_STARTED' && payload) {
+      this.lastDrawingStarted = payload;
+    }
+    if (event === 'NEXT_TURN') {
+      this.lastSecretDrawObjective = null;
+      this.lastDrawingStarted = null;
+    }
+    if (event === 'PLAYER_RECONNECTED' && payload) {
+      if (payload.drawerPrivateState) {
+        this.lastSecretDrawObjective = {
+          objective: payload.drawerPrivateState.canonicalAnswer || payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective,
+          canonicalAnswer: payload.drawerPrivateState.canonicalAnswer || payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective,
+          drawerPrompt: payload.drawerPrivateState.drawerPrompt,
+          hint: payload.drawerPrivateState.hint,
+          storyContext: payload.drawerPrivateState.storyContext,
+        };
+      }
+      if (payload.gameState) {
+        this.lastDrawingStarted = payload.gameState;
+      }
+    }
+
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       handlers.forEach((h) => {
@@ -458,6 +510,10 @@ export class BackendClient {
 
   public sendChatMessage(text: string): void {
     this.send('CHAT_MESSAGE', { text });
+  }
+
+  public voteKick(targetPlayerId: string): void {
+    this.send('VOTE_KICK', { targetPlayerId });
   }
 
   public leaveRoom(): void {

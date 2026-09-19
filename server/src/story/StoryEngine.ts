@@ -1,6 +1,8 @@
 import { PromptOption, StoryDefinition, StoryEnding, StoryEvent } from '../types/index.js';
 import { MarkdownStoryParser } from './MarkdownStoryParser.js';
 import { InfiniteClueEngine } from './InfiniteClueEngine.js';
+import { InvestigationPromptGenerator } from './InvestigationPromptGenerator.js';
+import { InvestigationEventAdapter } from './InvestigationEventAdapter.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('StoryEngine');
@@ -146,6 +148,30 @@ export class StoryEngine {
       if (!distractor2) distractor2 = fresh2 !== distractor1 ? fresh2 : 'Secret Safe';
     }
 
+    const targetTask = targetEvent.drawerPrompt
+      || InvestigationPromptGenerator.generate({
+        canonicalAnswer: targetClueClean,
+        promptType: targetEvent.promptType || 'OBJECT',
+        narrativeContext: targetEvent.narrativeContext || targetEvent.narrativeDescription || '',
+        storyTitle: this.story.title,
+        storyGenre: this.story.genre,
+        storySetting: this.story.description || '',
+        hint: targetEvent.hint,
+        eventDescription: targetEvent.narrativeDescription,
+        acceptedAnswers: targetEvent.acceptedConcepts,
+      });
+
+    const distractor1Task = InvestigationEventAdapter.generateTaskForDistractor(
+      distractor1,
+      'OBJECT',
+      0
+    );
+    const distractor2Task = InvestigationEventAdapter.generateTaskForDistractor(
+      distractor2,
+      'OBJECT',
+      1
+    );
+
     const rawOptions: PromptOption[] = [
       {
         optionIndex: 0,
@@ -153,18 +179,21 @@ export class StoryEngine {
         difficulty: targetEvent.difficulty,
         isDistractor: false,
         eventId: targetEvent.eventId,
+        investigationTask: targetTask,
       },
       {
         optionIndex: 1,
         previewText: distractor1,
         difficulty: 'MEDIUM',
         isDistractor: true,
+        investigationTask: distractor1Task,
       },
       {
         optionIndex: 2,
         previewText: distractor2,
         difficulty: 'HARD',
         isDistractor: true,
+        investigationTask: distractor2Task,
       },
     ];
 

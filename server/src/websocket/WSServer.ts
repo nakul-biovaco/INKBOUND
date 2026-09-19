@@ -10,6 +10,7 @@ import {
   Player,
   ReconnectSchema,
   SelectPromptSchema,
+  SubmitDiscussionVoteSchema,
   SubmitGuessSchema,
   SubmitTheorySchema,
   WSClientEvent,
@@ -22,6 +23,8 @@ import { GameEngine } from '../game/GameEngine.js';
 import { StoryLoader } from '../story/StoryLoader.js';
 import { Serializer } from './Serializer.js';
 import { DrawingManager } from '../drawing/DrawingManager.js';
+import { MarkdownStoryParser } from '../story/MarkdownStoryParser.js';
+import { IdGenerator } from '../utils/idGenerator.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('WSServer');
@@ -421,33 +424,133 @@ export class WSServer {
 
       case WSClientEvent.START_GAME: {
         this.assertSocketAuthenticated(ws);
-        const room = RoomManager.getRoomOrThrow(ws.roomId!);
-        const storyId = payload?.storyId || room.settings.storyId || 'all';
-        if (storyId && storyId !== 'all') {
-          room.settings.storyId = storyId;
-        }
-        if (payload?.settings) {
-          const s = payload.settings;
-          RoomManager.updateRoomSettings(ws.roomId!, ws.playerId!, {
-            storyId: s.selectedCaseId || s.storyId,
-            drawingTimeLimit: s.turnDuration || s.drawingTimeLimit,
-            roundsPerGame: s.rounds || s.roundsPerGame,
-            maxPlayers: s.maxPlayers,
+        try {
+          const room = RoomManager.getRoomOrThrow(ws.roomId!);
+          const storyId = payload?.storyId || room.settings.storyId || 'all';
+          if (storyId && storyId !== 'all') {
+            room.settings.storyId = storyId;
+          }
+          if (payload?.settings) {
+            const s = payload.settings;
+            RoomManager.updateRoomSettings(ws.roomId!, ws.playerId!, {
+              storyId: s.selectedCaseId || s.storyId,
+              drawingTimeLimit: s.turnDuration || s.drawingTimeLimit,
+              roundsPerGame: s.rounds || s.roundsPerGame,
+              maxPlayers: s.maxPlayers,
+            });
+          }
+
+          let engine = GameEngine.getEngine(room.roomId);
+          if (!engine) {
+            engine = new GameEngine(room, null, (evt, data, recipientId) => {
+              if (recipientId) {
+                this.sendToPlayer(recipientId, evt, data);
+              } else {
+                this.broadcastToRoom(room.roomId, evt, data);
+              }
+            });
+          }
+
+          await engine.startGame(ws.playerId!);
+        } catch (err: any) {
+          logger.warn('Failed to start game', { error: err.message, roomId: ws.roomId });
+          this.sendToPlayer(ws.playerId!, WSServerEvent.ERROR, {
+            code: err.code || ErrorCode.INTERNAL_ERROR,
+            message: err.message || 'Failed to start game',
           });
         }
+        break;
+      }
 
-        let engine = GameEngine.getEngine(room.roomId);
-        if (!engine) {
-          engine = new GameEngine(room, null, (evt, data, recipientId) => {
-            if (recipientId) {
-              this.sendToPlayer(recipientId, evt, data);
-            } else {
-              this.broadcastToRoom(room.roomId, evt, data);
+      case WSClientEvent.VOTE_KICK: {
+        this.assertSocketAuthenticated(ws);
+        const targetPlayerId = payload?.targetPlayerId;
+        if (!targetPlayerId) break;
+        try {
+          const result = RoomManager.voteKick(ws.roomId!, ws.playerId!, targetPlayerId);
+          if (result.kicked) {
+            this.sendToPlayer(targetPlayerId, WSServerEvent.ERROR, {
+              code: 'KICKED',
+              message: 'You have been removed from the room by 75% majority vote.',
+            });
+            this.broadcastToRoom(ws.roomId!, WSServerEvent.PLAYER_KICKED, {
+              targetPlayerId,
+              targetName: result.targetPlayer.displayName,
+              reason: '75% majority vote kick',
+            });
+            this.broadcastToRoom(ws.roomId!, WSServerEvent.CHAT_MESSAGE, {
+              id: IdGenerator.generateStrokeId(),
+              senderId: 'system',
+              senderName: 'SYSTEM',
+              senderAvatar: '⚖️',
+              text: `⚖️ ${result.targetPlayer.displayName} was dismissed from the case by 75% majority vote.`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              isSystem: true,
+            });
+            const room = RoomManager.getRoom(ws.roomId!);
+            if (room) {
+              this.broadcastToRoom(ws.roomId!, WSServerEvent.ROOM_STATE, {
+                room: Serializer.serializeRoom(room),
+              });
             }
+          } else {
+            this.broadcastToRoom(ws.roomId!, WSServerEvent.VOTE_KICK_UPDATE, {
+              targetPlayerId,
+              targetName: result.targetPlayer.displayName,
+              currentVotes: result.currentVotes,
+              requiredVotes: result.requiredVotes,
+              voterIds: result.voterIds,
+            });
+            this.broadcastToRoom(ws.roomId!, WSServerEvent.CHAT_MESSAGE, {
+              id: IdGenerator.generateStrokeId(),
+              senderId: 'system',
+              senderName: 'SYSTEM',
+              senderAvatar: '🗳️',
+              text: `🗳️ Vote to kick ${result.targetPlayer.displayName}: ${result.currentVotes}/${result.requiredVotes} votes (75% majority needed)`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              isSystem: true,
+            });
+          }
+        } catch (err: any) {
+          this.sendToPlayer(ws.playerId!, WSServerEvent.ERROR, {
+            code: err.code || ErrorCode.INTERNAL_ERROR,
+            message: err.message,
           });
         }
+        break;
+      }
 
-        await engine.startGame(ws.playerId!);
+      case WSClientEvent.REQUEST_SECRET_OBJECTIVE: {
+        this.assertSocketAuthenticated(ws);
+        if (!ws.roomId || !ws.playerId) break;
+        const engine = GameEngine.getEngine(ws.roomId);
+        if (engine) {
+          const session = engine.getSession();
+          if (
+            (session.state === GameStatus.DRAWING || session.state === GameStatus.ROUND_START) &&
+            session.currentDrawerId === ws.playerId &&
+            session.selectedEvent
+          ) {
+            const cleanObjective = MarkdownStoryParser.cleanToClueWord(session.selectedEvent.drawingObjective);
+            const drawerPrompt = (engine as any).currentInvestigationEvent?.drawerPrompt
+              || session.selectedEvent.drawerPrompt
+              || 'You examine the crime scene carefully and discover a key piece of evidence. Draw what you discovered.';
+            this.sendToSocket(ws, WSServerEvent.SECRET_DRAW_OBJECTIVE, {
+              objective: session.selectedEvent.drawingObjective,
+              hint: session.selectedEvent.hint,
+              visualElements: session.selectedEvent.visualElements,
+              timeLimitSeconds: (engine as any).timerManager?.getRemainingSeconds() || 80,
+              drawerPrompt,
+              canonicalAnswer: cleanObjective,
+              narrativeContext: (engine as any).currentInvestigationEvent?.narrativeContext || null,
+              storyContext: session.storyContext,
+            });
+            logger.info('Dispatched requested secret drawer objective to player', {
+              playerId: ws.playerId,
+              objective: session.selectedEvent.drawingObjective,
+            });
+          }
+        }
         break;
       }
 
@@ -514,6 +617,38 @@ export class WSServer {
         const engine = GameEngine.getEngine(ws.roomId!);
         if (!engine) throw new Error('No active game session');
         engine.submitFinalTheory(ws.playerId!, valid.answer, valid.confidence);
+        break;
+      }
+
+      case WSClientEvent.SUBMIT_DISCUSSION_VOTE: {
+        this.assertSocketAuthenticated(ws);
+        const valid = SubmitDiscussionVoteSchema.parse(payload);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) throw new Error('No active game session');
+        engine.submitDiscussionVote(ws.playerId!, valid.optionIndex);
+        break;
+      }
+
+      case WSClientEvent.SKIP_NARRATIVE: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (engine) engine.skipNarrative(ws.playerId!);
+        break;
+      }
+
+      case WSClientEvent.REQUEST_CASE_FILE: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine) break;
+        const session = engine.getSession();
+        if (session) {
+          this.sendToSocket(ws, WSServerEvent.CASE_FILE, {
+            narrativeLog: session.narrativeLog || [],
+            evidenceBoard: session.evidenceBoard || [],
+            suspects: session.suspects || [],
+            caseProgress: session.caseProgress || null,
+          });
+        }
         break;
       }
 

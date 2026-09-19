@@ -6,7 +6,6 @@ import { Room } from '../types/room';
 import { GameService } from '../services/gameService';
 import { CaseManager } from '../game/CaseManager';
 import { BackendClient } from '../realtime/backendClient';
-import { GameHeader } from '../components/common/GameHeader';
 import { DrawingCanvas } from '../components/canvas/DrawingCanvas';
 import { InvestigationBoard } from '../components/investigation/InvestigationBoard';
 import { FinalTheoryModal } from '../components/accusation/FinalTheoryModal';
@@ -16,7 +15,6 @@ import { ClueDiscoveredCard } from '../components/common/ClueDiscoveredCard';
 import { TurnTransitionOverlay, TurnTransitionData } from '../components/common/TurnTransitionOverlay';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
 import { SoundService } from '../services/soundService';
-import { getStoryArtwork } from '../utils/storyArtwork';
 
 interface GameProps {
   room: Room;
@@ -39,9 +37,37 @@ interface GameBanner {
 const getClueStorageKey = (roomId: string, turnIndex: number) =>
   `inkbound_chosen_clue_${roomId}_turn_${turnIndex}`;
 
-const saveStoredClue = (roomId: string, turnIndex: number, optionIndex: number, objective: string) => {
+interface StoredClue {
+  optionIndex: number;
+  objective: string;
+  turnIndex: number;
+  drawerPrompt?: string | null;
+  hint?: string | null;
+  storyContext?: string | null;
+  roomId?: string;
+  timestamp?: number;
+}
+
+const saveStoredClue = (
+  roomId: string,
+  turnIndex: number,
+  optionIndex: number,
+  objective: string,
+  drawerPrompt?: string | null,
+  hint?: string | null,
+  storyContext?: string | null
+) => {
   try {
-    const data = JSON.stringify({ optionIndex, objective, turnIndex, roomId, timestamp: Date.now() });
+    const data = JSON.stringify({
+      optionIndex,
+      objective,
+      drawerPrompt,
+      hint,
+      storyContext,
+      turnIndex,
+      roomId,
+      timestamp: Date.now(),
+    });
     if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(getClueStorageKey(roomId, turnIndex), data);
     if (typeof localStorage !== 'undefined') localStorage.setItem(getClueStorageKey(roomId, turnIndex), data);
   } catch (e) {
@@ -49,7 +75,7 @@ const saveStoredClue = (roomId: string, turnIndex: number, optionIndex: number, 
   }
 };
 
-const getStoredClue = (roomId: string, turnIndex: number): { optionIndex: number; objective: string; turnIndex: number } | null => {
+const getStoredClue = (roomId: string, turnIndex: number): StoredClue | null => {
   try {
     const key = getClueStorageKey(roomId, turnIndex);
     const raw =
@@ -83,52 +109,31 @@ export const Game: React.FC<GameProps> = ({
   const channel = GameService.getChannel(room.id);
   const backend = BackendClient.getInstance();
 
-  // Authoritative server story selection state
-  const [isStorySelection, setIsStorySelection] = useState<boolean>(
-    gameState.status === 'STORY_SELECTION' || (gameState.status as string) === 'CASE_INTRO'
-  );
-  const [storyChooserId, setStoryChooserId] = useState<string | null>(null);
-  const [storyChooserName, setStoryChooserName] = useState<string>('');
-  const [offeredStories, setOfferedStories] = useState<Array<{ storyId: string; title: string; genre: string; difficulty: string; description: string }>>([]);
-  const [selectedStoryBriefing, setSelectedStoryBriefing] = useState<{ title: string; genre: string; description: string } | null>(null);
-  const [storyOverviewSeconds, setStoryOverviewSeconds] = useState<number>(10);
-
-  useEffect(() => {
-    if (!selectedStoryBriefing) return;
-    const interval = setInterval(() => {
-      setStoryOverviewSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [selectedStoryBriefing]);
-
   // Authoritative drawer prompt options & persistent secret clue
   const initialStoredClue = getStoredClue(room.id, initialState.turnIndex);
-  const [drawerPromptOptions, setDrawerPromptOptions] = useState<Array<{ optionIndex: number; previewText: string; difficulty: string }>>([]);
+  const cachedBackendObjective = backend.getSecretDrawObjective();
+  const [, setDrawerPromptOptions] = useState<any[]>([]);
   const [secretDrawObjective, setSecretDrawObjective] = useState<string | null>(
-    initialStoredClue?.objective || null
+    cachedBackendObjective?.canonicalAnswer || cachedBackendObjective?.objective || initialStoredClue?.objective || null
+  );
+  const [drawerPrompt, setDrawerPrompt] = useState<string | null>(
+    cachedBackendObjective?.drawerPrompt || initialStoredClue?.drawerPrompt || null
   );
   const [turnTransitionData, setTurnTransitionData] = useState<TurnTransitionData | null>(null);
-  const [secretDrawHint, setSecretDrawHint] = useState<string | null>(null);
+  const [secretDrawHint, setSecretDrawHint] = useState<string | null>(
+    cachedBackendObjective?.hint || initialStoredClue?.hint || null
+  );
   const [publicHint, setPublicHint] = useState<string | null>(null);
   const [publicWordLengths, setPublicWordLengths] = useState<number[] | null>(null);
   const [publicFirstLetters, setPublicFirstLetters] = useState<string[] | null>(null);
+  const [storyContext, setStoryContext] = useState<string | null>(
+    cachedBackendObjective?.storyContext || initialStoredClue?.storyContext || null
+  );
+  const [investigationObjective, setInvestigationObjective] = useState<string | null>(null);
+  const [clueHint, setClueHint] = useState<string | null>(null);
+  const [revealedLetters, setRevealedLetters] = useState<Array<Array<string | null>> | null>(null);
 
-  const cleanCardText = (txt: string): string => {
-    if (!txt) return 'Clue';
-    let clean = txt
-      .replace(/^#*\s*\d+\s*[—–-]\s*/, '')
-      .replace(/^(finding|discovering|getting into|picking up|refusing)\s+(an?\s+|the\s+)?/i, '')
-      .replace(/\s+(while cleaning|out of \w+|near the \w+|in the \w+).*$/i, '')
-      .replace(/^A\s+|^An\s+|^The\s+/i, '')
-      .replace(/[.!?:;]+$/, '')
-      .trim();
-    if (/refusing.*fare/i.test(txt)) return 'Taxi Fare';
-    if (/dispatcher.*voice|radio crackles/i.test(txt)) return 'Dispatch Radio';
-    if (/fender-bender|car crash/i.test(txt)) return 'Car Crash';
-    const words = clean.split(/\s+/).filter(Boolean);
-    const picked = words.length > 2 ? words.slice(-2) : words;
-    return picked.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  };
+
 
   // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
   const [gameBanner, setGameBanner] = useState<GameBanner | null>(null);
@@ -190,6 +195,13 @@ export const Game: React.FC<GameProps> = ({
     (currentDrawer && currentUser && currentDrawer.nickname.trim().toLowerCase() === currentUser.nickname.trim().toLowerCase())
   );
 
+  // Active drawer watchdog: If I am the active drawer and secretDrawObjective or drawerPrompt is missing, request it from server
+  useEffect(() => {
+    if (isDrawer && (!secretDrawObjective || !drawerPrompt)) {
+      backend.requestSecretObjective();
+    }
+  }, [isDrawer, secretDrawObjective, drawerPrompt, gameState.turnIndex]);
+
   const updateState = (next: AuthoritativeGameState) => {
     setGameState(next);
     if (onGameStateChange) {
@@ -199,35 +211,17 @@ export const Game: React.FC<GameProps> = ({
 
   // Wire BackendClient real-time authoritative events
   useEffect(() => {
-    const unsubChooser = backend.on('STORY_CHOOSER_SELECTED', (payload: any) => {
-      setIsStorySelection(true);
-      setStoryChooserId(payload.chooserPlayerId);
-      setStoryChooserName(payload.chooserName);
-    });
-
-    const unsubStoryOptions = backend.on('STORY_OPTIONS', (payload: any) => {
-      // Sent ONLY to the chooser
-      if (payload?.options) {
-        setOfferedStories(payload.options);
-        setIsStorySelection(true);
-      }
-    });
+    const unsubChooser = backend.on('STORY_CHOOSER_SELECTED', () => {});
+    const unsubStoryOptions = backend.on('STORY_OPTIONS', () => {});
 
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
       SoundService.playDramaticSting();
-      setIsStorySelection(false);
-      setSelectedStoryBriefing({
-        title: payload.title,
-        genre: payload.genre || 'Mystery Investigation',
-        description: payload.description || 'A confidential crime dossier has been unsealed for investigation.',
-      });
-      setStoryOverviewSeconds(payload.overviewSeconds || 10);
-
       const targetStoryId = payload.storyId || payload.title;
       const resolvedCase = CaseManager.getCase(targetStoryId);
 
       setGameState((prev) => ({
         ...prev,
+        status: 'PLAYER_DRAWING',
         caseId: resolvedCase.id,
         currentCase: resolvedCase,
       }));
@@ -236,8 +230,6 @@ export const Game: React.FC<GameProps> = ({
     const unsubTurnStarted = backend.on('TURN_STARTED', (payload: any) => {
       SoundService.playTurnStart();
       setGameBanner(null);
-      setIsStorySelection(false);
-      setSelectedStoryBriefing(null);
       if (payload?.category || payload?.hint) {
         setPublicHint(payload.category || payload.hint);
       } else {
@@ -253,15 +245,46 @@ export const Game: React.FC<GameProps> = ({
       } else {
         setPublicFirstLetters(null);
       }
+      if (payload?.storyContext) {
+        setStoryContext(payload.storyContext);
+      }
+      if (payload?.investigationObjective) {
+        setInvestigationObjective(payload.investigationObjective);
+      }
+      if (payload?.clueHint) {
+        setClueHint(payload.clueHint);
+      } else if (payload?.hint && payload.hint !== payload.category) {
+        setClueHint(payload.hint);
+      } else {
+        setClueHint(null);
+      }
+      if (payload?.revealedLetters) {
+        setRevealedLetters(payload.revealedLetters);
+      } else {
+        setRevealedLetters(null);
+      }
 
       const newTurn = payload.turnIndex || 0;
       const stored = getStoredClue(room.id, newTurn);
       if (stored && stored.objective) {
         setSecretDrawObjective(stored.objective);
+        if (stored.drawerPrompt) setDrawerPrompt(stored.drawerPrompt);
+        if (stored.hint) setSecretDrawHint(stored.hint);
+        if (stored.storyContext) setStoryContext(stored.storyContext);
         setDrawerPromptOptions([]);
       } else {
-        setSecretDrawObjective(null);
-        setSecretDrawHint(null);
+        const cached = backend.getSecretDrawObjective();
+        if (cached && (cached.canonicalAnswer || cached.objective)) {
+          const targetObj = cached.canonicalAnswer || cached.objective;
+          setSecretDrawObjective(targetObj);
+          setDrawerPrompt(cached.drawerPrompt || null);
+          setSecretDrawHint(cached.hint || null);
+          if (cached.storyContext) setStoryContext(cached.storyContext);
+        } else {
+          setSecretDrawObjective(null);
+          setDrawerPrompt(null);
+          setSecretDrawHint(null);
+        }
         setDrawerPromptOptions([]);
       }
 
@@ -280,7 +303,6 @@ export const Game: React.FC<GameProps> = ({
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
       SoundService.playTurnStart();
-      setIsStorySelection(false);
       if (payload?.category || payload?.hint) {
         setPublicHint(payload.category || payload.hint);
       }
@@ -290,12 +312,40 @@ export const Game: React.FC<GameProps> = ({
       if (payload?.firstLetters) {
         setPublicFirstLetters(payload.firstLetters);
       }
+      if (payload?.storyContext) {
+        setStoryContext(payload.storyContext);
+      }
+      if (payload?.investigationObjective) {
+        setInvestigationObjective(payload.investigationObjective);
+      }
+      if (payload?.clueHint) {
+        setClueHint(payload.clueHint);
+      } else if (payload?.hint && payload.hint !== payload.category) {
+        setClueHint(payload.hint);
+      }
+      if (payload?.revealedLetters) {
+        setRevealedLetters(payload.revealedLetters);
+      } else {
+        setRevealedLetters(null);
+      }
 
       const newTurn = payload.turnIndex || 0;
       const stored = getStoredClue(room.id, newTurn);
       if (stored && stored.objective) {
         setSecretDrawObjective(stored.objective);
+        if (stored.drawerPrompt) setDrawerPrompt(stored.drawerPrompt);
+        if (stored.hint) setSecretDrawHint(stored.hint);
+        if (stored.storyContext) setStoryContext(stored.storyContext);
         setDrawerPromptOptions([]);
+      } else {
+        const cached = backend.getSecretDrawObjective();
+        if (cached && (cached.canonicalAnswer || cached.objective)) {
+          const targetObj = cached.canonicalAnswer || cached.objective;
+          setSecretDrawObjective(targetObj);
+          setDrawerPrompt(cached.drawerPrompt || null);
+          setSecretDrawHint(cached.hint || null);
+          if (cached.storyContext) setStoryContext(cached.storyContext);
+        }
       }
 
       const targetStory = payload?.storyId ? CaseManager.getCase(payload.storyId) : null;
@@ -311,12 +361,21 @@ export const Game: React.FC<GameProps> = ({
       }));
     });
 
+    const unsubHintRevealed = backend.on('HINT_LETTER_REVEALED', (payload: any) => {
+      if (payload?.revealedLetters) {
+        setRevealedLetters(payload.revealedLetters);
+      }
+    });
+
     const unsubPromptOptions = backend.on('PROMPT_OPTIONS', (payload: any) => {
       // Sent ONLY to active drawer
       const stored = getStoredClue(room.id, gameState.turnIndex);
       if (stored && stored.objective) {
         // Clue already fixed in storage for this turn! Do not show modal
         setSecretDrawObjective(stored.objective);
+        if (stored.drawerPrompt) setDrawerPrompt(stored.drawerPrompt);
+        if (stored.hint) setSecretDrawHint(stored.hint);
+        if (stored.storyContext) setStoryContext(stored.storyContext);
         setDrawerPromptOptions([]);
         backend.selectPrompt(stored.optionIndex);
         return;
@@ -329,9 +388,23 @@ export const Game: React.FC<GameProps> = ({
     const unsubSecretDrawObjective = backend.on('SECRET_DRAW_OBJECTIVE', (payload: any) => {
       // Sent ONLY to active drawer
       setDrawerPromptOptions([]);
-      setSecretDrawObjective(payload.objective);
+      const targetObj = payload.canonicalAnswer || payload.objective;
+      setSecretDrawObjective(targetObj);
+      setDrawerPrompt(payload.drawerPrompt || null);
       setSecretDrawHint(payload.hint || null);
-      saveStoredClue(room.id, gameState.turnIndex, 0, payload.objective);
+      if (payload?.storyContext) {
+        setStoryContext(payload.storyContext);
+      }
+      const turnIdx = payload.turnIndex ?? gameState.turnIndex;
+      saveStoredClue(
+        room.id,
+        turnIdx,
+        0,
+        targetObj,
+        payload.drawerPrompt || null,
+        payload.hint || null,
+        payload.storyContext || null
+      );
     });
 
     const unsubClueSolved = backend.on('CLUE_SOLVED', (payload: any) => {
@@ -513,13 +586,31 @@ export const Game: React.FC<GameProps> = ({
       if (stored && stored.objective) {
         // Clue in storage takes precedence - DO NOT prompt user again!
         setSecretDrawObjective(stored.objective);
+        if (stored.drawerPrompt) setDrawerPrompt(stored.drawerPrompt);
+        if (stored.hint) setSecretDrawHint(stored.hint);
+        if (stored.storyContext) setStoryContext(stored.storyContext);
         setDrawerPromptOptions([]);
       } else if (payload?.isDrawer && payload?.drawerPrivateState) {
-        if (payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective) {
-          const obj = payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective;
+        if (payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective || payload.drawerPrivateState.canonicalAnswer) {
+          const obj = payload.drawerPrivateState.canonicalAnswer || payload.drawerPrivateState.selectedObjective || payload.drawerPrivateState.objective;
           setSecretDrawObjective(obj);
+          setDrawerPrompt(payload.drawerPrivateState.drawerPrompt || null);
+          if (payload.drawerPrivateState.hint) {
+            setSecretDrawHint(payload.drawerPrivateState.hint);
+          }
+          if (payload.drawerPrivateState.storyContext) {
+            setStoryContext(payload.drawerPrivateState.storyContext);
+          }
           setDrawerPromptOptions([]);
-          saveStoredClue(room.id, targetTurn, 0, obj);
+          saveStoredClue(
+            room.id,
+            targetTurn,
+            0,
+            obj,
+            payload.drawerPrivateState.drawerPrompt || null,
+            payload.drawerPrivateState.hint || null,
+            payload.drawerPrivateState.storyContext || null
+          );
         } else if (payload.drawerPrivateState.options && payload.drawerPrivateState.options.length > 0) {
           setDrawerPromptOptions(payload.drawerPrivateState.options);
         }
@@ -536,6 +627,20 @@ export const Game: React.FC<GameProps> = ({
       }
       if (payload?.gameState?.category || payload?.gameState?.hint) {
         setPublicHint(payload.gameState.category || payload.gameState.hint);
+      }
+      if (payload?.gameState?.storyContext) {
+        setStoryContext(payload.gameState.storyContext);
+      }
+      if (payload?.gameState?.investigationObjective) {
+        setInvestigationObjective(payload.gameState.investigationObjective);
+      }
+      if (payload?.gameState?.clueHint) {
+        setClueHint(payload.gameState.clueHint);
+      } else if (payload?.gameState?.hint && payload.gameState.hint !== payload.gameState.category) {
+        setClueHint(payload.gameState.hint);
+      }
+      if (payload?.gameState?.revealedLetters) {
+        setRevealedLetters(payload.gameState.revealedLetters);
       }
 
       const reconnectedCase = payload?.gameState?.storyId ? CaseManager.getCase(payload.gameState.storyId) : null;
@@ -644,12 +749,126 @@ export const Game: React.FC<GameProps> = ({
       }
     });
 
+    // === NEW CASE MODEL EVENT HANDLERS ===
+
+    const unsubCaseIntro = backend.on('CASE_INTRO', (payload: any) => {
+      SoundService.playDramaticSting();
+      setGameState((prev) => ({
+        ...prev,
+        status: 'CASE_INTRO' as any,
+        suspects: payload.suspects || prev.suspects,
+        narrativeLog: payload.introText
+          ? [{ id: `intro_${Date.now()}`, text: payload.introText, type: 'INTRO' as const, timestamp: Date.now() }]
+          : prev.narrativeLog,
+        caseProgress: payload.caseProgress || prev.caseProgress,
+      }));
+      showGameBanner({
+        id: 'case-intro',
+        type: 'story',
+        badge: payload.genre || 'MYSTERY',
+        title: payload.title || 'New Case',
+        subtitle: payload.mainMystery || payload.description,
+      }, (payload.timeLimitSeconds || 12) * 1000);
+    });
+
+    const unsubEvidenceDiscovered = backend.on('EVIDENCE_DISCOVERED', (payload: any) => {
+      SoundService.playSuccess();
+      setClueCardData({
+        isOpen: true,
+        clueNumber: payload.solvedCount || 1,
+        revealedText: payload.evidenceReveal || payload.revealedText || 'Evidence discovered!',
+        solvedObjective: payload.evidenceTitle || null,
+        solverName: payload.solverName || null,
+        drawerName: payload.drawerName || null,
+        storyTitle: payload.storyTitle || gameState.currentCase?.title || null,
+        durationSeconds: payload.revealSeconds || 7,
+      });
+      setGameState((prev) => ({
+        ...prev,
+        caseProgress: payload.caseProgress || prev.caseProgress,
+      }));
+    });
+
+    const unsubDiscussionStarted = backend.on('DISCUSSION_STARTED', (payload: any) => {
+      SoundService.playTurnStart();
+      setGameState((prev) => ({
+        ...prev,
+        status: 'DISCUSSION' as any,
+        discussionOptions: payload.options || [],
+        discussionVotes: [],
+        caseProgress: payload.caseProgress || prev.caseProgress,
+      }));
+      showGameBanner({
+        id: 'discussion',
+        type: 'story',
+        badge: 'TEAM DISCUSSION',
+        title: 'The detectives confer...',
+        subtitle: 'Vote on what to investigate next',
+      }, 4000);
+    });
+
+    const unsubDiscussionVote = backend.on('DISCUSSION_VOTE', (payload: any) => {
+      setGameState((prev) => ({
+        ...prev,
+        discussionVotes: [
+          ...(prev.discussionVotes || []),
+          { playerId: payload.playerId, optionIndex: payload.optionIndex, timestamp: Date.now() },
+        ],
+      }));
+    });
+
+    const unsubDiscussionResult = backend.on('DISCUSSION_RESULT', (payload: any) => {
+      showGameBanner({
+        id: 'discussion-result',
+        type: 'story',
+        badge: 'DECISION',
+        title: payload.winningText || 'Continue investigating',
+      }, 3000);
+    });
+
+    const unsubTruthReveal = backend.on('TRUTH_REVEAL', (_payload: any) => {
+      SoundService.playDramaticSting();
+      setGameState((prev) => ({
+        ...prev,
+        status: 'TRUTH_REVEAL' as any,
+      }));
+      // The CinematicReveal component will render truth data from the payload
+    });
+
+    const unsubNarrativePassage = backend.on('NARRATIVE_PASSAGE', (payload: any) => {
+      if (payload?.passage) {
+        setGameState((prev) => ({
+          ...prev,
+          narrativeLog: [...(prev.narrativeLog || []), payload.passage],
+        }));
+      }
+    });
+
+    const unsubEvidenceCard = backend.on('EVIDENCE_CARD', (payload: any) => {
+      if (payload?.evidenceCard) {
+        setGameState((prev) => ({
+          ...prev,
+          caseEvidenceBoard: [...(prev.caseEvidenceBoard || []), payload.evidenceCard],
+        }));
+      }
+    });
+
+    const unsubCaseProgress = backend.on('CASE_PROGRESS', (payload: any) => {
+      if (payload?.caseProgress) {
+        setGameState((prev) => ({
+          ...prev,
+          caseProgress: payload.caseProgress,
+        }));
+      }
+    });
+
     return () => {
       unsubChooser();
       unsubStoryOptions();
       unsubStorySelected();
       unsubTurnStarted();
       unsubDrawingStarted();
+      unsubHintRevealed();
       unsubPromptOptions();
       unsubSecretDrawObjective();
       unsubClueSolved();
@@ -666,6 +885,16 @@ export const Game: React.FC<GameProps> = ({
       unsubChatMessage();
       unsubPublicGuess();
       unsubChannelMessage();
+      // Case model cleanup
+      unsubCaseIntro();
+      unsubEvidenceDiscovered();
+      unsubDiscussionStarted();
+      unsubDiscussionVote();
+      unsubDiscussionResult();
+      unsubTruthReveal();
+      unsubNarrativePassage();
+      unsubEvidenceCard();
+      unsubCaseProgress();
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     };
   }, [backend, gameState.players, gameState.turnIndex, room.id]);
@@ -757,25 +986,9 @@ export const Game: React.FC<GameProps> = ({
     }
   };
 
-  const handleChooseStory = (storyId: string) => {
-    backend.chooseStory(storyId);
-    setIsStorySelection(false);
-    const resolvedCase = CaseManager.getCase(storyId);
-    setGameState((prev) => ({
-      ...prev,
-      caseId: resolvedCase.id,
-      currentCase: resolvedCase,
-    }));
-  };
 
-  const handleSelectPrompt = (optionIndex: number, chosenText?: string) => {
-    const opt = drawerPromptOptions.find((o) => o.optionIndex === optionIndex);
-    const text = chosenText || opt?.previewText || 'Secret Clue';
-    saveStoredClue(room.id, gameState.turnIndex, optionIndex, text);
-    backend.selectPrompt(optionIndex);
-    setSecretDrawObjective(text);
-    setDrawerPromptOptions([]);
-  };
+
+
 
   return (
 
@@ -939,362 +1152,25 @@ export const Game: React.FC<GameProps> = ({
         />
       )}
 
-      {/* SKRIBBL-STYLE CLUE PICKER (Only shown to active drawer if clue hasn't been chosen yet and not during handover transition) */}
-      {drawerPromptOptions.length > 0 && isDrawer && !secretDrawObjective && !turnTransitionData && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
-          {/* VINTAGE INVESTIGATION EVIDENCE DOSSIER MODAL */}
-          <div
-            className="max-w-2xl w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.9),inset_0_0_90px_rgba(139,94,60,0.22)] text-center animate-fadeIn relative overflow-hidden select-none"
-            style={{
-              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-              backgroundSize: '16px 16px, 100% 100%',
-            }}
-          >
-            {/* Parchment Corner Decorative Accents */}
-            <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-            <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-            <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-            <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-
-            {/* Vintage Brass Paperclip Illustration */}
-            <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
-
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ CLASSIFIED EVIDENCE // YOUR TURN TO SKETCH
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] tracking-wide mb-1">
-              Choose a Secret Clue
-            </h2>
-            <p className="text-xs sm:text-sm text-[#5c422e] font-mono mb-6">
-              Pick 1 evidence card below to sketch for the room. Detectives will decipher while you draw!
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-              {drawerPromptOptions.map((opt) => (
-                <button
-                  key={opt.optionIndex}
-                  type="button"
-                  onMouseEnter={() => SoundService.playCardFlip()}
-                  onClick={() => {
-                    SoundService.playStamp();
-                    handleSelectPrompt(opt.optionIndex, cleanCardText(opt.previewText));
-                  }}
-                  className="group relative p-4 sm:p-5 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-[#7a4e2d] font-bold uppercase tracking-wider">
-                        CARD #{opt.optionIndex + 1}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border-2 ${opt.difficulty?.toLowerCase() === 'easy'
-                            ? 'bg-emerald-100 text-emerald-900 border-emerald-700'
-                            : opt.difficulty?.toLowerCase() === 'hard'
-                              ? 'bg-purple-100 text-purple-900 border-purple-700'
-                              : 'bg-amber-100 text-amber-900 border-amber-700'
-                          }`}
-                      >
-                        {opt.difficulty || 'NORMAL'}
-                      </span>
-                    </div>
-
-                    <div className="text-base sm:text-lg font-black text-[#1a110a] group-hover:text-red-900 font-serif leading-snug">
-                      "{cleanCardText(opt.previewText)}"
-                    </div>
-                  </div>
-
-                  <div className="mt-5 w-full py-2.5 rounded-xl bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white text-xs font-bold font-mono uppercase tracking-wider text-center transition-colors shadow">
-                    Draw This Clue →
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 flex items-center justify-between text-xs font-mono text-[#7a5839] pt-3 border-t border-[#bfa98e]/80">
-              <span>Auto-picks first option if not chosen</span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (drawerPromptOptions.length > 0) {
-                    handleSelectPrompt(drawerPromptOptions[0].optionIndex, drawerPromptOptions[0].previewText);
-                  }
-                }}
-                className="text-red-900 font-bold hover:underline cursor-pointer"
-              >
-                Auto-Pick & Start
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 1. DYNAMIC STORY SELECTION & CASE DOSSIER PHASE */}
-      {(selectedStoryBriefing || isStorySelection || (gameState.status === 'STORY_SELECTION' && !gameState.currentTurnPlayerId && gameState.turnIndex < 0)) &&
-        (!selectedStoryBriefing ? gameState.status !== 'PLAYER_DRAWING' : true) &&
+      {/* SERIAL DRAWING & INVESTIGATION SCENE PHASE */}
+      {gameState.status !== 'INVESTIGATION' &&
         gameState.status !== 'FINAL_THEORY' &&
+        gameState.status !== 'TRUTH_REVEAL' &&
         gameState.status !== 'RESULTS' && (
-          <div className="relative z-10 flex flex-col min-h-screen justify-between">
-            <GameHeader
-              currentUser={currentUser}
-              roomCode={room.code}
-              playerCount={gameState.players.length}
-              maxPlayers={8}
-              currentPhase="STORY_SELECTION"
-              caseTitle={selectedStoryBriefing ? selectedStoryBriefing.title : (gameState.currentCase?.title && gameState.currentCase.title !== 'The Midnight Museum Heist' ? gameState.currentCase.title : 'Mystery Case Selection')}
-              roundText="Story Selection"
-              onLeaveRoom={onExitGame}
-            />
-
-            <main className="flex-1 max-w-5xl mx-auto px-4 py-8 flex items-center justify-center w-full">
-              {selectedStoryBriefing ? (
-                /* GRAND CASE BRIEFING (After Story is Picked) - VINTAGE CASE DOSSIER */
-                <div
-                  className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden text-center space-y-6 animate-fadeIn select-none"
-                  style={{
-                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                    backgroundSize: '16px 16px, 100% 100%',
-                  }}
-                >
-                  {/* Parchment Corner Decorative Accents */}
-                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-
-                  {/* Vintage Brass Paperclip Illustration */}
-                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
-
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                    <Sparkles className="w-3.5 h-3.5 text-red-800" /> ★ OFFICIAL CASE DOSSIER UNSEALED
-                  </div>
-
-                  <h1 className="text-3xl sm:text-5xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
-                    {selectedStoryBriefing.title}
-                  </h1>
-
-                  <div className="flex items-center justify-center gap-4 text-xs font-mono text-[#7a5839]">
-                    <span className="px-3 py-1 bg-[#ede1cf] border border-[#b89e7c] rounded-lg text-[#3e2b1b] font-bold uppercase">
-                      {selectedStoryBriefing.genre}
-                    </span>
-                    <span>•</span>
-                    <span className="text-[#5c422e] font-bold">CLASSIFIED DOSSIER</span>
-                  </div>
-
-                  {(() => {
-                    const artwork = getStoryArtwork(selectedStoryBriefing.genre, selectedStoryBriefing.title);
-                    return (
-                      <div className="flex flex-col md:flex-row items-center gap-6 max-w-4xl mx-auto text-left">
-                        {/* Evidence Photo Polaroid */}
-                        <div className="relative w-64 shrink-0 bg-[#fdfcf9] p-3 pb-6 rounded-xl shadow-2xl border-2 border-[#b89e7c] rotate-1">
-                          <div className="w-4 h-4 rounded-full bg-red-800 absolute -top-2 left-1/2 -translate-x-1/2 shadow-md border-2 border-[#541010] z-10" />
-                          <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-950 border border-[#cfbeab]">
-                            <img
-                              src={artwork.img}
-                              alt={selectedStoryBriefing.title}
-                              className="w-full h-full object-cover filter contrast-115 sepia-[0.2]"
-                            />
-                          </div>
-                          <div className="mt-2 text-center font-mono text-[10px] font-bold text-[#4a3525] uppercase tracking-wider">
-                            {artwork.badge}
-                          </div>
-                        </div>
-
-                        {/* Briefing Text */}
-                        <div className="flex-1 p-6 bg-[#fdfbf6] border-2 border-[#b89e7c] rounded-2xl font-serif text-base sm:text-lg text-[#2a1d13] leading-relaxed italic shadow-inner space-y-3">
-                          <p>"{selectedStoryBriefing.description}"</p>
-                          <div className="font-handwriting text-sm text-[#7a5839] not-italic border-t border-[#bfa98e]/50 pt-2">
-                            {artwork.quote}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Compulsory 10-Second Countdown Bar */}
-                  <div className="pt-2 max-w-xl mx-auto space-y-2.5">
-                    <div className="flex items-center justify-between text-xs font-mono font-bold text-[#4a3525]">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-red-800 animate-spin" />
-                        <span>READING CASE DOSSIER • ROUND BEGINS IN</span>
-                      </div>
-                      <span className="text-sm font-black text-red-800 tabular-nums px-2 py-0.5 rounded bg-red-100 border border-red-800 shadow-xs">
-                        00:{storyOverviewSeconds.toString().padStart(2, '0')}
-                      </span>
-                    </div>
-                    {/* Visual Progress Bar */}
-                    <div className="w-full h-2.5 rounded-full bg-[#ede1cf] border border-[#b89e7c] overflow-hidden p-0.5 shadow-inner">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-red-800 via-amber-700 to-red-800 transition-all duration-1000 ease-linear"
-                        style={{ width: `${Math.min(100, Math.max(0, (storyOverviewSeconds / 10) * 100))}%` }}
-                      />
-                    </div>
-                    <p className="text-[11px] text-[#7a5e45] font-mono">
-                      Review the case overview carefully. Random detective clue assignments are being drafted.
-                    </p>
-                  </div>
-                </div>
-              ) : currentUser.id === storyChooserId || (storyChooserId === null && offeredStories.length > 0) ? (
-                /* STORY CHOOSER VIEW: 3 VINTAGE CASE ARCHIVES */
-                <div
-                  className="w-full text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden space-y-6 animate-fadeIn select-none"
-                  style={{
-                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                    backgroundSize: '16px 16px, 100% 100%',
-                  }}
-                >
-                  {/* Parchment Corner Decorative Accents */}
-                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-
-                  {/* Vintage Brass Paperclip */}
-                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
-
-                  <div className="text-center space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                      <BookOpen className="w-3.5 h-3.5" /> ★ CLASSIFIED ARCHIVES // PICK THE MYSTERY CASE
-                    </div>
-                    <h1 className="text-2xl sm:text-4xl font-black text-[#1a110a] font-serif tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
-                      Select an Active Mystery Dossier
-                    </h1>
-                    <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-xl mx-auto">
-                      You are the Lead Investigator! Pick any case file below to distribute clues to your detective squad.
-                    </p>
-                  </div>
-
-                  {offeredStories.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-                      {offeredStories.map((st) => {
-                        const artwork = getStoryArtwork(st.genre, st.title, st.storyId);
-                        return (
-                          <div
-                            key={st.storyId}
-                            onMouseEnter={() => SoundService.playCardFlip()}
-                            onClick={() => {
-                              SoundService.playStamp();
-                              handleChooseStory(st.storyId);
-                            }}
-                            className="group relative p-4 sm:p-5 rounded-2xl bg-[#fdfbf6] hover:bg-[#fffdf9] border-2 border-[#b89e7c] hover:border-red-800 transition-all text-left shadow-md hover:shadow-2xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
-                          >
-                            <div className="space-y-3">
-                              {/* Thematic Artwork Photo */}
-                              <div className="w-full aspect-[16/10] rounded-xl overflow-hidden border border-[#b89e7c] shadow-inner relative bg-stone-900">
-                                <img
-                                  src={artwork.img}
-                                  alt={st.title}
-                                  className="w-full h-full object-cover filter contrast-110 sepia-[0.15] group-hover:scale-105 transition-transform duration-500"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
-                                <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[9px] font-mono text-amber-200 font-bold uppercase tracking-wider">
-                                  <span>{artwork.caption}</span>
-                                  <span className="px-1.5 py-0.5 rounded bg-black/60 text-amber-300 border border-amber-500/30">
-                                    {st.difficulty || 'NORMAL'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center justify-between border-b border-[#bfa98e]/80 pb-1.5">
-                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[#b89e7c] bg-[#ede1cf] text-[#443020]">
-                                  {st.genre}
-                                </span>
-                                <span className="text-[9px] font-mono text-[#7a5839]">
-                                  ★ DOSSIER
-                                </span>
-                              </div>
-
-                              <h3 className="text-base sm:text-lg font-bold text-[#1a110a] font-serif group-hover:text-red-900 transition-colors leading-snug">
-                                {st.title}
-                              </h3>
-
-                              <p className="text-xs text-[#3e2c1e] line-clamp-3 leading-relaxed font-serif italic">
-                                "{st.description}"
-                              </p>
-                            </div>
-
-                            <button className="mt-5 w-full py-2.5 bg-red-800 hover:bg-red-700 group-hover:bg-red-700 text-white rounded-xl text-xs font-bold font-mono uppercase tracking-wider shadow transition-colors cursor-pointer">
-                              Open This Case File →
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="py-16 text-center space-y-4">
-                      <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <div className="text-sm font-mono text-[#5c422e]">
-                        Unsealing case archives...
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* WAITING FOR CHOOSER SCREEN - VINTAGE PAPER CASE DISPATCH */
-                <div
-                  className="w-full max-w-2xl text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-8 sm:p-12 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] relative overflow-hidden backdrop-blur-md animate-fadeIn text-center space-y-6 select-none"
-                  style={{
-                    background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
-                    backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
-                    backgroundSize: '16px 16px, 100% 100%',
-                  }}
-                >
-                  {/* Parchment Corner Decorative Accents */}
-                  <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
-                  <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
-
-                  {/* Vintage Brass Paperclip */}
-                  <div className="absolute -top-2 left-8 w-4 h-8 rounded-full border-2 border-[#a67c52] -rotate-6 shadow-sm opacity-90 pointer-events-none flex items-center justify-center bg-[#d1b89d]/40" />
-
-                  <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full bg-red-800/20 animate-ping" />
-                    <div className="w-14 h-14 rounded-full bg-[#ede1cf] border-2 border-red-800 flex items-center justify-center text-red-800 shadow-md">
-                      <BookOpen className="w-6 h-6 animate-pulse" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded border-2 border-red-800 bg-red-800/10 text-red-800 font-mono text-xs font-black uppercase tracking-widest -rotate-1 shadow-sm">
-                      ★ CASE ASSIGNMENT IN PROGRESS
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#1a110a] pt-1">
-                      {storyChooserName ? `${storyChooserName} is choosing the case dossier...` : 'Selecting lead investigator...'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-[#5c422e] font-mono max-w-md mx-auto leading-relaxed">
-                      Your fellow detective is reviewing case files in the archives. Prepare your sketchpad!
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#ede1cf]/80 border-2 border-[#b89e7c] text-xs text-[#443020] font-mono flex items-center justify-center gap-2 shadow-inner">
-                    <Clock className="w-4 h-4 text-red-800 animate-spin" />
-                    <span className="font-bold">The sketching & deduction phase starts immediately after!</span>
-                  </div>
-                </div>
-              )}
-            </main>
-
-            <footer className="relative z-10 w-full max-w-4xl mx-auto px-4 py-3 text-center text-xs font-mono text-slate-500">
-              INKBOUND • Draw, Guess & Solve
-            </footer>
-          </div>
-        )}
-
-      {/* 2. SERIAL DRAWING PHASE */}
-      {gameState.status === 'PLAYER_DRAWING' && (
         <DrawingCanvas
           gameState={gameState}
           currentUser={currentUser}
           secretClue={secretClue}
           secretDrawObjective={secretDrawObjective}
+          drawerPrompt={drawerPrompt}
           secretDrawHint={secretDrawHint}
           publicHint={publicHint || secretDrawHint}
           publicWordLengths={publicWordLengths}
           publicFirstLetters={publicFirstLetters}
+          storyContext={storyContext}
+          investigationObjective={investigationObjective}
+          clueHint={clueHint}
+          revealedLetters={revealedLetters}
           roomCode={room.code}
           channel={channel}
           isDrawer={isDrawer}
@@ -1352,29 +1228,7 @@ export const Game: React.FC<GameProps> = ({
         />
       )}
 
-      {/* 7. FALLBACK RECOVERY SCREEN IF NO PHASE MATCHED */}
-      {gameState.status !== 'PLAYER_DRAWING' &&
-        gameState.status !== 'INVESTIGATION' &&
-        gameState.status !== 'FINAL_THEORY' &&
-        gameState.status !== 'TRUTH_REVEAL' &&
-        gameState.status !== 'RESULTS' &&
-        gameState.status !== 'STORY_SELECTION' &&
-        (gameState.status as string) !== 'CASE_INTRO' &&
-        (gameState.status as string) !== 'COUNTDOWN' &&
-        !isStorySelection &&
-        !selectedStoryBriefing && (
-          <div className="relative z-10 flex flex-col min-h-screen justify-center items-center py-12 px-4 text-center font-mono">
-            <div className="w-14 h-14 rounded-full border-4 border-amber-600/40 border-t-amber-400 animate-spin mb-4" />
-            <h2 className="text-xl font-serif font-bold text-amber-300">GAME IN PROGRESS</h2>
-            <p className="text-xs text-slate-400 mt-2">Connecting and loading game state...</p>
-            <button
-              onClick={handleReturnToLobby}
-              className="mt-6 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
-            >
-              Return to Lobby
-            </button>
-          </div>
-        )}
+
 
       {/* VINTAGE PARCHMENT CLUE DISCOVERED CARD MODAL (15S READING GRACE PERIOD WITH CLOSE CROSS) */}
       <ClueDiscoveredCard

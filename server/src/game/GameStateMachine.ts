@@ -60,4 +60,20 @@ export class GameStateMachine {
   public isGameComplete(): boolean {
     return this.currentStatus === GameStatus.GAME_COMPLETE;
   }
+
+  public isCaseIntro(): boolean {
+    return this.currentStatus === GameStatus.CASE_INTRO;
+  }
+
+  public isEvidenceRevealActive(): boolean {
+    return this.currentStatus === GameStatus.EVIDENCE_DISCOVERED;
+  }
+
+  public isDiscussionActive(): boolean {
+    return this.currentStatus === GameStatus.DISCUSSION;
+  }
+
+  public isTruthReveal(): boolean {
+    return this.currentStatus === GameStatus.TRUTH_REVEAL;
+  }
 }

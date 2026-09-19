@@ -11,6 +11,7 @@ import {
   Sparkles,
   PaintBucket,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -35,10 +36,15 @@ interface DrawingCanvasProps {
   currentUser: Player;
   secretClue?: PlayerSecretClue | null;
   secretDrawObjective?: string | null;
+  drawerPrompt?: string | null;
   secretDrawHint?: string | null;
   publicHint?: string | null;
   publicWordLengths?: number[] | null;
   publicFirstLetters?: string[] | null;
+  storyContext?: string | null;
+  investigationObjective?: string | null;
+  clueHint?: string | null;
+  revealedLetters?: Array<Array<string | null>> | null;
   roomCode?: string;
   channel: RoomChannelManager;
   isDrawer?: boolean;
@@ -58,10 +64,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   gameState,
   currentUser,
   secretDrawObjective,
+  drawerPrompt,
   secretDrawHint,
   publicHint,
   publicWordLengths,
   publicFirstLetters,
+  storyContext,
+  investigationObjective,
+  clueHint,
+  revealedLetters,
   roomCode,
   channel,
   isDrawer: propIsDrawer,
@@ -87,9 +98,43 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // Mobile layout active tab state (< lg)
   const [mobileTab, setMobileTab] = useState<'chat' | 'detectives'>('chat');
 
+  const [kickVotes, setKickVotes] = useState<
+    Record<string, { currentVotes: number; requiredVotes: number; voterIds: string[] }>
+  >({});
+
   const backend = BackendClient.getInstance();
   const myBackendId = backend.getPlayerId();
   const currentDrawer = gameState.players.find((p) => p.id === gameState.currentTurnPlayerId);
+
+  useEffect(() => {
+    const unsubVoteKick = backend.on('VOTE_KICK_UPDATE', (payload: any) => {
+      if (payload?.targetPlayerId) {
+        setKickVotes((prev) => ({
+          ...prev,
+          [payload.targetPlayerId]: {
+            currentVotes: payload.currentVotes,
+            requiredVotes: payload.requiredVotes,
+            voterIds: payload.voterIds || [],
+          },
+        }));
+      }
+    });
+
+    const unsubPlayerKicked = backend.on('PLAYER_KICKED', (payload: any) => {
+      if (payload?.targetPlayerId) {
+        setKickVotes((prev) => {
+          const next = { ...prev };
+          delete next[payload.targetPlayerId];
+          return next;
+        });
+      }
+    });
+
+    return () => {
+      unsubVoteKick();
+      unsubPlayerKicked();
+    };
+  }, [backend]);
 
   // Strict authoritative drawer check: ID match or backend ID match
   const isCurrentDrawer = Boolean(
@@ -97,6 +142,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     (gameState.currentTurnPlayerId && currentUser?.id && gameState.currentTurnPlayerId === currentUser.id) ||
     (gameState.currentTurnPlayerId && myBackendId && gameState.currentTurnPlayerId === myBackendId)
   );
+
+  // Active drawer watchdog: If I am the active drawer and secretDrawObjective is missing, request it
+  useEffect(() => {
+    if (isCurrentDrawer && !secretDrawObjective) {
+      backend.requestSecretObjective();
+    }
+  }, [isCurrentDrawer, secretDrawObjective, gameState.turnIndex, backend]);
 
   // Reset canvas, strokes, and guess feed whenever turn advances
   useEffect(() => {
@@ -133,7 +185,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return chosen.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
   };
 
-  const cleanTarget = cleanClueToTwoWords(secretDrawObjective);
+  const cleanTarget =
+    cleanClueToTwoWords(secretDrawObjective) || (secretDrawObjective ? secretDrawObjective.trim() : '');
   const targetWords = cleanTarget ? cleanTarget.split(' ') : [];
 
   // Dynamic progressive real-time hints
@@ -162,6 +215,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const dynamicCategory = getDynamicCategory();
 
+  const effectiveClueHint = clueHint || (publicHint && publicHint !== dynamicCategory && !publicHint.toLowerCase().includes('category') ? publicHint : null);
+
   const effectiveFirstLetters = (publicFirstLetters && publicFirstLetters.length > 0)
     ? publicFirstLetters
     : (targetWords.length > 0 ? targetWords.map((w) => w[0]?.toUpperCase() || '') : []);
@@ -173,7 +228,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (effectiveFirstLetters.length >= 1 && elapsed >= 10) {
       return `💡 First word starts with "${effectiveFirstLetters[0]}" • ${dynamicCategory}`;
     }
-    return `Category: ${dynamicCategory}`;
+    return null;
   })();
 
   const renderLetterPattern = () => {
@@ -182,29 +237,51 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       : (targetWords.length > 0 ? targetWords.map((w) => w.length) : (effectiveFirstLetters.length >= 2 ? [effectiveFirstLetters[0].length + 4, effectiveFirstLetters[1].length + 5] : [5, 7]));
 
     return (
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 my-1.5">
         {lengths.map((len, wIdx) => {
-          // Progressive letter reveal for guessers:
-          // Word 0 first letter revealed after 10s
-          // Word 1 first letter revealed after 25s
-          const revealFirstLetter = (wIdx === 0 && elapsed >= 10) || (wIdx === 1 && elapsed >= 25);
-          const firstChar = revealFirstLetter && effectiveFirstLetters[wIdx] ? effectiveFirstLetters[wIdx] : null;
-
           const dashes = Array.from({ length: len }).map((_, cIdx) => {
-            const showChar = cIdx === 0 && Boolean(firstChar);
+            // Check if server sent revealed letter for this word and char index
+            const serverChar = revealedLetters && revealedLetters[wIdx] ? revealedLetters[wIdx][cIdx] : null;
+
+            // Client-side dynamic reveal fallback (e.g. if targetWords known for drawer or local dev)
+            let clientChar: string | null = null;
+            if (!serverChar) {
+              if (targetWords[wIdx] && targetWords[wIdx][cIdx]) {
+                const char = targetWords[wIdx][cIdx].toUpperCase();
+                const L = targetWords[wIdx].length;
+                if (cIdx === 0 && ((wIdx === 0 && elapsed >= 10) || (wIdx === 1 && elapsed >= 25))) {
+                  clientChar = char;
+                } else if (L >= 4 && cIdx === Math.floor(L / 2) && elapsed >= totalSec * 0.5) {
+                  clientChar = char;
+                } else if (L >= 6 && cIdx === L - 1 && elapsed >= totalSec * 0.75) {
+                  clientChar = char;
+                } else if (L >= 8 && cIdx === 2 && elapsed >= totalSec * 0.85) {
+                  clientChar = char;
+                }
+              } else {
+                // If only first letters array known
+                if (cIdx === 0 && ((wIdx === 0 && elapsed >= 10) || (wIdx === 1 && elapsed >= 25))) {
+                  clientChar = effectiveFirstLetters[wIdx] || null;
+                }
+              }
+            }
+
+            const charToShow = serverChar || clientChar;
+            const isRevealed = Boolean(charToShow);
+
             return (
               <span
                 key={cIdx}
-                className={`inline-block border-b-2 sm:border-b-[3px] ${showChar
-                    ? 'border-emerald-700 text-emerald-800 bg-emerald-100/80 font-black rounded-t-sm'
+                className={`inline-block border-b-2 sm:border-b-[3px] ${
+                  isRevealed
+                    ? 'border-emerald-700 text-emerald-800 bg-emerald-100/90 font-black rounded-t-sm shadow-xs'
                     : 'border-[#4a3424] text-[#1f150d] font-bold'
-                  } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base sm:text-lg`}
+                } w-3.5 sm:w-4 text-center mx-0.5 font-mono text-base sm:text-lg transition-all`}
               >
-                {showChar ? firstChar : '\u00A0'}
+                {isRevealed ? charToShow : '\u00A0'}
               </span>
             );
           });
-
           return (
             <span key={wIdx} className="inline-flex items-end">
               {dashes}
@@ -812,7 +889,30 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 </div>
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-1.5">
+                {!isMe && (() => {
+                  const pKick = kickVotes[p.id];
+                  const hasVoted = pKick?.voterIds?.includes(currentUser.id);
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        SoundService.playClick();
+                        backend.voteKick(p.id);
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-bold border transition-all cursor-pointer ${
+                        hasVoted
+                          ? 'bg-amber-200 text-amber-950 border-amber-600 shadow-xs'
+                          : 'bg-[#ded0bd] text-[#543e2d] border-[#bfa98e] hover:bg-red-50 hover:text-red-900'
+                      }`}
+                      title="Vote to kick (75% majority will automatically dismiss this player)"
+                    >
+                      ⚖️ {hasVoted ? 'Voted' : 'Vote Kick'}
+                      {pKick && pKick.currentVotes > 0 ? ` (${pKick.currentVotes}/${pKick.requiredVotes})` : ''}
+                    </button>
+                  );
+                })()}
+
                 {isDrawing ? (
                   <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-red-800 text-white shadow flex items-center gap-1">
                     <Pencil className="w-2.5 h-2.5 animate-bounce" /> Sketching
@@ -897,9 +997,92 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         {/* Rendered FIRST on mobile, 6 cols on desktop               */}
         {/* ======================================================== */}
         <div className="col-span-1 lg:col-span-6 xl:col-span-6 flex flex-col gap-2.5">
-          {/* VINTAGE OLD INVESTIGATION PAPER CLUE CARD */}
+          {/* 1. MOBILE ULTRA-COMPACT CLUE HEADER (< sm) */}
           <div
-            className="relative w-full rounded-2xl border-2 border-[#8c6d48] p-3 sm:p-4 text-[#221711] shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.18)] overflow-hidden transition-all select-none"
+            className="sm:hidden relative w-full rounded-2xl border-2 border-[#8c6d48] p-2.5 text-[#221711] shadow-md overflow-hidden select-none"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Top Bar: Act + Category + Clock */}
+            <div className="flex items-center justify-between gap-1.5 mb-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black uppercase tracking-wider bg-red-800/10 text-red-800 border border-red-800 shrink-0">
+                  {isCurrentDrawer ? '★ SECRET CLUE' : '🔍 CLUE'}
+                </span>
+                <span className="text-[10px] font-mono text-[#7a6047] font-bold shrink-0">
+                  ACT #{gameState.turnIndex + 1}
+                </span>
+                <span className="text-[9px] font-mono font-bold bg-[#ede0ce] border border-[#bfa98e] px-1.5 py-0.2 rounded truncate max-w-[130px] text-[#443020]">
+                  {dynamicCategory}
+                </span>
+              </div>
+
+              {/* Compact Clock Capsule */}
+              <div
+                className={`px-2 py-0.5 rounded-lg border font-mono text-sm font-black tabular-nums shrink-0 shadow-xs ${
+                  remainingSeconds <= 10
+                    ? 'bg-red-900 border-red-700 text-white animate-pulse'
+                    : remainingSeconds <= 25
+                    ? 'bg-[#3b281c] border-amber-600 text-amber-300'
+                    : 'bg-[#221811] border-[#7d5f42] text-amber-200'
+                }`}
+              >
+                ⏱ {formattedTimer}
+              </div>
+            </div>
+
+            {isCurrentDrawer ? (
+              /* Drawer Mobile View */
+              <div className="space-y-1">
+                <div className="text-xs font-serif font-bold text-[#1a110a] leading-snug break-words">
+                  "{drawerPrompt || secretDrawObjective}"
+                </div>
+                <div className="text-[11px] font-mono text-red-900 font-bold flex items-center gap-1.5">
+                  <span>Draw:</span>
+                  <span className="underline uppercase tracking-wider font-black">{cleanTarget || 'Unsealing Clue...'}</span>
+                </div>
+              </div>
+            ) : (
+              /* Guesser Mobile View: Prominent Skribbl-Style Word Dashes */
+              <div className="space-y-1.5">
+                <div className="py-0.5 flex justify-center">
+                  {renderLetterPattern()}
+                </div>
+
+                {/* Sub-bar: Artist & Clue Lead */}
+                <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-[#5c4632] flex-wrap">
+                  <div>
+                    <span>Artist: </span>
+                    <strong className="text-[#1a110a] bg-[#ded2be] px-1 rounded">{currentDrawer?.nickname || 'Detective'}</strong>
+                  </div>
+                  {effectiveClueHint && (
+                    <div className="text-amber-950 font-serif italic truncate max-w-[200px]" title={effectiveClueHint}>
+                      💡 "{effectiveClueHint}"
+                    </div>
+                  )}
+                </div>
+
+                {/* Collapsible Story Context Accordion */}
+                {storyContext && (
+                  <details className="text-[10px] font-serif text-[#443020] bg-[#ede1ce]/70 rounded-lg px-2 py-0.5 border border-[#bfa98e]/70">
+                    <summary className="font-mono text-[9px] font-bold uppercase tracking-wider text-amber-900 cursor-pointer select-none">
+                      📜 Case Story Context (Tap to expand)
+                    </summary>
+                    <p className="italic mt-1 text-[11px] leading-snug text-[#291a0f]">
+                      "{storyContext}"
+                    </p>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 1. DESKTOP FULL VINTAGE INVESTIGATION DOSSIER (>= sm) */}
+          <div
+            className="hidden sm:block relative w-full rounded-2xl border-2 border-[#8c6d48] p-3 sm:p-4 text-[#221711] shadow-[0_12px_35px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.18)] overflow-hidden transition-all select-none"
             style={{
               background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
               backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
@@ -929,35 +1112,75 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
                 {isCurrentDrawer ? (
                   <>
-                    <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#1a110a] tracking-wide uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] break-words leading-tight">
-                      {cleanTarget || 'Mystery Evidence'}
+                    {/* Story Scene Context: WHY this investigation is happening */}
+                    {storyContext && (
+                      <div className="text-[11px] sm:text-xs font-serif text-[#6b4e33] italic mb-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono not-italic text-[9px] font-bold uppercase tracking-wider text-[#8a6845] bg-[#dfd0be] px-1.5 py-0.5 rounded">
+                          SCENE
+                        </span>
+                        <span>"{storyContext}"</span>
+                      </div>
+                    )}
+
+                    <div className="text-sm xs:text-base sm:text-lg md:text-xl font-serif font-bold text-[#1a110a] tracking-normal leading-snug break-words">
+                      "{drawerPrompt || secretDrawObjective || 'You search the scene and discover something unusual. Draw what you discovered.'}"
                     </div>
-                    <div className="text-xs text-[#523d2b] font-mono font-medium mt-0.5 leading-snug">
-                      ✏️ Sketch this crime scene clue on the canvas for other detectives!
+                    <div className="text-xs text-[#6e4e32] font-mono font-medium mt-1.5 flex items-center gap-2 flex-wrap">
+                      <span>Secret Target: <span className="font-bold text-red-900 uppercase underline">{cleanTarget || 'Unsealing Clue...'}</span></span>
+                      <span className="text-[#a68261]">•</span>
+                      <span>Sketch what was discovered so other detectives can deduce it!</span>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="text-xs text-[#5c4632] font-mono font-semibold flex items-center gap-1.5 flex-wrap">
-                      <span>Sketch Artist:</span>
-                      <span className="font-bold text-[#1f150d] bg-[#ded2be] px-1.5 py-0.5 rounded text-[11px]">
-                        {currentDrawer?.nickname || 'Detective'}
-                      </span>
-                      <span className="text-[#8c6d48]">is drawing now</span>
-                    </div>
-
-                    {/* Typewriter Letter Pattern */}
-                    <div className="my-1.5">
-                      {renderLetterPattern()}
-                    </div>
-
-                    {/* Classification & Hint */}
-                    <div className="text-[11px] font-mono text-[#614935] flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                      <div className="text-xs text-[#5c4632] font-mono font-semibold flex items-center gap-1.5">
+                        <span>Sketch Artist:</span>
+                        <span className="font-bold text-[#1f150d] bg-[#ded2be] px-1.5 py-0.5 rounded text-[11px]">
+                          {currentDrawer?.nickname || 'Detective'}
+                        </span>
+                        <span className="text-[#8c6d48]">is drawing now</span>
+                      </div>
                       <span className="bg-[#e4d7c3] border border-[#bfa98e] px-1.5 py-0.5 rounded text-[10px] font-bold text-[#443020]">
-                        CLASSIFICATION: {dynamicCategory}
+                        {dynamicCategory}
                       </span>
-                      <span className="text-[#785b42]">• {guesserHintMessage}</span>
                     </div>
+
+                    {/* Story Scene Context: Case story beat unfolding right now */}
+                    <div className="bg-[#ede1ce]/70 border-l-[3px] border-amber-800 px-2.5 py-1.5 rounded-r my-1 text-xs sm:text-sm font-serif text-[#291a0f] leading-snug">
+                      <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-amber-900 uppercase tracking-wider mb-0.5">
+                        <BookOpen className="w-3 h-3 text-amber-800 inline" />
+                        <span>Scene Context</span>
+                      </div>
+                      <p className="italic">
+                        "{storyContext || 'Detectives are investigating the scene to uncover physical evidence connected to the case.'}"
+                      </p>
+                    </div>
+
+                    {/* Investigative Lead / Clue Hint (Guides deduction vocabulary without leaking answer) */}
+                    {effectiveClueHint && (
+                      <div className="bg-amber-100/90 border border-amber-700/30 rounded-md px-2.5 py-1 my-1 text-xs font-serif text-[#2e1b0d] flex items-center gap-2 shadow-xs">
+                        <Lightbulb className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                        <span className="font-mono text-[10px] font-bold uppercase text-amber-900 shrink-0">Clue Lead:</span>
+                        <span className="font-medium">"{effectiveClueHint}"</span>
+                      </div>
+                    )}
+
+                    {/* Current Investigation Objective (What the room is investigating) */}
+                    <div className="text-[11px] font-mono font-semibold text-amber-950 bg-amber-900/10 px-2 py-0.5 rounded border border-amber-800/20 inline-flex items-center gap-1.5 my-0.5 flex-wrap">
+                      <span className="text-amber-800 font-bold">🎯 OBJECTIVE:</span>
+                      <span>{investigationObjective || 'Watch the sketch artist live and deduce what was discovered.'}</span>
+                    </div>
+
+                    {/* Word length dashes & letter reveals */}
+                    {renderLetterPattern()}
+
+                    {/* Progressive Reveal Toast (10s / 25s) */}
+                    {guesserHintMessage && (
+                      <div className="text-[10px] font-mono font-bold text-amber-900 flex items-center gap-1 mt-0.5">
+                        <span>{guesserHintMessage}</span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1099,7 +1322,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
           {/* 3. PARCHMENT DRAWING CANVAS */}
           <div
-            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[54vh] min-h-[260px] sm:min-h-[380px] md:min-h-[440px] lg:min-h-[500px] bg-[#fbf8f1] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.12)] border-2 border-[#8c6d48] overflow-hidden flex flex-col"
+            className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[38vh] sm:max-h-[54vh] min-h-[200px] sm:min-h-[380px] md:min-h-[440px] lg:min-h-[500px] bg-[#fbf8f1] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_0_50px_rgba(139,94,60,0.12)] border-2 border-[#8c6d48] overflow-hidden flex flex-col"
             style={{ touchAction: 'none' }}
           >
             {/* Header Sub-bar */}
@@ -1158,10 +1381,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#1a110a]">
                     <Crosshair className="w-3.5 h-3.5 text-red-800" />
-                    <span>Type Your Evidence Guess</span>
+                    <span>Decipher the Evidence</span>
                   </div>
                   <span className="text-[10px] text-[#7a4e2d] font-bold bg-[#ede0ce] border border-[#bfa98e] px-2 py-0.5 rounded-full font-mono">
-                    Any 2 matching words = Right Answer!
+                    Single-word or short answer
                   </span>
                 </div>
 
@@ -1170,8 +1393,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     type="text"
                     value={guessInput}
                     onChange={(e) => setGuessInput(e.target.value)}
-                    placeholder="Type 2-3 words (e.g. tunnel map, guard sleeping)..."
-                    className="min-w-0 flex-1 px-3.5 py-2.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-sm text-[#1a110a] placeholder-[#8a725b] focus:outline-none focus:ring-1 focus:ring-red-800 font-mono shadow-inner"
+                    placeholder={
+                      effectiveClueHint
+                        ? "What is it? Type your guess (e.g. key, envelope)..."
+                        : "What is it? Type your guess (e.g. key, photo)..."
+                    }
+                    className="min-w-0 flex-1 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-[#fdfbf6] border-2 border-[#b89e7c] focus:border-red-800 rounded-xl text-base sm:text-sm text-[#1a110a] placeholder-[#8a725b] focus:outline-none focus:ring-1 focus:ring-red-800 font-mono shadow-inner"
                   />
                   <button
                     type="submit"

@@ -71,12 +71,36 @@ test('Phase 3: Security - Serializer hides secret prompt and private story varia
   assert.equal((publicState as any).selectedObjective, undefined);
   assert.equal((publicState as any).activePromptOptions, undefined);
 
-  // Drawer state has options and objective
-  assert.ok(drawerState.options && drawerState.options.length === 3);
+  // Drawer state has direct narrative prompt and canonical answer
+  assert.ok(drawerState.drawerPrompt, 'Drawer must receive drawerPrompt');
+  assert.ok(drawerState.canonicalAnswer || drawerState.selectedObjective, 'Drawer must receive answer objective');
 
   // Guesser private state isDrawer is FALSE and drawerState is null
   assert.equal(guesserPrivate.isDrawer, false);
   assert.equal(guesserPrivate.drawerState, null);
+
+  GameEngine.removeEngine(room.roomId);
+});
+
+test('Seamless Chronological Story Flow: beginTurn advances directly into DRAWING with canonical clue', async () => {
+  StoryLibrary.ensureInitialized();
+  const story = StoryLibrary.getStory('story_01_the_midnight_museum')!;
+
+  const { room } = await RoomManager.createRoom('Host', 'd1');
+  await RoomManager.joinRoom(room.joinCode, 'Guesser', 'd2');
+
+  const engine = new GameEngine(room, story);
+  advanceToStorySelected(engine);
+
+  // Turn 1: begins turn
+  await engine.beginTurn();
+  const session = engine.getSession();
+
+  // Must transition directly to DRAWING without stopping at PROMPT_SELECTION
+  assert.equal(session.state, GameStatus.DRAWING);
+  assert.ok(session.selectedEvent, 'Canonical event must be selected');
+  assert.equal(session.activePromptOptions?.length || 0, 0, 'No distractor options');
+  assert.ok(session.selectedEvent.drawerPrompt, 'Drawer prompt must be populated');
 
   GameEngine.removeEngine(room.roomId);
 });

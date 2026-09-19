@@ -11,6 +11,7 @@ export class RoomManager {
   private static rooms: Map<string, Room> = new Map();
   private static codeToRoomId: Map<string, string> = new Map();
   private static playerToRoomId: Map<string, string> = new Map();
+  private static roomKickVotes: Map<string, Map<string, Set<string>>> = new Map();
 
   /**
    * Creates a new multiplayer room with a unique random join code
@@ -54,6 +55,7 @@ export class RoomManager {
       roundsPerGame: customSettings?.roundsPerGame || 6,
       storyId: customSettings?.storyId || 'all',
       isPublic: customSettings?.isPublic !== false,
+      isQuickMatch: Boolean(customSettings?.isQuickMatch),
     };
 
     const room: Room = {
@@ -66,6 +68,7 @@ export class RoomManager {
       createdAt: Date.now(),
       settings,
       isPublic: settings.isPublic,
+      isQuickMatch: settings.isQuickMatch,
     };
 
     this.rooms.set(roomId, room);
@@ -268,6 +271,7 @@ export class RoomManager {
       roundsPerGame: 3,
       storyId: options?.genre || 'all',
       isPublic: true,
+      isQuickMatch: true,
     });
 
     return {
@@ -371,6 +375,15 @@ export class RoomManager {
       return { room, wasHost };
     }
 
+    // Clean up kick votes for that player and from that player
+    if (this.roomKickVotes.has(roomId)) {
+      const roomVotes = this.roomKickVotes.get(roomId)!;
+      roomVotes.delete(playerId);
+      for (const voters of roomVotes.values()) {
+        voters.delete(playerId);
+      }
+    }
+
     if (wasHost && room.players.length > 0) {
       // Transfer host to next senior player
       room.players[0].isHost = true;
@@ -379,6 +392,104 @@ export class RoomManager {
     }
 
     return { room, wasHost };
+  }
+
+  /**
+   * Casts or toggles a vote to kick a target player from the room.
+   * If votes reach 75% majority of eligible voters (connected players except target),
+   * the target player is automatically kicked!
+   */
+  public static voteKick(
+    roomId: string,
+    voterPlayerId: string,
+    targetPlayerId: string
+  ): {
+    kicked: boolean;
+    currentVotes: number;
+    requiredVotes: number;
+    targetPlayer: Player;
+    voterIds: string[];
+  } {
+    const room = this.getRoomOrThrow(roomId);
+    const targetPlayer = room.players.find((p) => p.playerId === targetPlayerId);
+    if (!targetPlayer) {
+      const err = new Error('Target player not found in room');
+      (err as any).code = ErrorCode.PLAYER_NOT_FOUND;
+      throw err;
+    }
+    if (voterPlayerId === targetPlayerId) {
+      const err = new Error('Cannot vote to kick yourself');
+      (err as any).code = ErrorCode.NOT_AUTHORIZED;
+      throw err;
+    }
+
+    if (!this.roomKickVotes.has(roomId)) {
+      this.roomKickVotes.set(roomId, new Map());
+    }
+    const roomVotes = this.roomKickVotes.get(roomId)!;
+    if (!roomVotes.has(targetPlayerId)) {
+      roomVotes.set(targetPlayerId, new Set());
+    }
+    const targetVotes = roomVotes.get(targetPlayerId)!;
+
+    if (targetVotes.has(voterPlayerId)) {
+      targetVotes.delete(voterPlayerId);
+    } else {
+      targetVotes.add(voterPlayerId);
+    }
+
+    // Eligible voters are all connected players except target player
+    const eligibleVoters = room.players.filter(
+      (p) => p.isConnected && p.playerId !== targetPlayerId
+    );
+    // 75% majority requirement
+    const requiredVotes = Math.max(1, Math.ceil(eligibleVoters.length * 0.75));
+    const currentVotes = targetVotes.size;
+
+    if (currentVotes >= requiredVotes) {
+      // 75% majority reached! Automatically kick target player!
+      roomVotes.delete(targetPlayerId);
+      this.leaveRoom(roomId, targetPlayerId);
+      logger.info('Player kicked by 75% majority vote', {
+        roomId,
+        targetPlayerId,
+        targetName: targetPlayer.displayName,
+        currentVotes,
+        requiredVotes,
+      });
+      return {
+        kicked: true,
+        currentVotes,
+        requiredVotes,
+        targetPlayer,
+        voterIds: Array.from(targetVotes),
+      };
+    }
+
+    return {
+      kicked: false,
+      currentVotes,
+      requiredVotes,
+      targetPlayer,
+      voterIds: Array.from(targetVotes),
+    };
+  }
+
+  public static getKickVotesForRoom(roomId: string): Record<string, { currentVotes: number; requiredVotes: number; voterIds: string[] }> {
+    const room = this.rooms.get(roomId);
+    if (!room || !this.roomKickVotes.has(roomId)) return {};
+    const roomVotes = this.roomKickVotes.get(roomId)!;
+    const result: Record<string, { currentVotes: number; requiredVotes: number; voterIds: string[] }> = {};
+    for (const [targetId, voterSet] of roomVotes.entries()) {
+      const eligibleVoters = room.players.filter((p) => p.isConnected && p.playerId !== targetId);
+      const requiredVotes = Math.max(1, Math.ceil(eligibleVoters.length * 0.75));
+      result[targetId] = {
+        currentVotes: voterSet.size,
+        requiredVotes,
+        voterIds: Array.from(voterSet),
+      };
+    }
+    return result;
   }
 
   /**
@@ -467,6 +578,7 @@ export class RoomManager {
       this.playerToRoomId.delete(p.playerId);
     }
     this.codeToRoomId.delete(room.joinCode.toUpperCase());
+    this.roomKickVotes.delete(roomId);
     this.rooms.delete(roomId);
     logger.info('Room forcefully deleted and purged', { roomId, code: room.joinCode });
     return true;

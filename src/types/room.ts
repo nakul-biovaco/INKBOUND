@@ -9,6 +9,7 @@ export interface RoomSettings {
   showHints?: boolean;
   matureContent?: boolean;
   isPublic?: boolean;
+  isQuickMatch?: boolean;
 }
 
 export interface Room {
@@ -20,4 +21,5 @@ export interface Room {
   settings: RoomSettings;
   createdAt: string;
   isPublic?: boolean;
+  isQuickMatch?: boolean;
 }
