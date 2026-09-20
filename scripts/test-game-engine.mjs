@@ -63,7 +63,7 @@ const theories = {
     id: 't1',
     gameId: 'game-123',
     playerId: 'p1',
-    culprit: 'Arthur Vance',
+    culprit: caseItem.culprit,
     motive: 'Debts from underground gambling',
     keyEvent: 'Camera sabotage',
     method: 'Master key',

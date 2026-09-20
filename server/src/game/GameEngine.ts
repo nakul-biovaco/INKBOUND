@@ -634,6 +634,14 @@ export class GameEngine {
     });
   }
 
+  public isDrawingActive(): boolean {
+    return this.stateMachine.isDrawingActive();
+  }
+
+  public getCurrentDrawerId(): string | null {
+    return this.session.currentDrawerId;
+  }
+
   /**
    * Handles incoming drawing stroke from active drawer
    */
@@ -650,11 +658,27 @@ export class GameEngine {
     stroke.turnIndex = this.session.turnIndex;
     stroke.timestamp = Date.now();
 
-    this.session.drawingStrokes.push(stroke);
-    await DrawingManager.recordStroke(this.roomId, this.session.turnIndex, stroke);
+    if (stroke.isComplete !== false) {
+      this.session.drawingStrokes.push(stroke);
+      await DrawingManager.recordStroke(this.roomId, this.session.turnIndex, stroke);
+    }
 
-    // Broadcast stroke to all players except the drawer
+    // Broadcast stroke to all players
     this.emit('DRAW_STROKE', stroke);
+  }
+
+  /**
+   * Synchronizes undo across active game session
+   */
+  public handleUndo(playerId: string, updatedStrokes?: any[]): void {
+    AuthService.assertDrawer(playerId, this.session.currentDrawerId);
+    if (!this.stateMachine.isDrawingActive()) return;
+
+    if (Array.isArray(updatedStrokes)) {
+      this.session.drawingStrokes = updatedStrokes;
+    } else if (this.session.drawingStrokes.length > 0) {
+      this.session.drawingStrokes.pop();
+    }
   }
 
   /**

@@ -464,6 +464,8 @@ export const WSClientEvent = {
   SELECT_PROMPT: 'SELECT_PROMPT',
   START_DRAWING: 'START_DRAWING',
   DRAW_STROKE: 'DRAW_STROKE',
+  DRAW_LIVE_UPDATE: 'DRAW_LIVE_UPDATE',
+  DRAW_UNDO: 'DRAW_UNDO',
   DRAW_CLEAR: 'DRAW_CLEAR',
   END_DRAWING: 'END_DRAWING',
   SUBMIT_GUESS: 'SUBMIT_GUESS',
@@ -499,6 +501,8 @@ export const WSServerEvent = {
   DRAWING_STARTED: 'DRAWING_STARTED',
   HINT_LETTER_REVEALED: 'HINT_LETTER_REVEALED',
   DRAW_STROKE: 'DRAW_STROKE',
+  DRAW_LIVE_UPDATE: 'DRAW_LIVE_UPDATE',
+  DRAW_UNDO: 'DRAW_UNDO',
   DRAW_CLEAR: 'DRAW_CLEAR',
   PROMPT_SELECTED: 'PROMPT_SELECTED',
   DRAWING_ENDED: 'DRAWING_ENDED',
@@ -581,6 +585,26 @@ export const DrawStrokeSchema = z.object({
     isComplete: z.boolean(),
     timestamp: z.number(),
   }),
+});
+
+export const DrawLiveUpdateSchema = z.object({
+  strokeId: z.string(),
+  tool: z.enum(['pencil', 'brush', 'marker', 'eraser', 'line', 'rectangle', 'circle', 'fill']).optional().default('pencil'),
+  color: z.string().optional().default('#111827'),
+  width: z.number().min(1).max(100).optional().default(4),
+  points: z.array(
+    z.object({
+      x: z.number().transform((v) => Math.max(0, Math.min(1, v))),
+      y: z.number().transform((v) => Math.max(0, Math.min(1, v))),
+    })
+  ),
+  isStart: z.boolean().optional(),
+  isComplete: z.boolean().optional(),
+  timestamp: z.number().optional(),
+});
+
+export const DrawUndoSchema = z.object({
+  strokes: z.array(z.any()).optional().default([]),
 });
 
 export const SubmitGuessSchema = z.object({

@@ -82,6 +82,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
   const currentStrokeRef = useRef<Stroke | null>(null);
+  const liveBufferPtsRef = useRef<Point[]>([]);
+  const activeSpectatorStrokeRef = useRef<{ strokeId: string; lastPoint: Point } | null>(null);
 
   const [currentTool, setCurrentTool] = useState<DrawingTool>('pencil');
   const [currentColor, setCurrentColor] = useState<string>('#111827');
@@ -157,6 +159,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     setGuessFeed([]);
     setGuessFeedback(null);
     setGuessInput('');
+    activeSpectatorStrokeRef.current = null;
+    liveBufferPtsRef.current = [];
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -325,6 +329,65 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   // Subscribe to backend authoritative drawing and guess events
   useEffect(() => {
+    const unsubLiveUpdate = backend.on('DRAW_LIVE_UPDATE', (payload: any) => {
+      if (isCurrentDrawer) return;
+      const canvas = canvasRef.current;
+      if (!canvas || !payload?.points || payload.points.length === 0) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const dprScale = canvas.width / (rect.width || 1);
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (payload.tool === 'eraser') {
+        ctx.strokeStyle = '#fbf8f1';
+        ctx.fillStyle = '#fbf8f1';
+        ctx.lineWidth = (payload.width || 4) * 2 * dprScale;
+      } else if (payload.tool === 'marker') {
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = payload.color || '#111827';
+        ctx.fillStyle = payload.color || '#111827';
+        ctx.lineWidth = (payload.width || 4) * 2.5 * dprScale;
+      } else {
+        ctx.strokeStyle = payload.color || '#111827';
+        ctx.fillStyle = payload.color || '#111827';
+        ctx.lineWidth = (payload.width || 4) * dprScale;
+      }
+
+      const pts = payload.points;
+      if (payload.isStart && pts.length === 1) {
+        const px = pts[0].x * canvas.width;
+        const py = pts[0].y * canvas.height;
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(1.5, ((payload.width || 4) * dprScale) / 2), 0, Math.PI * 2);
+        ctx.fill();
+        activeSpectatorStrokeRef.current = { strokeId: payload.strokeId, lastPoint: pts[0] };
+      } else if (pts.length > 0) {
+        ctx.beginPath();
+        const activeTrack = activeSpectatorStrokeRef.current;
+        const startPt =
+          activeTrack && activeTrack.strokeId === payload.strokeId && activeTrack.lastPoint
+            ? activeTrack.lastPoint
+            : pts[0];
+
+        ctx.moveTo(startPt.x * canvas.width, startPt.y * canvas.height);
+        for (let i = 0; i < pts.length; i++) {
+          ctx.lineTo(pts[i].x * canvas.width, pts[i].y * canvas.height);
+        }
+        ctx.stroke();
+        activeSpectatorStrokeRef.current = {
+          strokeId: payload.strokeId,
+          lastPoint: pts[pts.length - 1],
+        };
+      }
+      ctx.restore();
+    });
+
     const unsubStroke = backend.on('DRAW_STROKE', (chunk: any) => {
       if (isCurrentDrawer) return;
       const canvas = canvasRef.current;
@@ -345,12 +408,30 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       };
 
       setStrokes((prev) => [...prev, strokeObj]);
+      activeSpectatorStrokeRef.current = null;
       DrawingService.renderStroke(ctx, strokeObj, canvas.width, canvas.height);
+    });
+
+    const unsubUndo = backend.on('DRAW_UNDO', (payload: any) => {
+      if (isCurrentDrawer) return;
+      const updated = payload?.strokes || [];
+      setStrokes(updated);
+      activeSpectatorStrokeRef.current = null;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#fbf8f1';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          DrawingService.replayStrokes(ctx, canvas.width, canvas.height, updated);
+        }
+      }
     });
 
     const unsubClear = backend.on('DRAW_CLEAR', () => {
       if (isCurrentDrawer) return;
       setStrokes([]);
+      activeSpectatorStrokeRef.current = null;
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -404,7 +485,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     });
 
     return () => {
+      unsubLiveUpdate();
       unsubStroke();
+      unsubUndo();
       unsubClear();
       unsubPublicGuess();
       unsubGuessFeedback();
@@ -627,6 +710,20 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       normPt
     );
     currentStrokeRef.current = newStroke;
+    liveBufferPtsRef.current = [normPt];
+    lastBroadcastRef.current = Date.now();
+
+    // Stream initial stroke start immediately to spectators over WebSocket (<10ms)
+    backend.drawLiveUpdate({
+      strokeId: newStroke.id,
+      tool: newStroke.tool,
+      color: newStroke.color,
+      width: newStroke.width,
+      points: [normPt],
+      isStart: true,
+      isComplete: false,
+      timestamp: Date.now(),
+    });
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -658,6 +755,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (dx * dx + dy * dy < 0.000001) return;
 
     pts.push(normPt);
+    liveBufferPtsRef.current.push(normPt);
 
     const canvas = canvasRef.current;
     if (canvas) {
@@ -689,10 +787,26 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       }
     }
 
-    // Stream live stroke to spectators (throttled to 35ms)
+    // Stream live stroke to spectators with ultra-low latency (25ms batching, ~40 FPS)
     const now = Date.now();
-    if (now - lastBroadcastRef.current > 35) {
+    if (now - lastBroadcastRef.current >= 25 && liveBufferPtsRef.current.length > 1) {
       lastBroadcastRef.current = now;
+      const batch = [...liveBufferPtsRef.current];
+      // Keep last point as anchor for the next chunk to ensure connected lines
+      liveBufferPtsRef.current = [normPt];
+
+      backend.drawLiveUpdate({
+        strokeId: stroke.id,
+        tool: stroke.tool,
+        color: stroke.color,
+        width: stroke.width,
+        points: batch,
+        isStart: false,
+        isComplete: false,
+        timestamp: now,
+      });
+
+      // Redundant fallback broadcast
       channel.broadcast('STROKE_LIVE_UPDATE', currentUser.id, {
         stroke,
       });
@@ -713,6 +827,21 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     isDrawingRef.current = false;
     const completedStroke = currentStrokeRef.current;
     currentStrokeRef.current = null;
+
+    // Flush any remaining buffered points
+    if (liveBufferPtsRef.current.length > 1) {
+      backend.drawLiveUpdate({
+        strokeId: completedStroke.id,
+        tool: completedStroke.tool,
+        color: completedStroke.color,
+        width: completedStroke.width,
+        points: liveBufferPtsRef.current,
+        isStart: false,
+        isComplete: true,
+        timestamp: Date.now(),
+      });
+    }
+    liveBufferPtsRef.current = [];
 
     const canvas = canvasRef.current;
     if (canvas) {
@@ -792,6 +921,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       }
     }
 
+    backend.drawUndo(previous);
     channel.broadcast('DRAWING_UNDO', currentUser.id, {
       strokes: previous,
     });
@@ -812,6 +942,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         DrawingService.renderStroke(ctx, restored, canvas.width, canvas.height);
       }
     }
+
+    backend.drawStroke({
+      strokeId: restored.id,
+      tool: restored.tool === 'eraser' ? 'eraser' : 'pencil',
+      color: restored.color,
+      width: restored.width,
+      points: restored.points,
+      isComplete: true,
+      timestamp: restored.timestamp,
+    });
 
     channel.broadcast('DRAWING_STROKE', currentUser.id, {
       drawingId: restored.drawingId,

@@ -56,6 +56,17 @@ export interface StrokeBroadcastPayload {
   stroke: Stroke;
 }
 
+export interface LiveStrokePayload {
+  strokeId: string;
+  tool: string;
+  color: string;
+  width: number;
+  points: Array<{ x: number; y: number }>;
+  isStart?: boolean;
+  isComplete?: boolean;
+  timestamp?: number;
+}
+
 export interface StrokeUndoBroadcastPayload {
   drawingId: string;
   playerId: string;

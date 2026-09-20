@@ -3,7 +3,9 @@ import { WebSocket, WebSocketServer } from 'ws';
 import {
   ChooseStorySchema,
   CreateRoomSchema,
+  DrawLiveUpdateSchema,
   DrawStrokeSchema,
+  DrawUndoSchema,
   ErrorCode,
   JoinRoomSchema,
   QuickPlaySchema,
@@ -92,7 +94,7 @@ export class WSServer {
           logger.error('Error handling WS message', err);
           let safeMsg = err?.message || 'Invalid request';
           if (err?.name === 'ZodError' || Array.isArray(err?.issues) || typeof safeMsg === 'string' && safeMsg.startsWith('[')) {
-            if (raw && raw.event === WSClientEvent.DRAW_STROKE) {
+            if (raw && (raw.event === WSClientEvent.DRAW_STROKE || raw.event === WSClientEvent.DRAW_LIVE_UPDATE || raw.event === WSClientEvent.DRAW_UNDO)) {
               return; // Gracefully ignore invalid stroke chunk without throwing scary alerts to user
             }
             safeMsg = 'Invalid action or parameters';
@@ -575,6 +577,30 @@ export class WSServer {
         const engine = GameEngine.getEngine(ws.roomId!);
         if (!engine) throw new Error('No active game session');
         engine.selectPrompt(ws.playerId!, valid.optionIndex);
+        break;
+      }
+
+      case WSClientEvent.DRAW_LIVE_UPDATE: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine || !engine.isDrawingActive()) break;
+        if (engine.getCurrentDrawerId() !== ws.playerId) break;
+
+        const valid = DrawLiveUpdateSchema.parse(payload);
+        // Ultra-fast zero-latency relay directly to other sockets in room (omits drawer socket)
+        this.broadcastToRoom(ws.roomId!, WSServerEvent.DRAW_LIVE_UPDATE, valid, ws);
+        break;
+      }
+
+      case WSClientEvent.DRAW_UNDO: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (!engine || !engine.isDrawingActive()) break;
+        if (engine.getCurrentDrawerId() !== ws.playerId) break;
+
+        const valid = DrawUndoSchema.parse(payload);
+        engine.handleUndo(ws.playerId!, valid.strokes);
+        this.broadcastToRoom(ws.roomId!, WSServerEvent.DRAW_UNDO, valid, ws);
         break;
       }
 

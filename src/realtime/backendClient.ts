@@ -476,6 +476,14 @@ export class BackendClient {
     this.send('DRAW_STROKE', { chunk });
   }
 
+  public drawLiveUpdate(payload: any): void {
+    this.send('DRAW_LIVE_UPDATE', payload);
+  }
+
+  public drawUndo(strokes: any[]): void {
+    this.send('DRAW_UNDO', { strokes });
+  }
+
   public drawClear(): void {
     this.send('DRAW_CLEAR', {});
   }

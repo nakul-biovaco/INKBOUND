@@ -1,14 +1,32 @@
 {
   "name": "inkbound",
-  "private": true,
   "version": "1.0.0",
+  "description": "Multiplayer Real-Time Detective Deduction & Live Drawing Party Game",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "server:dev": "npm --prefix server run dev",
+    "server:build": "npm --prefix server run build",
+    "server:test": "npm --prefix server test",
+    "test": "npm --prefix server test"
   },
+  "keywords": [
+    "multiplayer",
+    "party-game",
+    "detective",
+    "deduction",
+    "realtime",
+    "drawing",
+    "canvas",
+    "websocket",
+    "react",
+    "fastify"
+  ],
+  "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
     "canvas-confetti": "^1.9.3",
