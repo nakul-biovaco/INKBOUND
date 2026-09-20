@@ -51,6 +51,9 @@ export class GameEngine {
   private drawerDisconnectTimeout: NodeJS.Timeout | null = null;
   private currentInvestigationEvent: InvestigationEvent | null = null;
   private hintTimeouts: NodeJS.Timeout[] = [];
+  private playersInGameWindow: Set<string> = new Set();
+  private isWaitingForAllPlayersToEnterGame: boolean = false;
+  private gameWindowTimeout: NodeJS.Timeout | null = null;
 
   constructor(room: Room, story: StoryDefinition | null, broadcastCallback: GameEngineCallback) {
     this.roomId = room.roomId;
@@ -112,6 +115,10 @@ export class GameEngine {
     if (engine) {
       engine.timerManager.cancelTimer();
       engine.clearHintTimeouts();
+      if (engine.gameWindowTimeout) {
+        clearTimeout(engine.gameWindowTimeout);
+        engine.gameWindowTimeout = null;
+      }
       this.sessions.delete(roomId);
     }
   }
@@ -325,6 +332,13 @@ export class GameEngine {
     this.session.suspects = this.caseRuntime.getSuspects();
     this.session.caseProgress = this.caseRuntime.getCaseProgress();
 
+    this.playersInGameWindow.clear();
+    this.isWaitingForAllPlayersToEnterGame = false;
+    if (this.gameWindowTimeout) {
+      clearTimeout(this.gameWindowTimeout);
+      this.gameWindowTimeout = null;
+    }
+
     // Broadcast chosen story to everyone in the room with overview time
     const overviewSeconds = 10;
     this.emit('STORY_SELECTED', {
@@ -338,12 +352,94 @@ export class GameEngine {
       caseProgress: this.session.caseProgress,
     });
 
-    // Give players time to read the case overview before starting
+    // Give players time to read the case overview before prompting game room entry
     this.timerManager.startTimer('story_overview', overviewSeconds, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+      this.promptGameWindowTransition();
+    });
+  }
+
+  private promptGameWindowTransition(): void {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+    this.emit('TRANSITION_TO_GAME_WINDOW', {});
+    this.isWaitingForAllPlayersToEnterGame = true;
+
+    if (this.checkAllPlayersEnteredGame()) {
+      return;
+    }
+
+    // Safety timeout: if any player has connection delay, start after 5s so connected players aren't held hostage
+    this.gameWindowTimeout = setTimeout(() => {
+      if (this.isWaitingForAllPlayersToEnterGame && this.session.state === GameStatus.STORY_SELECTED) {
+        logger.info('Safety timeout reached for game window entry. Commencing round for arrived detectives.', {
+          roomId: this.roomId,
+        });
+        this.isWaitingForAllPlayersToEnterGame = false;
+        this.turnManager.randomizeFirstDrawer();
+        this.beginTurn();
+      }
+    }, 5000);
+  }
+
+  public playerEnteredGame(playerId: string): void {
+    this.playersInGameWindow.add(playerId);
+    const room = RoomManager.getRoom(this.roomId);
+    if (!room) return;
+
+    const connectedPlayers = room.players.filter((p) => p.isConnected);
+    const arrivedCount = connectedPlayers.filter((p) => this.playersInGameWindow.has(p.playerId)).length;
+    const totalCount = connectedPlayers.length;
+    const waitingFor = connectedPlayers
+      .filter((p) => !this.playersInGameWindow.has(p.playerId))
+      .map((p) => p.displayName);
+
+    logger.info('Player entered game window', {
+      roomId: this.roomId,
+      playerId,
+      arrivedCount,
+      totalCount,
+    });
+
+    this.emit('GAME_WINDOW_PLAYERS_SYNC', {
+      arrivedCount,
+      totalCount,
+      waitingFor,
+      allArrived: arrivedCount >= totalCount,
+    });
+
+    // If all connected players have entered, start immediately!
+    if (arrivedCount >= totalCount) {
+      this.checkAllPlayersEnteredGame();
+    }
+  }
+
+  private checkAllPlayersEnteredGame(): boolean {
+    if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return false;
+    const room = RoomManager.getRoomOrThrow(this.roomId);
+    const connectedPlayers = room.players.filter((p) => p.isConnected);
+    const allArrived =
+      connectedPlayers.length > 0 &&
+      connectedPlayers.every((p) => this.playersInGameWindow.has(p.playerId));
+
+    if (
+      allArrived &&
+      (this.session.state === GameStatus.STORY_SELECTED || this.isWaitingForAllPlayersToEnterGame)
+    ) {
+      this.isWaitingForAllPlayersToEnterGame = false;
+      this.timerManager.cancelTimer();
+      if (this.gameWindowTimeout) {
+        clearTimeout(this.gameWindowTimeout);
+        this.gameWindowTimeout = null;
+      }
+      logger.info('All connected detectives entered the game window. Starting investigation round now!', {
+        roomId: this.roomId,
+        playerCount: connectedPlayers.length,
+      });
       this.turnManager.randomizeFirstDrawer();
       this.beginTurn();
-    });
+      return true;
+    }
+    return false;
   }
 
   /**

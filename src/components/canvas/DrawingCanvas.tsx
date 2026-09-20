@@ -12,6 +12,7 @@ import {
   PaintBucket,
   MessageSquare,
   BookOpen,
+  Clock,
 } from 'lucide-react';
 import {
   AuthoritativeGameState,
@@ -48,6 +49,12 @@ interface DrawingCanvasProps {
   roomCode?: string;
   channel: RoomChannelManager;
   isDrawer?: boolean;
+  gameWindowSync?: {
+    arrivedCount: number;
+    totalCount: number;
+    waitingFor: string[];
+    allArrived: boolean;
+  };
   onSubmitDrawing?: (previewDataUrl: string, strokes: Stroke[]) => void;
   onLeaveRoom?: () => void;
 }
@@ -76,6 +83,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   roomCode,
   channel,
   isDrawer: propIsDrawer,
+  gameWindowSync,
   onLeaveRoom,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -297,9 +305,17 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     );
   };
 
-  // Robust authoritative timer with automatic local countdown fallback so it never freezes
+  // Authoritative timer: starts ONLY when turnEndsAt is set by server, frozen at turnDuration while staging
   const turnDuration = gameState.turnDuration || 80;
   const turnStartedAtRef = useRef<number>(Date.now());
+  const isRoundActive = Boolean(
+    gameState.turnEndsAt && TurnManager.calculateRemainingSeconds(gameState.turnEndsAt) > 0
+  );
+
+  // Notify backend immediately when detective enters the game window
+  useEffect(() => {
+    backend.enterGameWindow();
+  }, []);
 
   useEffect(() => {
     turnStartedAtRef.current = Date.now();
@@ -310,14 +326,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       let rem = 0;
       if (gameState.turnEndsAt) {
         rem = TurnManager.calculateRemainingSeconds(gameState.turnEndsAt);
-      }
-      if (rem <= 0) {
-        const elapsed = Math.floor((Date.now() - turnStartedAtRef.current) / 1000);
-        rem = Math.max(0, turnDuration - elapsed);
+      } else {
+        // If turn has not officially started by server, hold at full turn duration (no phantom countdown)
+        rem = turnDuration;
       }
 
       setRemainingSeconds(rem);
-      if (rem > 0 && rem <= 10) {
+      if (gameState.turnEndsAt && rem > 0 && rem <= 10) {
         SoundService.playTick(rem <= 5);
       }
     };
@@ -1120,6 +1135,37 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         roundText={`${roundDisplay} • Drawing Round`}
         onLeaveRoom={onLeaveRoom}
       />
+
+      {/* WAITING FOR ALL DETECTIVES TO ENTER THE ROOM BANNER */}
+      {!isRoundActive && (
+        <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-2 animate-fadeIn">
+          <div className="bg-slate-900/95 border-2 border-amber-500/60 shadow-[0_10px_35px_rgba(0,0,0,0.85)] backdrop-blur-md rounded-2xl px-5 py-3 flex items-center justify-between gap-4 text-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-amber-400 animate-pulse" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                  <span>Staging Case Room</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                </div>
+                <p className="text-sm font-serif font-bold text-white">
+                  Waiting for all detectives to enter... ({gameWindowSync?.arrivedCount || 1}/{gameWindowSync?.totalCount || gameState.players.length} Ready)
+                </p>
+                {gameWindowSync?.waitingFor && gameWindowSync.waitingFor.length > 0 && (
+                  <p className="text-[11px] font-mono text-slate-400">
+                    Connecting: {gameWindowSync.waitingFor.join(', ')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-xs font-mono text-slate-300">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span>Timer starts when all arrive</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. MAIN 3-COLUMN WORKSPACE (MOBILE FIRST) */}
       <main className="relative z-10 w-full max-w-[1720px] mx-auto px-2.5 sm:px-5 py-2 sm:py-3 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-3.5 items-start">

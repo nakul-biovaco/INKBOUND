@@ -508,6 +508,10 @@ export class BackendClient {
     this.send('CHOOSE_STORY', { storyId });
   }
 
+  public enterGameWindow(): void {
+    this.send('ENTER_GAME_WINDOW', {});
+  }
+
   public setReady(isReady: boolean): void {
     this.send('READY', { isReady });
   }

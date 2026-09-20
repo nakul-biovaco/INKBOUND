@@ -568,6 +568,15 @@ export class WSServer {
         break;
       }
 
+      case WSClientEvent.ENTER_GAME_WINDOW: {
+        this.assertSocketAuthenticated(ws);
+        const engine = GameEngine.getEngine(ws.roomId!);
+        if (engine) {
+          engine.playerEnteredGame(ws.playerId!);
+        }
+        break;
+      }
+
       // ==========================================
       // GAMEPLAY ACTIONS
       // ==========================================

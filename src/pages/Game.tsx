@@ -134,14 +134,33 @@ export const Game: React.FC<GameProps> = ({
   const [clueHint, setClueHint] = useState<string | null>(null);
   const [revealedLetters, setRevealedLetters] = useState<Array<Array<string | null>> | null>(null);
 
-  // Story Selection & Overview phase state
-  const [storySelectionPhase, setStorySelectionPhase] = useState<'none' | 'choosing' | 'overview'>('none');
+  // Story Selection & Overview phase state (Clean standalone windows)
+  const [storySelectionPhase, setStorySelectionPhase] = useState<'none' | 'choosing' | 'overview'>(() => {
+    // If the game just launched or turn has not yet started with turnEndsAt, start in choosing or overview phase
+    if (!initialState.turnEndsAt || initialState.status === 'STORY_SELECTION' || (initialState.status as any) === 'COUNTDOWN') {
+      return 'choosing';
+    }
+    return 'none';
+  });
   const [storyOptions, setStoryOptions] = useState<any[]>([]);
   const [chooserPlayerId, setChooserPlayerId] = useState<string | null>(null);
   const [chooserName, setChooserName] = useState<string>('');
   const [overviewData, setOverviewData] = useState<any>(null);
   const [overviewCountdown, setOverviewCountdown] = useState<number>(0);
   const overviewTimerRef = useRef<any>(null);
+
+  // Synchronized player arrival tracking for the game window
+  const [gameWindowSync, setGameWindowSync] = useState<{
+    arrivedCount: number;
+    totalCount: number;
+    waitingFor: string[];
+    allArrived: boolean;
+  }>({
+    arrivedCount: 0,
+    totalCount: initialState.players?.length || 1,
+    waitingFor: [],
+    allArrived: false,
+  });
 
 
 
@@ -219,6 +238,12 @@ export const Game: React.FC<GameProps> = ({
     }
   };
 
+  const handleEnterGameRoom = () => {
+    if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+    setStorySelectionPhase('none');
+    setOverviewData(null);
+  };
+
   // Wire BackendClient real-time authoritative events
   useEffect(() => {
     const unsubChooser = backend.on('STORY_CHOOSER_SELECTED', (payload: any) => {
@@ -278,7 +303,27 @@ export const Game: React.FC<GameProps> = ({
       }, 1000);
     });
 
+    const unsubTransition = backend.on('TRANSITION_TO_GAME_WINDOW', () => {
+      if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+      setStorySelectionPhase('none');
+    });
+
+    const unsubSync = backend.on('GAME_WINDOW_PLAYERS_SYNC', (payload: any) => {
+      setGameWindowSync({
+        arrivedCount: payload.arrivedCount || 0,
+        totalCount: payload.totalCount || gameState.players.length,
+        waitingFor: payload.waitingFor || [],
+        allArrived: Boolean(payload.allArrived),
+      });
+      if (payload.allArrived) {
+        if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+        setStorySelectionPhase('none');
+      }
+    });
+
     const unsubTurnStarted = backend.on('TURN_STARTED', (payload: any) => {
+      if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+      setStorySelectionPhase('none');
       SoundService.playTurnStart();
       setGameBanner(null);
       if (payload?.category || payload?.hint) {
@@ -353,6 +398,8 @@ export const Game: React.FC<GameProps> = ({
     });
 
     const unsubDrawingStarted = backend.on('DRAWING_STARTED', (payload: any) => {
+      if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+      setStorySelectionPhase('none');
       SoundService.playTurnStart();
       if (payload?.category || payload?.hint) {
         setPublicHint(payload.category || payload.hint);
@@ -917,6 +964,8 @@ export const Game: React.FC<GameProps> = ({
       unsubChooser();
       unsubStoryOptions();
       unsubStorySelected();
+      unsubTransition();
+      unsubSync();
       unsubTurnStarted();
       unsubDrawingStarted();
       unsubHintRevealed();
@@ -1203,111 +1252,167 @@ export const Game: React.FC<GameProps> = ({
         />
       )}
 
-      {/* STORY SELECTION PHASE — 3 random stories for the chooser to pick */}
-      {storySelectionPhase === 'choosing' && storyOptions.length > 0 && (
-        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="max-w-4xl w-full space-y-6">
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold uppercase tracking-widest">
-                <BookOpen className="w-3.5 h-3.5" />
-                Case Selection
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-tight">
-                {chooserPlayerId === currentUser.id
-                  ? 'Choose Your Mystery Case'
-                  : `${chooserName} is choosing the case...`}
-              </h2>
-              <p className="text-sm text-slate-400 font-mono">
-                {chooserPlayerId === currentUser.id
-                  ? 'Select one of these 3 mystery cases to investigate'
-                  : 'Take your time — no time limit'}
-              </p>
-            </div>
+      {/* 1. STORY SELECTION WINDOW — Standalone full screen (No DrawingCanvas mounted) */}
+      {storySelectionPhase === 'choosing' && (
+        <div className="fixed inset-0 z-50 bg-[#07090e] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
+          {/* Background ambiance */}
+          <div
+            className="fixed inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-screen"
+            style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
+          />
+          <div className="fixed inset-0 bg-gradient-to-b from-[#07090e]/95 via-[#07090e]/80 to-[#07090e]/95 pointer-events-none" />
 
-            {/* 3 Story Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {storyOptions.map((option: any, idx: number) => {
-                const artwork = getStoryArtwork(option.genre, option.title, option.storyId);
-                const isChooser = chooserPlayerId === currentUser.id;
-                return (
-                  <div
-                    key={option.storyId || idx}
-                    onClick={() => {
-                      if (isChooser) {
-                        SoundService.playStamp();
-                        backend.chooseStory(option.storyId);
-                      }
-                    }}
-                    className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
-                      isChooser
-                        ? 'cursor-pointer hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(217,161,59,0.3)] border-slate-600 bg-slate-900/80'
-                        : 'border-slate-700 bg-slate-900/60 opacity-80'
-                    }`}
-                  >
-                    {/* Case Image */}
-                    <div className="w-full aspect-[16/10] bg-slate-800 overflow-hidden relative">
-                      <img
-                        src={artwork.img}
-                        alt={option.title}
-                        className="w-full h-full object-cover filter contrast-110 brightness-90"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-mono text-amber-300 font-bold uppercase border border-amber-500/30">
-                        {option.genre}
-                      </div>
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <div className="text-white font-serif font-black text-sm sm:text-base leading-tight drop-shadow-lg">
-                          {option.title}
+          {storyOptions.length === 0 ? (
+            <div className="relative z-10 max-w-md w-full text-center space-y-4 p-8 rounded-3xl bg-slate-900/80 border border-amber-500/30 backdrop-blur-md shadow-2xl">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-amber-400 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
+                  Confidential Archive
+                </span>
+                <h3 className="text-xl font-serif font-black text-white">
+                  Retrieving Case Files...
+                </h3>
+                <p className="text-xs font-mono text-slate-400">
+                  Selecting 3 mystery dossiers for the detectives.
+                </p>
+              </div>
+              <div className="flex justify-center gap-1.5 pt-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
+              </div>
+            </div>
+          ) : (
+            <div className="relative z-10 max-w-5xl w-full space-y-6 my-auto py-6">
+              {/* Header */}
+              <div className="text-center space-y-2">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold uppercase tracking-widest">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Case Selection
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black font-serif text-white tracking-tight">
+                  {chooserPlayerId === currentUser.id
+                    ? 'Choose Your Mystery Case'
+                    : `${chooserName} is choosing the case...`}
+                </h2>
+                <p className="text-sm text-slate-400 font-mono max-w-xl mx-auto">
+                  {chooserPlayerId === currentUser.id
+                    ? 'Select one of these 3 mystery dossiers to investigate with your team.'
+                    : 'All detectives are reviewing the archives. Take your time — no time limit.'}
+                </p>
+              </div>
+
+              {/* 3 Story Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {storyOptions.map((option: any, idx: number) => {
+                  const artwork = getStoryArtwork(option.genre, option.title, option.storyId);
+                  const isChooser = chooserPlayerId === currentUser.id;
+                  return (
+                    <div
+                      key={option.storyId || idx}
+                      onClick={() => {
+                        if (isChooser) {
+                          SoundService.playStamp();
+                          backend.chooseStory(option.storyId);
+                        }
+                      }}
+                      className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+                        isChooser
+                          ? 'cursor-pointer hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_35px_rgba(217,161,59,0.35)] border-amber-500/40 bg-slate-900/90'
+                          : 'border-slate-700/80 bg-slate-900/70 opacity-90'
+                      }`}
+                    >
+                      {/* Case Image */}
+                      <div>
+                        <div className="w-full aspect-[16/10] bg-slate-800 overflow-hidden relative">
+                          <img
+                            src={artwork.img}
+                            alt={option.title}
+                            className="w-full h-full object-cover filter contrast-110 brightness-90"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                          <div className="absolute top-2 right-2 px-2.5 py-0.5 rounded bg-black/70 text-[10px] font-mono text-amber-300 font-bold uppercase border border-amber-500/30">
+                            {option.genre}
+                          </div>
+                          <div className="absolute bottom-2 left-3 right-3">
+                            <div className="text-white font-serif font-black text-base sm:text-lg leading-tight drop-shadow-lg">
+                              {option.title}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Case Details */}
+                        <div className="p-4 space-y-2">
+                          <p className="text-xs text-slate-300 font-mono leading-relaxed line-clamp-3">
+                            {option.description}
+                          </p>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Case Details */}
-                    <div className="p-3 space-y-2">
-                      <p className="text-xs text-slate-300 font-mono leading-relaxed line-clamp-3">
-                        {option.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
-                          option.difficulty === 'HARD' ? 'text-red-300 border-red-700 bg-red-950/50' :
-                          option.difficulty === 'EASY' ? 'text-green-300 border-green-700 bg-green-950/50' :
-                          'text-amber-300 border-amber-700 bg-amber-950/50'
-                        }`}>
+                      <div className="p-4 pt-0 flex items-center justify-between border-t border-slate-800/80 mt-2">
+                        <span
+                          className={`text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded border ${
+                            option.difficulty === 'HARD'
+                              ? 'text-red-300 border-red-700 bg-red-950/50'
+                              : option.difficulty === 'EASY'
+                              ? 'text-green-300 border-green-700 bg-green-950/50'
+                              : 'text-amber-300 border-amber-700 bg-amber-950/50'
+                          }`}
+                        >
                           {option.difficulty || 'NORMAL'}
                         </span>
-                        {isChooser && (
-                          <span className="text-[10px] font-mono text-amber-400 font-bold animate-pulse">
-                            Click to select →
+                        {isChooser ? (
+                          <span className="text-xs font-mono text-amber-400 font-bold flex items-center gap-1 animate-pulse">
+                            Select Case →
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Waiting for choice
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* STORY OVERVIEW PHASE — Case briefing before investigation begins */}
+      {/* 2. STORY OVERVIEW WINDOW — Standalone full screen (No DrawingCanvas mounted) */}
       {storySelectionPhase === 'overview' && overviewData && (
-        <div className="fixed inset-0 z-[60] bg-black/92 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="max-w-2xl w-full space-y-5">
-            {/* Countdown badge */}
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-900/60 border border-red-500/40 text-red-200 text-sm font-mono font-bold">
-                <Clock className="w-4 h-4 animate-pulse" />
-                Investigation begins in {overviewCountdown}s
+        <div className="fixed inset-0 z-50 bg-[#07090e] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
+          {/* Background ambiance */}
+          <div
+            className="fixed inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-screen"
+            style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
+          />
+          <div className="fixed inset-0 bg-gradient-to-b from-[#07090e]/95 via-[#07090e]/85 to-[#07090e]/95 pointer-events-none" />
+
+          <div className="relative z-10 max-w-3xl w-full space-y-5 my-auto py-6">
+            {/* Top Navigation & Countdown Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-900/60 border border-red-500/40 text-red-200 text-xs font-mono font-bold">
+                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                Case Room opening in {overviewCountdown}s
               </div>
+              <button
+                onClick={handleEnterGameRoom}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold uppercase tracking-wider transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+              >
+                <span>Enter Game Room Now</span>
+                <span>→</span>
+              </button>
             </div>
 
             {/* Case Briefing Card */}
             <div
-              className="relative rounded-2xl border-2 border-amber-700/60 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+              className="relative rounded-2xl border-2 border-amber-700/60 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.85)]"
               style={{
-                background: 'linear-gradient(135deg, #1a1510 0%, #0f0d0a 50%, #151210 100%)',
+                background: 'linear-gradient(135deg, #18140f 0%, #0d0b09 50%, #14110e 100%)',
               }}
             >
               {/* Case header image */}
@@ -1320,17 +1425,21 @@ export const Game: React.FC<GameProps> = ({
                       alt={overviewData.title}
                       className="w-full h-full object-cover filter contrast-110 brightness-75"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1510] via-[#1a1510]/30 to-transparent" />
-                    <div className="absolute bottom-4 left-5 right-5 space-y-1">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#18140f] via-[#18140f]/40 to-transparent" />
+                    <div className="absolute bottom-4 left-5 right-5 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded bg-amber-900/80 text-amber-300 text-[10px] font-mono font-bold uppercase border border-amber-600/40">
                           {overviewData.genre}
                         </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
-                          overviewData.difficulty === 'HARD' ? 'text-red-300 border-red-700 bg-red-950/60' :
-                          overviewData.difficulty === 'EASY' ? 'text-green-300 border-green-700 bg-green-950/60' :
-                          'text-amber-300 border-amber-700 bg-amber-950/60'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                            overviewData.difficulty === 'HARD'
+                              ? 'text-red-300 border-red-700 bg-red-950/60'
+                              : overviewData.difficulty === 'EASY'
+                              ? 'text-green-300 border-green-700 bg-green-950/60'
+                              : 'text-amber-300 border-amber-700 bg-amber-950/60'
+                          }`}
+                        >
                           {overviewData.difficulty || 'NORMAL'}
                         </span>
                       </div>
@@ -1343,25 +1452,30 @@ export const Game: React.FC<GameProps> = ({
               })()}
 
               {/* Case details */}
-              <div className="p-5 space-y-4">
+              <div className="p-6 space-y-5">
                 <p className="text-sm text-slate-300 font-mono leading-relaxed">
                   {overviewData.description}
                 </p>
 
                 {/* Suspects preview */}
                 {overviewData.suspects && overviewData.suspects.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
                       <Users className="w-3.5 h-3.5" />
-                      Suspects ({overviewData.suspects.length})
+                      Key Suspects ({overviewData.suspects.length})
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {overviewData.suspects.slice(0, 6).map((s: any, idx: number) => (
-                        <div key={s.id || idx} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700">
-                          <span className="text-lg">{s.avatar || '🕵️'}</span>
+                        <div
+                          key={s.id || idx}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/80"
+                        >
+                          <span className="text-xl">{s.avatar || '🕵️'}</span>
                           <div className="min-w-0">
                             <div className="text-xs font-bold text-slate-200 truncate">{s.name}</div>
-                            <div className="text-[10px] text-slate-500 font-mono truncate">{s.role_description || s.role || 'Suspect'}</div>
+                            <div className="text-[10px] text-slate-400 font-mono truncate">
+                              {s.role_description || s.role || 'Suspect'}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1370,10 +1484,10 @@ export const Game: React.FC<GameProps> = ({
                 )}
 
                 {/* Objective */}
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-950/40 border border-amber-700/40">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-950/40 border border-amber-700/40">
                   <Shield className="w-5 h-5 text-amber-400 shrink-0" />
                   <p className="text-xs text-amber-200 font-mono">
-                    Draw clues, guess evidence, and uncover the truth behind this mystery!
+                    Draw clues, guess evidence, and identify the culprit when all detectives enter the case room!
                   </p>
                 </div>
               </div>
@@ -1382,7 +1496,7 @@ export const Game: React.FC<GameProps> = ({
         </div>
       )}
 
-      {/* SERIAL DRAWING & INVESTIGATION SCENE PHASE */}
+      {/* 3. GAME WINDOW (Drawing Canvas with Timer, Staging & Arrival Sync) */}
       {storySelectionPhase === 'none' &&
         gameState.status !== 'INVESTIGATION' &&
         gameState.status !== 'FINAL_THEORY' &&
@@ -1405,6 +1519,7 @@ export const Game: React.FC<GameProps> = ({
           roomCode={room.code}
           channel={channel}
           isDrawer={isDrawer}
+          gameWindowSync={gameWindowSync}
           onSubmitDrawing={handleSubmitDrawing}
           onLeaveRoom={onExitGame}
         />

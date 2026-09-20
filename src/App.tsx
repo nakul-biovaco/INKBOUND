@@ -345,7 +345,7 @@ export const App: React.FC = () => {
     });
 
     const unsubGameStarting = backend.on('GAME_STARTING', () => {
-      setGameState((prev) => (prev ? { ...prev, status: 'PLAYER_DRAWING' } : null));
+      setGameState((prev) => (prev ? { ...prev, status: 'STORY_SELECTION' } : null));
       setView('GAME');
       if (currentRoom) saveCachedSession(currentRoom, players, gameState, 'GAME');
     });
@@ -814,7 +814,7 @@ export const App: React.FC = () => {
     if (!currentRoom) return;
     const chosenGenre = currentRoom.settings?.selectedCaseId || 'all';
     BackendClient.getInstance().startGame(chosenGenre);
-    setGameState((prev) => (prev ? { ...prev, status: 'PLAYER_DRAWING' } : null));
+    setGameState((prev) => (prev ? { ...prev, status: 'STORY_SELECTION' } : null));
     setView('GAME');
   };
 
