@@ -67,6 +67,17 @@ const PALETTE_COLORS = [
   '#eab308', // Amber Yellow
 ];
 
+const mapChunkToStroke = (chunk: any, drawingId = '', drawerId = ''): Stroke => ({
+  id: chunk.strokeId || chunk.id || `reconnected-${Math.random()}`,
+  drawingId: drawingId || `draw-${Date.now()}`,
+  playerId: chunk.playerId || drawerId,
+  tool: chunk.tool || 'pencil',
+  color: chunk.color || '#111827',
+  width: chunk.width || 4,
+  points: chunk.points || [],
+  timestamp: chunk.timestamp || Date.now(),
+});
+
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   gameState,
   currentUser,
@@ -315,6 +326,26 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // Notify backend immediately when detective enters the game window
   useEffect(() => {
     backend.enterGameWindow();
+
+    // If we reconnected and backend already cached turn strokes, replay immediately
+    const initialStrokes = backend.getLastReconnectedStrokes();
+    if (initialStrokes && initialStrokes.length > 0) {
+      const mapped = initialStrokes.map((s: any) =>
+        mapChunkToStroke(s, `draw-${gameState.id}`, gameState.currentTurnPlayerId || '')
+      );
+      setStrokes(mapped);
+      setTimeout(() => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#fbf8f1';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            DrawingService.replayStrokes(ctx, canvas.width, canvas.height, mapped);
+          }
+        }
+      }, 60);
+    }
   }, []);
 
   useEffect(() => {
@@ -499,6 +530,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       setTimeout(() => setGuessFeedback(null), 5000);
     });
 
+    const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
+      if (payload?.strokeHistory && Array.isArray(payload.strokeHistory) && payload.strokeHistory.length > 0) {
+        const mapped = payload.strokeHistory.map((s: any) =>
+          mapChunkToStroke(s, `draw-${gameState.id}`, gameState.currentTurnPlayerId || '')
+        );
+        setStrokes(mapped);
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#fbf8f1';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            DrawingService.replayStrokes(ctx, canvas.width, canvas.height, mapped);
+          }
+        }
+      }
+    });
+
     return () => {
       unsubLiveUpdate();
       unsubStroke();
@@ -507,8 +556,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       unsubPublicGuess();
       unsubGuessFeedback();
       unsubClueSolved();
+      unsubPlayerReconnected();
     };
-  }, [backend, isCurrentDrawer]);
+  }, [backend, isCurrentDrawer, gameState.id, gameState.currentTurnPlayerId]);
 
   const strokesRef = useRef<Stroke[]>(strokes);
   useEffect(() => {

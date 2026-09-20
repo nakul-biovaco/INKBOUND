@@ -11,6 +11,7 @@ import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
 import { decodeInviteCode } from './utils/inviteCrypto';
 import { SoundService } from './services/soundService';
+import { CaseManager } from './game/CaseManager';
 import { AlertTriangle } from 'lucide-react';
 
 type AppView = 'HOME' | 'LOBBY' | 'GAME';
@@ -157,16 +158,27 @@ export const App: React.FC = () => {
   const [view, setView] = useState<AppView>(() => {
     try {
       if (typeof window !== 'undefined') {
+        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
+        const storedView = sessionStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null;
+        const cachedRoomRaw = sessionStorage.getItem(CACHED_ROOM_KEY);
+        const cachedRoom = cachedRoomRaw ? JSON.parse(cachedRoomRaw) : null;
+        const cachedGameRaw = sessionStorage.getItem(CACHED_GAME_STATE_KEY);
+        const cachedGame = cachedGameRaw ? JSON.parse(cachedGameRaw) : null;
+
+        // CRITICAL: If the player was actively in a game, or cached room status is IN_GAME,
+        // preserve GAME view even if the URL query parameter ?room=CODE is present!
+        if (storedView === 'GAME' || cachedRoom?.status === 'IN_GAME') {
+          if (cachedGame && cachedGame.status !== 'GAME_OVER' && (cachedGame.status as string) !== 'COMPLETED') {
+            return 'GAME';
+          }
+          if (cachedRoom?.status === 'IN_GAME') {
+            return 'GAME';
+          }
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const rawCode = urlParams.get('invite') || urlParams.get('join') || urlParams.get('room');
         const codeFromUrl = rawCode ? decodeInviteCode(rawCode) : null;
-
-        if (codeFromUrl) {
-          return 'LOBBY';
-        }
-
-        const storedRoomId = sessionStorage.getItem(ACTIVE_ROOM_ID_KEY);
-        const storedView = sessionStorage.getItem(ACTIVE_VIEW_KEY) as AppView | null;
 
         if (storedRoomId && storedView) {
           const existingGame = GameService.getGameState(storedRoomId);
@@ -176,6 +188,10 @@ export const App: React.FC = () => {
           if (storedView === 'LOBBY') {
             return 'LOBBY';
           }
+        }
+
+        if (codeFromUrl) {
+          return 'LOBBY';
         }
       }
     } catch {
@@ -279,7 +295,13 @@ export const App: React.FC = () => {
           const me = mappedPlayers.find((p) => p.id === myId || (p.id === payload?.playerId) || (p.nickname === currentUser.nickname && !p.isHost));
           if (me) setCurrentUser(me);
 
+          if (serverRoom.status === 'IN_GAME') {
+            setView('GAME');
+          }
+
           saveCachedSession(mappedRoom, mappedPlayers, gameState, serverRoom.status === 'IN_GAME' ? 'GAME' : view);
+        } else if (serverRoom.status === 'IN_GAME') {
+          setView('GAME');
         }
       }
     });
@@ -322,8 +344,9 @@ export const App: React.FC = () => {
     const unsubPlayerReconnected = backend.on('PLAYER_RECONNECTED', (payload: any) => {
       if (payload?.gameState) {
         const gs = payload.gameState;
+        let mappedPlayers: Player[] = [];
         if (gs.players) {
-          const mappedPlayers: Player[] = gs.players.map((p: any) => ({
+          mappedPlayers = gs.players.map((p: any) => ({
             id: p.playerId,
             nickname: p.displayName,
             avatar: p.avatar,
@@ -338,9 +361,51 @@ export const App: React.FC = () => {
           const myId = backend.getPlayerId() || currentUser.id;
           const me = mappedPlayers.find((p) => p.id === myId);
           if (me) setCurrentUser(me);
-          if (currentRoom) saveCachedSession(currentRoom, mappedPlayers, gameState, 'GAME');
         }
+
+        const reconnectedCase = gs.storyId ? CaseManager.getCase(gs.storyId) : undefined;
+        const mappedGameState: AuthoritativeGameState = {
+          id: gs.id || currentRoom?.id || `game-${Date.now()}`,
+          roomId: gs.roomId || currentRoom?.id || '',
+          caseId: gs.storyId || currentRoom?.settings?.selectedCaseId || 'all',
+          currentCase: reconnectedCase,
+          status:
+            gs.state === 'FINAL_INVESTIGATION'
+              ? 'FINAL_THEORY'
+              : gs.state === 'GAME_COMPLETE'
+                ? 'RESULTS'
+                : 'PLAYER_DRAWING',
+          currentTurnPlayerId: gs.currentDrawerId || null,
+          turnIndex: gs.turnIndex ?? 0,
+          turnStartedAt: gs.roundStartedAt ? new Date(gs.roundStartedAt).toISOString() : null,
+          turnEndsAt: gs.roundEndsAt ? new Date(gs.roundEndsAt).toISOString() : null,
+          turnDuration: currentRoom?.settings?.turnDuration || 120,
+          sequenceNumber: 0,
+          players: mappedPlayers.length > 0 ? mappedPlayers : players,
+          evidenceCards: [],
+          connections: [],
+          timelineSlots: {},
+          theories: {},
+          scores: {},
+          distorterId: null,
+          narrativeLog: gs.narrativeLog || [],
+          caseEvidenceBoard: gs.evidenceBoard || [],
+          suspects: gs.suspects || [],
+          caseProgress: gs.caseProgress || null,
+          discussionOptions: gs.discussionOptions || null,
+          discussionVotes: gs.discussionVotes || [],
+          storyContext: gs.storyContext || null,
+          investigationObjective: gs.investigationObjective || null,
+          clueHint: gs.clueHint || gs.hint || null,
+          category: gs.category || null,
+          revealedLetters: gs.revealedLetters || null,
+        };
+
+        setGameState(mappedGameState);
         setView('GAME');
+        if (currentRoom) {
+          saveCachedSession(currentRoom, mappedPlayers.length > 0 ? mappedPlayers : players, mappedGameState, 'GAME');
+        }
       }
     });
 

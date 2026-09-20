@@ -136,8 +136,18 @@ export const Game: React.FC<GameProps> = ({
 
   // Story Selection & Overview phase state (Clean standalone windows)
   const [storySelectionPhase, setStorySelectionPhase] = useState<'none' | 'choosing' | 'overview'>(() => {
-    // If the game just launched or turn has not yet started with turnEndsAt, start in choosing or overview phase
-    if (!initialState.turnEndsAt || initialState.status === 'STORY_SELECTION' || (initialState.status as any) === 'COUNTDOWN') {
+    // If the game has already started (active turn running, drawing, or investigation), never show choosing!
+    if (
+      initialState.turnEndsAt ||
+      initialState.status === 'PLAYER_DRAWING' ||
+      initialState.status === 'DISCUSSION' ||
+      initialState.status === 'INVESTIGATION' ||
+      initialState.status === 'FINAL_THEORY' ||
+      initialState.status === 'RESULTS'
+    ) {
+      return 'none';
+    }
+    if (initialState.status === 'STORY_SELECTION' || (initialState.status as any) === 'COUNTDOWN') {
       return 'choosing';
     }
     return 'none';
@@ -742,6 +752,21 @@ export const Game: React.FC<GameProps> = ({
       }
 
       const reconnectedCase = payload?.gameState?.storyId ? CaseManager.getCase(payload.gameState.storyId) : null;
+
+      if (
+        payload?.gameState?.state === 'DRAWING' ||
+        payload?.gameState?.state === 'PROMPT_SELECTION' ||
+        payload?.gameState?.state === 'ROUND_START' ||
+        payload?.gameState?.state === 'GUESSING' ||
+        payload?.gameState?.roundEndsAt ||
+        (payload?.gameState?.turnIndex !== undefined && payload.gameState.turnIndex >= 0)
+      ) {
+        if (overviewTimerRef.current) {
+          clearInterval(overviewTimerRef.current);
+          overviewTimerRef.current = null;
+        }
+        setStorySelectionPhase('none');
+      }
 
       setGameState((prev) => ({
         ...prev,

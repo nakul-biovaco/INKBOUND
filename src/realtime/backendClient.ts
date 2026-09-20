@@ -106,6 +106,7 @@ export class BackendClient {
   private shouldSendReconnectHandshake = false;
   private lastSecretDrawObjective: any = null;
   private lastDrawingStarted: any = null;
+  private lastReconnectedStrokes: any[] | null = null;
 
   private constructor() {
     try {
@@ -337,6 +338,10 @@ export class BackendClient {
     return this.lastSecretDrawObjective;
   }
 
+  public getLastReconnectedStrokes(): any[] | null {
+    return this.lastReconnectedStrokes;
+  }
+
   public requestSecretObjective(): void {
     this.send('REQUEST_SECRET_OBJECTIVE', {});
   }
@@ -351,6 +356,7 @@ export class BackendClient {
     if (event === 'NEXT_TURN') {
       this.lastSecretDrawObjective = null;
       this.lastDrawingStarted = null;
+      this.lastReconnectedStrokes = null;
     }
     if (event === 'PLAYER_RECONNECTED' && payload) {
       if (payload.drawerPrivateState) {
@@ -364,6 +370,9 @@ export class BackendClient {
       }
       if (payload.gameState) {
         this.lastDrawingStarted = payload.gameState;
+      }
+      if (payload.strokeHistory && Array.isArray(payload.strokeHistory)) {
+        this.lastReconnectedStrokes = payload.strokeHistory;
       }
     }
 
