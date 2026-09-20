@@ -175,7 +175,8 @@ export class GameEngine {
   }
 
   /**
-   * Starts game directly into the investigation without 15s option chooser delay
+   * Starts game directly into the investigation without 15s option chooser delay.
+   * Always picks a random case from the 120 catalog stories.
    */
   public startDirectGame(): void {
     if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
@@ -190,22 +191,36 @@ export class GameEngine {
     const genreSetting = rawGenre && rawGenre !== 'midnight_museum' ? rawGenre : 'all';
 
     let selectedStory: StoryDefinition | null = null;
-    if (genreSetting && genreSetting !== 'all') {
+
+    // Only do a direct story lookup if the setting looks like an actual story ID (e.g. "story_042")
+    if (genreSetting && /^story_\d+/i.test(genreSetting)) {
       selectedStory = StoryLibrary.getStory(genreSetting);
     }
+
+    // Otherwise, use StorySelector to pick a random story from the 120 catalog,
+    // filtered by genre if a genre was specified
     if (!selectedStory) {
-      const options = StorySelector.getRandomStories(1, genreSetting || 'all');
+      const genreFilter = genreSetting || 'all';
+      const options = StorySelector.getRandomStories(1, genreFilter);
       if (options.length > 0) {
         selectedStory = StoryLibrary.getStory(options[0].storyId);
       }
     }
+
+    // Ultimate fallback: pick any story from the catalog
     if (!selectedStory) {
-      selectedStory = StoryLibrary.getStory('story_01_the_midnight_museum') || StoryLibrary.getAllStories()[0];
+      const allCatalog = StoryLibrary.getCatalogStories();
+      if (allCatalog.length > 0) {
+        selectedStory = allCatalog[Math.floor(Math.random() * allCatalog.length)];
+      } else {
+        selectedStory = StoryLibrary.getAllStories()[0];
+      }
     }
 
     logger.info('Starting game directly with selected case', {
       storyId: selectedStory.id,
       title: selectedStory.title,
+      genre: selectedStory.genre,
     });
 
     this.lockAndStartStory(selectedStory);
@@ -355,7 +370,10 @@ export class GameEngine {
 
     // Ensure story engine is ready
     if (!this.storyEngine) {
-      const defaultStory = StoryLibrary.getStory('story_01_the_midnight_museum') || StoryLibrary.getAllStories()[0];
+      const catalogStories = StoryLibrary.getCatalogStories();
+      const defaultStory = catalogStories.length > 0
+        ? catalogStories[Math.floor(Math.random() * catalogStories.length)]
+        : StoryLibrary.getAllStories()[0];
       this.storyEngine = new StoryEngine(defaultStory);
       this.session.storyId = defaultStory.id;
       this.session.storyVariables = this.storyEngine.getVariables();

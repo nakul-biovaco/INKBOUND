@@ -36,13 +36,18 @@ interface LobbyProps {
   onPromoteHost?: (playerId: string) => void;
 }
 
-export const GENRE_OPTIONS: Record<string, { id: string; icon: string; title: string; desc: string }> = {
-  all: { id: 'all', icon: '🔍', title: 'All Mystery Genres (Random)', desc: 'Mix of horror, romance, heist, and noir' },
-  horror: { id: 'horror', icon: '👻', title: 'Supernatural Horror', desc: 'Ghostly sightings, haunted corridors, eerie clues' },
-  romance: { id: 'romance', icon: '💌', title: 'Romance & Secrets', desc: 'Lost letters, unrequited love, train station rendezvous' },
-  heist: { id: 'heist', icon: '💎', title: 'Museum & Vault Heist', desc: 'Master thieves, security overrides, diamond heists' },
-  locked_room: { id: 'locked_room', icon: '🗝️', title: 'Locked Room Mystery', desc: 'Impossible crime scenes, sealed chambers, vanishing culprits' },
-  cyberpunk: { id: 'cyberpunk', icon: '💾', title: 'Corporate Noir & Cyber', desc: 'Empty offices, wiped hard drives, encrypted ledgers' },
+export const GENRE_OPTIONS: Record<string, { id: string; icon: string; title: string; desc: string; count: number }> = {
+  all: { id: 'all', icon: '🔍', title: 'All 120 Cases (Full Random)', desc: 'Every genre, every mystery — pure unpredictable chaos', count: 120 },
+  noir: { id: 'noir', icon: '🕵️', title: 'Noir Mystery', desc: 'Classic whodunits, shadowy alleys, hard-boiled detectives', count: 12 },
+  investigation: { id: 'investigation', icon: '🔎', title: 'Investigation', desc: 'Methodical crime scene work, forensic puzzles, cold cases', count: 12 },
+  psychological: { id: 'psychological', icon: '🧠', title: 'Psychological', desc: 'Mind games, unreliable witnesses, twisted motives', count: 12 },
+  thriller: { id: 'thriller', icon: '⚡', title: 'Thriller', desc: 'High-stakes chases, ticking clocks, deadly conspiracies', count: 12 },
+  horror: { id: 'horror', icon: '👻', title: 'Horror', desc: 'Haunted crime scenes, cursed artifacts, sinister rituals', count: 12 },
+  supernatural: { id: 'supernatural', icon: '🌙', title: 'Supernatural', desc: 'Ghostly sightings, inexplicable phenomena, eerie clues', count: 12 },
+  romance: { id: 'romance', icon: '💌', title: 'Romance & Drama', desc: 'Lost letters, forbidden love, passionate betrayals', count: 12 },
+  scifi: { id: 'scifi', icon: '💾', title: 'Sci-Fi & Cyber', desc: 'Encrypted ledgers, neon cities, digital crime trails', count: 12 },
+  dark: { id: 'dark', icon: '🖤', title: 'Dark Mystery', desc: 'Grim underworlds, moral ambiguity, haunting secrets', count: 12 },
+  emotional: { id: 'emotional', icon: '💔', title: 'Emotional Mystery', desc: 'Heart-wrenching truths, family secrets, bittersweet justice', count: 12 },
 };
 
 export const Lobby: React.FC<LobbyProps> = ({
@@ -673,7 +678,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                         {activeGenre.title}
                       </div>
                       <div className="text-[10px] text-[#7a5e45] font-mono">
-                        {isHost ? 'Click to select classified archive category' : 'Category selected by Chief'}
+                        {isHost ? `${activeGenre.count} cases • Click to change category` : `${activeGenre.count} cases • Category selected by Chief`}
                       </div>
                     </div>
                   </div>
@@ -942,7 +947,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-serif font-black text-[#1a110a] truncate">{g.title}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-serif font-black text-[#1a110a] truncate">{g.title}</span>
+                        <span className="text-[8px] font-mono font-bold text-[#7a5e45] bg-[#ede1cf] border border-[#b89e7c] px-1.5 py-0.2 rounded shrink-0">{g.count}</span>
+                      </div>
                       <div className="text-[10px] text-[#5c422e] font-mono mt-0.5 line-clamp-2 leading-tight">{g.desc}</div>
                     </div>
                   </div>

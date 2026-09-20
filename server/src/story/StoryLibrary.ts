@@ -91,6 +91,17 @@ export class StoryLibrary {
     return Array.from(this.storiesMap.values());
   }
 
+  /**
+   * Returns only the 120 catalog stories (story_001 through story_120),
+   * excluding any legacy markdown stories.
+   */
+  public static getCatalogStories(): StoryDefinition[] {
+    this.ensureInitialized();
+    return Array.from(this.storiesMap.values()).filter(
+      (s) => /^story_\d{3}$/.test(s.id)
+    );
+  }
+
   public static getStory(storyId: string): StoryDefinition | null {
     this.ensureInitialized();
 
@@ -99,17 +110,26 @@ export class StoryLibrary {
       return this.storiesMap.get(storyId)!;
     }
 
-    // Match by prefix or clean id (e.g. 'midnight_museum' or 'room_404')
-    const lowerId = storyId.toLowerCase();
-    for (const [id, story] of this.storiesMap.entries()) {
-      if (id.toLowerCase().includes(lowerId) || lowerId.includes(id.toLowerCase())) {
+    // Normalize numeric IDs: 'story_7' -> 'story_007', 'story_01' -> 'story_001'
+    const numMatch = storyId.match(/story_?(\d+)/i);
+    if (numMatch) {
+      const normalizedId = `story_${numMatch[1].padStart(3, '0')}`;
+      if (this.storiesMap.has(normalizedId)) {
+        return this.storiesMap.get(normalizedId)!;
+      }
+    }
+
+    // Match by title (exact, case-insensitive)
+    const lowerId = storyId.toLowerCase().trim();
+    for (const [, story] of this.storiesMap.entries()) {
+      if (story.title.toLowerCase().trim() === lowerId) {
         return story;
       }
     }
 
-    // Fallback to first available story
-    const first = this.storiesMap.values().next().value;
-    return first || null;
+    // DO NOT fuzzy-match genre names or partial substrings — that causes the
+    // same stories to always be selected when a genre setting is passed in.
+    return null;
   }
 
   public static getSummaries(): Array<{ id: string; title: string; genre: string; difficulty: string; description: string }> {
