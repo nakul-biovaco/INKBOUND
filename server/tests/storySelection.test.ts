@@ -93,17 +93,11 @@ test('Phase 2 Game Flow: 1 random chooser gets 3 story options, other players wa
   assert.ok(chooserId, 'A story chooser must be assigned');
   assert.ok(allPlayers.some((p) => p.playerId === chooserId));
 
-  // 3. Verify private unicast vs public broadcast
-  const chooserMsg = unicastMessages.find((m) => m.recipient === chooserId && m.event === 'STORY_OPTIONS');
-  assert.ok(chooserMsg, 'Chooser must receive STORY_OPTIONS privately');
-  assert.equal(chooserMsg.payload.options.length, 3, 'Must receive exactly 3 story options');
-
-  // Verify non-choosers did NOT receive STORY_OPTIONS
-  const nonChoosers = allPlayers.filter((p) => p.playerId !== chooserId);
-  nonChoosers.forEach((p) => {
-    const leaked = unicastMessages.find((m) => m.recipient === p.playerId && m.event === 'STORY_OPTIONS');
-    assert.equal(leaked, undefined, `Player ${p.displayName} must NOT receive private story options!`);
-  });
+  // 3. Verify STORY_OPTIONS is now broadcast to ALL players (not unicast)
+  const storyOptionsBroadcast = broadcastMessages.find((m) => m.event === 'STORY_OPTIONS');
+  assert.ok(storyOptionsBroadcast, 'STORY_OPTIONS must be broadcast to all players');
+  assert.equal(storyOptionsBroadcast.payload.options.length, 3, 'Must receive exactly 3 story options');
+  assert.equal(storyOptionsBroadcast.payload.timeLimitSeconds, 0, 'No time limit for story selection');
 
   // Verify public broadcast announced the chooser
   const publicAnnouncement = broadcastMessages.find((m) => m.event === 'STORY_CHOOSER_SELECTED');
@@ -111,8 +105,8 @@ test('Phase 2 Game Flow: 1 random chooser gets 3 story options, other players wa
   assert.equal(publicAnnouncement.payload.chooserPlayerId, chooserId);
 
   // 4. Chooser picks one of the offered stories
-  const pickedStoryId = chooserMsg.payload.options[1].storyId;
-  const pickedStoryTitle = chooserMsg.payload.options[1].title;
+  const pickedStoryId = storyOptionsBroadcast.payload.options[1].storyId;
+  const pickedStoryTitle = storyOptionsBroadcast.payload.options[1].title;
 
   engine.chooseStory(chooserId, pickedStoryId);
 
@@ -122,11 +116,12 @@ test('Phase 2 Game Flow: 1 random chooser gets 3 story options, other players wa
   );
   assert.equal(engine.getSession().storyId, pickedStoryId);
 
-  // Verify STORY_SELECTED broadcasted to everyone
+  // Verify STORY_SELECTED broadcasted to everyone with overview seconds
   const selectedBroadcast = broadcastMessages.find((m) => m.event === 'STORY_SELECTED');
   assert.ok(selectedBroadcast);
   assert.equal(selectedBroadcast.payload.storyId, pickedStoryId);
   assert.equal(selectedBroadcast.payload.title, pickedStoryTitle);
+  assert.ok(selectedBroadcast.payload.overviewSeconds > 0, 'Must include overview countdown');
 
   // Clean up
   GameEngine.removeEngine(room.roomId);

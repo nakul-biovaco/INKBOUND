@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Clock, Sparkles, CheckCircle, X, MessageSquare } from 'lucide-react';
+import { BookOpen, Clock, Sparkles, CheckCircle, X, MessageSquare, Users, Shield } from 'lucide-react';
 import { AuthoritativeGameState, TheorySubmission } from '../types/game';
 import { Player } from '../types/player';
 import { Room } from '../types/room';
@@ -15,6 +15,7 @@ import { ClueDiscoveredCard } from '../components/common/ClueDiscoveredCard';
 import { TurnTransitionOverlay, TurnTransitionData } from '../components/common/TurnTransitionOverlay';
 import { DEFAULT_EVIDENCE_SKETCHES } from '../utils/defaultSketches';
 import { SoundService } from '../services/soundService';
+import { getStoryArtwork } from '../utils/storyArtwork';
 
 interface GameProps {
   room: Room;
@@ -133,6 +134,15 @@ export const Game: React.FC<GameProps> = ({
   const [clueHint, setClueHint] = useState<string | null>(null);
   const [revealedLetters, setRevealedLetters] = useState<Array<Array<string | null>> | null>(null);
 
+  // Story Selection & Overview phase state
+  const [storySelectionPhase, setStorySelectionPhase] = useState<'none' | 'choosing' | 'overview'>('none');
+  const [storyOptions, setStoryOptions] = useState<any[]>([]);
+  const [chooserPlayerId, setChooserPlayerId] = useState<string | null>(null);
+  const [chooserName, setChooserName] = useState<string>('');
+  const [overviewData, setOverviewData] = useState<any>(null);
+  const [overviewCountdown, setOverviewCountdown] = useState<number>(0);
+  const overviewTimerRef = useRef<any>(null);
+
 
 
   // Integrated HUD Game Alert Banner (replaces fragmented floating vibe-coded cards)
@@ -211,20 +221,61 @@ export const Game: React.FC<GameProps> = ({
 
   // Wire BackendClient real-time authoritative events
   useEffect(() => {
-    const unsubChooser = backend.on('STORY_CHOOSER_SELECTED', () => {});
-    const unsubStoryOptions = backend.on('STORY_OPTIONS', () => {});
+    const unsubChooser = backend.on('STORY_CHOOSER_SELECTED', (payload: any) => {
+      setChooserPlayerId(payload.chooserPlayerId);
+      setChooserName(payload.chooserName || 'A Detective');
+      setStorySelectionPhase('choosing');
+      SoundService.playDramaticSting();
+    });
+
+    const unsubStoryOptions = backend.on('STORY_OPTIONS', (payload: any) => {
+      if (payload.options && Array.isArray(payload.options)) {
+        setStoryOptions(payload.options);
+        setChooserPlayerId(payload.chooserPlayerId || chooserPlayerId);
+        setChooserName(payload.chooserName || chooserName || 'A Detective');
+        setStorySelectionPhase('choosing');
+      }
+    });
 
     const unsubStorySelected = backend.on('STORY_SELECTED', (payload: any) => {
       SoundService.playDramaticSting();
       const targetStoryId = payload.storyId || payload.title;
       const resolvedCase = CaseManager.getCase(targetStoryId);
 
+      // Show overview phase
+      const overviewSecs = payload.overviewSeconds || 10;
+      setOverviewData({
+        storyId: targetStoryId,
+        title: payload.title,
+        genre: payload.genre,
+        difficulty: payload.difficulty,
+        description: payload.description,
+        suspects: payload.suspects || resolvedCase?.characters || [],
+        caseProgress: payload.caseProgress,
+        resolvedCase,
+      });
+      setOverviewCountdown(overviewSecs);
+      setStorySelectionPhase('overview');
+      setStoryOptions([]);
+
       setGameState((prev) => ({
         ...prev,
-        status: 'PLAYER_DRAWING',
         caseId: resolvedCase.id,
         currentCase: resolvedCase,
       }));
+
+      // Countdown timer for overview
+      if (overviewTimerRef.current) clearInterval(overviewTimerRef.current);
+      let remaining = overviewSecs;
+      overviewTimerRef.current = setInterval(() => {
+        remaining--;
+        setOverviewCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(overviewTimerRef.current);
+          setStorySelectionPhase('none');
+          setOverviewData(null);
+        }
+      }, 1000);
     });
 
     const unsubTurnStarted = backend.on('TURN_STARTED', (payload: any) => {
@@ -1152,8 +1203,188 @@ export const Game: React.FC<GameProps> = ({
         />
       )}
 
+      {/* STORY SELECTION PHASE — 3 random stories for the chooser to pick */}
+      {storySelectionPhase === 'choosing' && storyOptions.length > 0 && (
+        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-4xl w-full space-y-6">
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold uppercase tracking-widest">
+                <BookOpen className="w-3.5 h-3.5" />
+                Case Selection
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-tight">
+                {chooserPlayerId === currentUser.id
+                  ? 'Choose Your Mystery Case'
+                  : `${chooserName} is choosing the case...`}
+              </h2>
+              <p className="text-sm text-slate-400 font-mono">
+                {chooserPlayerId === currentUser.id
+                  ? 'Select one of these 3 mystery cases to investigate'
+                  : 'Take your time — no time limit'}
+              </p>
+            </div>
+
+            {/* 3 Story Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {storyOptions.map((option: any, idx: number) => {
+                const artwork = getStoryArtwork(option.genre, option.title, option.storyId);
+                const isChooser = chooserPlayerId === currentUser.id;
+                return (
+                  <div
+                    key={option.storyId || idx}
+                    onClick={() => {
+                      if (isChooser) {
+                        SoundService.playStamp();
+                        backend.chooseStory(option.storyId);
+                      }
+                    }}
+                    className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
+                      isChooser
+                        ? 'cursor-pointer hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(217,161,59,0.3)] border-slate-600 bg-slate-900/80'
+                        : 'border-slate-700 bg-slate-900/60 opacity-80'
+                    }`}
+                  >
+                    {/* Case Image */}
+                    <div className="w-full aspect-[16/10] bg-slate-800 overflow-hidden relative">
+                      <img
+                        src={artwork.img}
+                        alt={option.title}
+                        className="w-full h-full object-cover filter contrast-110 brightness-90"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-mono text-amber-300 font-bold uppercase border border-amber-500/30">
+                        {option.genre}
+                      </div>
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <div className="text-white font-serif font-black text-sm sm:text-base leading-tight drop-shadow-lg">
+                          {option.title}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Case Details */}
+                    <div className="p-3 space-y-2">
+                      <p className="text-xs text-slate-300 font-mono leading-relaxed line-clamp-3">
+                        {option.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                          option.difficulty === 'HARD' ? 'text-red-300 border-red-700 bg-red-950/50' :
+                          option.difficulty === 'EASY' ? 'text-green-300 border-green-700 bg-green-950/50' :
+                          'text-amber-300 border-amber-700 bg-amber-950/50'
+                        }`}>
+                          {option.difficulty || 'NORMAL'}
+                        </span>
+                        {isChooser && (
+                          <span className="text-[10px] font-mono text-amber-400 font-bold animate-pulse">
+                            Click to select →
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STORY OVERVIEW PHASE — Case briefing before investigation begins */}
+      {storySelectionPhase === 'overview' && overviewData && (
+        <div className="fixed inset-0 z-[60] bg-black/92 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-2xl w-full space-y-5">
+            {/* Countdown badge */}
+            <div className="flex justify-center">
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-red-900/60 border border-red-500/40 text-red-200 text-sm font-mono font-bold">
+                <Clock className="w-4 h-4 animate-pulse" />
+                Investigation begins in {overviewCountdown}s
+              </div>
+            </div>
+
+            {/* Case Briefing Card */}
+            <div
+              className="relative rounded-2xl border-2 border-amber-700/60 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+              style={{
+                background: 'linear-gradient(135deg, #1a1510 0%, #0f0d0a 50%, #151210 100%)',
+              }}
+            >
+              {/* Case header image */}
+              {(() => {
+                const artwork = getStoryArtwork(overviewData.genre, overviewData.title, overviewData.storyId);
+                return (
+                  <div className="w-full aspect-[21/9] bg-slate-800 overflow-hidden relative">
+                    <img
+                      src={artwork.img}
+                      alt={overviewData.title}
+                      className="w-full h-full object-cover filter contrast-110 brightness-75"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1510] via-[#1a1510]/30 to-transparent" />
+                    <div className="absolute bottom-4 left-5 right-5 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded bg-amber-900/80 text-amber-300 text-[10px] font-mono font-bold uppercase border border-amber-600/40">
+                          {overviewData.genre}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                          overviewData.difficulty === 'HARD' ? 'text-red-300 border-red-700 bg-red-950/60' :
+                          overviewData.difficulty === 'EASY' ? 'text-green-300 border-green-700 bg-green-950/60' :
+                          'text-amber-300 border-amber-700 bg-amber-950/60'
+                        }`}>
+                          {overviewData.difficulty || 'NORMAL'}
+                        </span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-tight drop-shadow-lg">
+                        {overviewData.title}
+                      </h2>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Case details */}
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-slate-300 font-mono leading-relaxed">
+                  {overviewData.description}
+                </p>
+
+                {/* Suspects preview */}
+                {overviewData.suspects && overviewData.suspects.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                      <Users className="w-3.5 h-3.5" />
+                      Suspects ({overviewData.suspects.length})
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {overviewData.suspects.slice(0, 6).map((s: any, idx: number) => (
+                        <div key={s.id || idx} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700">
+                          <span className="text-lg">{s.avatar || '🕵️'}</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-200 truncate">{s.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono truncate">{s.role_description || s.role || 'Suspect'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Objective */}
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-950/40 border border-amber-700/40">
+                  <Shield className="w-5 h-5 text-amber-400 shrink-0" />
+                  <p className="text-xs text-amber-200 font-mono">
+                    Draw clues, guess evidence, and uncover the truth behind this mystery!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SERIAL DRAWING & INVESTIGATION SCENE PHASE */}
-      {gameState.status !== 'INVESTIGATION' &&
+      {storySelectionPhase === 'none' &&
+        gameState.status !== 'INVESTIGATION' &&
         gameState.status !== 'FINAL_THEORY' &&
         gameState.status !== 'TRUTH_REVEAL' &&
         gameState.status !== 'RESULTS' && (
@@ -1181,7 +1412,7 @@ export const Game: React.FC<GameProps> = ({
 
 
       {/* 3. INVESTIGATION BOARD & TIMELINE */}
-      {gameState.status === 'INVESTIGATION' && (
+      {storySelectionPhase === 'none' && gameState.status === 'INVESTIGATION' && (
         <InvestigationBoard
           gameState={gameState}
           currentUser={currentUser}

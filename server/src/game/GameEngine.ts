@@ -167,10 +167,10 @@ export class GameEngine {
 
     this.emit('GAME_STARTING', { countdownSeconds: 1 });
 
-    // 1-second countdown before starting directly into the case
+    // 1-second countdown before showing story selection to players
     this.timerManager.startTimer('lobby_countdown', 1, () => {
       if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      this.startDirectGame();
+      this.beginStorySelection();
     });
   }
 
@@ -258,28 +258,22 @@ export class GameEngine {
       optionsCount: options.length,
     });
 
-    // Broadcast to room that chooser is picking (WITHOUT leaking the choices)
+    // Broadcast to room that a chooser is picking
     this.emit('STORY_CHOOSER_SELECTED', {
       chooserPlayerId: chooser.playerId,
       chooserName: chooser.displayName,
-      timeLimitSeconds: 20,
+      timeLimitSeconds: 0, // No time limit — user picks at their own pace
     });
 
-    // Unicast the 3 secret story choices ONLY to the chooser
-    this.emit(
-      'STORY_OPTIONS',
-      {
-        options,
-        timeLimitSeconds: 20,
-      },
-      chooser.playerId
-    );
-
-    // 20-second timer for player to pick
-    this.timerManager.startTimer('story_selection', 20, () => {
-      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
-      this.autoSelectStory();
+    // Send the 3 story choices to ALL players so everyone can see
+    this.emit('STORY_OPTIONS', {
+      options,
+      chooserPlayerId: chooser.playerId,
+      chooserName: chooser.displayName,
+      timeLimitSeconds: 0, // No time limit
     });
+
+    // No timer — the chooser takes as long as they want
   }
 
   /**
@@ -331,19 +325,25 @@ export class GameEngine {
     this.session.suspects = this.caseRuntime.getSuspects();
     this.session.caseProgress = this.caseRuntime.getCaseProgress();
 
-    // Broadcast chosen story to everyone in the room
+    // Broadcast chosen story to everyone in the room with overview time
+    const overviewSeconds = 10;
     this.emit('STORY_SELECTED', {
       storyId: story.id,
       title: story.title,
       genre: story.genre,
       difficulty: story.difficulty,
       description: story.description,
-      overviewSeconds: 0,
+      overviewSeconds,
+      suspects: this.session.suspects,
+      caseProgress: this.session.caseProgress,
     });
 
-    // Directly start the first investigation turn without any 15-20s choosing timer or 12s delay!
-    this.turnManager.randomizeFirstDrawer();
-    this.beginTurn();
+    // Give players time to read the case overview before starting
+    this.timerManager.startTimer('story_overview', overviewSeconds, () => {
+      if (!GameEngine.getEngine(this.roomId) || !RoomManager.getRoom(this.roomId)) return;
+      this.turnManager.randomizeFirstDrawer();
+      this.beginTurn();
+    });
   }
 
   /**
