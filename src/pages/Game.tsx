@@ -1117,7 +1117,7 @@ export const Game: React.FC<GameProps> = ({
 
   return (
 
-    <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between overflow-x-hidden">
+    <div className="relative min-h-screen w-full desk-bg text-slate-100 flex flex-col justify-between overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
         className="fixed inset-0 bg-cover bg-center opacity-30 mix-blend-screen pointer-events-none"
@@ -1279,58 +1279,65 @@ export const Game: React.FC<GameProps> = ({
 
       {/* 1. STORY SELECTION WINDOW — Standalone full screen (No DrawingCanvas mounted) */}
       {storySelectionPhase === 'choosing' && (
-        <div className="fixed inset-0 z-50 bg-[#07090e] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
+        <div className="fixed inset-0 z-50 desk-bg text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
           {/* Background ambiance */}
           <div
-            className="fixed inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-screen"
+            className="fixed inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-screen"
             style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
           />
-          <div className="fixed inset-0 bg-gradient-to-b from-[#07090e]/95 via-[#07090e]/80 to-[#07090e]/95 pointer-events-none" />
+          <div className="fixed inset-0 bg-gradient-to-b from-desk-950/95 via-desk-950/80 to-desk-950/95 pointer-events-none" />
 
           {storyOptions.length === 0 ? (
-            <div className="relative z-10 max-w-md w-full text-center space-y-4 p-8 rounded-3xl bg-slate-900/80 border border-amber-500/30 backdrop-blur-md shadow-2xl">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-amber-400 animate-pulse" />
+            <div
+              className="relative z-10 max-w-md w-full text-center space-y-4 p-8 rounded-3xl border-3 border-[#8c6d48] shadow-[0_20px_60px_rgba(0,0,0,0.85),inset_0_0_60px_rgba(139,94,60,0.15)] text-[#221711] select-none"
+              style={{
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
+              }}
+            >
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-[#ede0ce] border-2 border-[#b89e7c] flex items-center justify-center text-red-800 shadow-inner">
+                <BookOpen className="w-8 h-8 animate-pulse" />
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
-                  Confidential Archive
+                <span className="px-2.5 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                  CONFIDENTIAL ARCHIVE
                 </span>
-                <h3 className="text-xl font-serif font-black text-white">
-                  Retrieving Case Files...
+                <h3 className="text-xl font-serif font-black text-[#1a110a]">
+                  Retrieving Case Dossiers...
                 </h3>
-                <p className="text-xs font-mono text-slate-400">
-                  Selecting 3 mystery dossiers for the detectives.
+                <p className="text-xs font-mono text-[#5c422e]">
+                  Selecting 3 mystery dossiers from the evidence vault.
                 </p>
               </div>
               <div className="flex justify-center gap-1.5 pt-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
+                <span className="w-2.5 h-2.5 rounded-full bg-red-800 animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#8c6d48] animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#3e2b1b] animate-bounce" />
               </div>
             </div>
           ) : (
             <div className="relative z-10 max-w-5xl w-full space-y-6 my-auto py-6">
               {/* Header */}
               <div className="text-center space-y-2">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold uppercase tracking-widest">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Case Selection
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbf7ee] border-2 border-[#8c6d48] text-red-900 text-xs font-mono font-bold uppercase tracking-widest shadow-md">
+                  <BookOpen className="w-3.5 h-3.5 text-red-800" />
+                  CONFIDENTIAL CASE ARCHIVES
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black font-serif text-white tracking-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black font-serif text-amber-100 tracking-tight drop-shadow">
                   {chooserPlayerId === currentUser.id
-                    ? 'Choose Your Mystery Case'
-                    : `${chooserName} is choosing the case...`}
+                    ? 'Select Your Case File Dossier'
+                    : `${chooserName} is choosing the case dossier...`}
                 </h2>
-                <p className="text-sm text-slate-400 font-mono max-w-xl mx-auto">
+                <p className="text-sm text-stone-300 font-mono max-w-xl mx-auto">
                   {chooserPlayerId === currentUser.id
-                    ? 'Select one of these 3 mystery dossiers to investigate with your team.'
-                    : 'All detectives are reviewing the archives. Take your time — no time limit.'}
+                    ? 'Review the three classified crime briefs below and select one for your squad.'
+                    : 'All detectives are inspecting the crime dossiers. Take your time — no time limit.'}
                 </p>
               </div>
 
-              {/* 3 Story Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {/* 3 Story Cards as Physical Investigation Dossiers */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-stretch">
                 {storyOptions.map((option: any, idx: number) => {
                   const artwork = getStoryArtwork(option.genre, option.title, option.storyId);
                   const isChooser = chooserPlayerId === currentUser.id;
@@ -1343,58 +1350,78 @@ export const Game: React.FC<GameProps> = ({
                           backend.chooseStory(option.storyId);
                         }
                       }}
-                      className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+                      className={`relative text-[#221711] border-3 rounded-2xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.65),inset_0_0_50px_rgba(139,94,60,0.12)] flex flex-col justify-between transition-all duration-300 overflow-hidden select-none ${
                         isChooser
-                          ? 'cursor-pointer hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_35px_rgba(217,161,59,0.35)] border-amber-500/40 bg-slate-900/90'
-                          : 'border-slate-700/80 bg-slate-900/70 opacity-90'
+                          ? 'border-[#8c6d48] hover:border-red-800 cursor-pointer hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(138,28,28,0.35)] group'
+                          : 'border-[#8c6d48]/70 opacity-90'
                       }`}
+                      style={{
+                        background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                        backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                        backgroundSize: '16px 16px, 100% 100%',
+                      }}
                     >
-                      {/* Case Image */}
-                      <div>
-                        <div className="w-full aspect-[16/10] bg-slate-800 overflow-hidden relative">
+                      {/* Corner Accents */}
+                      <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                      <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+                      <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+                      <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+                      {/* Top folder tab indicator */}
+                      <div className="flex items-center justify-between mb-3 border-b border-[#bfa98e]/70 pb-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#7a5839]">
+                          DOSSIER #{idx + 1}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-black uppercase tracking-wider bg-red-800/10 text-red-800 border border-red-800">
+                          {option.genre}
+                        </span>
+                      </div>
+
+                      {/* Polaroid Evidence Artwork */}
+                      <div className="relative rounded-xl overflow-hidden bg-stone-900 border-2 border-[#b89e7c] shadow-sm mb-3">
+                        <div className="w-full aspect-[16/10] overflow-hidden relative">
                           <img
                             src={artwork.img}
                             alt={option.title}
-                            className="w-full h-full object-cover filter contrast-110 brightness-90"
+                            className="w-full h-full object-cover filter contrast-110 brightness-95 group-hover:scale-105 transition-transform duration-300"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-                          <div className="absolute top-2 right-2 px-2.5 py-0.5 rounded bg-black/70 text-[10px] font-mono text-amber-300 font-bold uppercase border border-amber-500/30">
-                            {option.genre}
-                          </div>
-                          <div className="absolute bottom-2 left-3 right-3">
-                            <div className="text-white font-serif font-black text-base sm:text-lg leading-tight drop-shadow-lg">
-                              {option.title}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Case Details */}
-                        <div className="p-4 space-y-2">
-                          <p className="text-xs text-slate-300 font-mono leading-relaxed line-clamp-3">
-                            {option.description}
-                          </p>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                         </div>
                       </div>
 
-                      <div className="p-4 pt-0 flex items-center justify-between border-t border-slate-800/80 mt-2">
+                      {/* Case Details */}
+                      <div className="space-y-1.5 flex-1">
+                        <h3 className="text-base sm:text-lg font-black font-serif text-[#1a110a] leading-tight group-hover:text-red-900 transition-colors">
+                          {option.title}
+                        </h3>
+                        <p className="text-xs text-[#5c422e] font-serif leading-relaxed line-clamp-3">
+                          {option.description}
+                        </p>
+                      </div>
+
+                      {/* Footer: Difficulty + Select Action */}
+                      <div className="pt-3 mt-3 border-t border-[#bfa98e]/80 flex items-center justify-between">
                         <span
-                          className={`text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded border ${
+                          className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
                             option.difficulty === 'HARD'
-                              ? 'text-red-300 border-red-700 bg-red-950/50'
+                              ? 'text-red-800 border-red-800 bg-red-800/10'
                               : option.difficulty === 'EASY'
-                              ? 'text-green-300 border-green-700 bg-green-950/50'
-                              : 'text-amber-300 border-amber-700 bg-amber-950/50'
+                              ? 'text-emerald-900 border-emerald-800 bg-emerald-800/10'
+                              : 'text-amber-900 border-amber-800 bg-amber-800/10'
                           }`}
                         >
                           {option.difficulty || 'NORMAL'}
                         </span>
                         {isChooser ? (
-                          <span className="text-xs font-mono text-amber-400 font-bold flex items-center gap-1 animate-pulse">
+                          <button
+                            type="button"
+                            className="btn-wax-seal text-xs py-1.5 px-3 uppercase tracking-wider font-bold cursor-pointer"
+                          >
                             Select Case →
-                          </span>
+                          </button>
                         ) : (
-                          <span className="text-[10px] font-mono text-slate-500">
-                            Waiting for choice
+                          <span className="text-[10px] font-mono text-[#7a5839] italic">
+                            Awaiting lead detective...
                           </span>
                         )}
                       </div>
@@ -1409,66 +1436,81 @@ export const Game: React.FC<GameProps> = ({
 
       {/* 2. STORY OVERVIEW WINDOW — Standalone full screen (No DrawingCanvas mounted) */}
       {storySelectionPhase === 'overview' && overviewData && (
-        <div className="fixed inset-0 z-50 bg-[#07090e] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
+        <div className="fixed inset-0 z-50 desk-bg text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto animate-fadeIn">
           {/* Background ambiance */}
           <div
             className="fixed inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-screen"
             style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
           />
-          <div className="fixed inset-0 bg-gradient-to-b from-[#07090e]/95 via-[#07090e]/85 to-[#07090e]/95 pointer-events-none" />
+          <div className="fixed inset-0 bg-gradient-to-b from-desk-950/95 via-desk-950/85 to-desk-950/95 pointer-events-none" />
 
-          <div className="relative z-10 max-w-3xl w-full space-y-5 my-auto py-6">
+          <div className="relative z-10 max-w-3xl w-full space-y-4 my-auto py-6">
             {/* Top Navigation & Countdown Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-900/60 border border-red-500/40 text-red-200 text-xs font-mono font-bold">
-                <Clock className="w-3.5 h-3.5 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbf7ee] border-2 border-red-800 text-red-900 text-xs font-mono font-bold shadow-md">
+                <Clock className="w-3.5 h-3.5 text-red-800 animate-pulse" />
                 Case Room opening in {overviewCountdown}s
               </div>
               <button
                 onClick={handleEnterGameRoom}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold uppercase tracking-wider transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                className="btn-wax-seal text-xs py-2 px-5 flex items-center gap-2 font-mono uppercase tracking-wider cursor-pointer"
               >
                 <span>Enter Game Room Now</span>
                 <span>→</span>
               </button>
             </div>
 
-            {/* Case Briefing Card */}
+            {/* Case Briefing Dossier Folder */}
             <div
-              className="relative rounded-2xl border-2 border-amber-700/60 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.85)]"
+              className="relative text-[#221711] border-4 border-[#8c6d48] rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.85),inset_0_0_80px_rgba(139,94,60,0.2)] space-y-5 overflow-hidden select-none"
               style={{
-                background: 'linear-gradient(135deg, #18140f 0%, #0d0b09 50%, #14110e 100%)',
+                background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+                backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+                backgroundSize: '16px 16px, 100% 100%',
               }}
             >
-              {/* Case header image */}
+              {/* Corner Decorative Accents */}
+              <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+              <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
+              {/* Header: Folder tab / Confidential ribbon */}
+              <div className="flex items-center justify-between border-b-2 border-[#bfa98e]/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded border border-red-800 bg-red-800/10 text-red-800 font-mono text-[10px] font-black uppercase tracking-widest">
+                    CLASSIFIED CASE BRIEFING
+                  </span>
+                  <span className="text-[10px] font-mono text-[#7a5839] font-bold">
+                    GENRE: {overviewData.genre}
+                  </span>
+                </div>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                    overviewData.difficulty === 'HARD'
+                      ? 'text-red-800 border-red-800 bg-red-800/10'
+                      : overviewData.difficulty === 'EASY'
+                      ? 'text-emerald-900 border-emerald-800 bg-emerald-800/10'
+                      : 'text-amber-900 border-amber-800 bg-amber-800/10'
+                  }`}
+                >
+                  {overviewData.difficulty || 'NORMAL'}
+                </span>
+              </div>
+
+              {/* Case header artwork banner */}
               {(() => {
                 const artwork = getStoryArtwork(overviewData.genre, overviewData.title, overviewData.storyId);
                 return (
-                  <div className="w-full aspect-[21/9] bg-slate-800 overflow-hidden relative">
+                  <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden relative border-2 border-[#b89e7c] shadow-md bg-stone-900">
                     <img
                       src={artwork.img}
                       alt={overviewData.title}
-                      className="w-full h-full object-cover filter contrast-110 brightness-75"
+                      className="w-full h-full object-cover filter contrast-110 brightness-95"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#18140f] via-[#18140f]/40 to-transparent" />
-                    <div className="absolute bottom-4 left-5 right-5 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded bg-amber-900/80 text-amber-300 text-[10px] font-mono font-bold uppercase border border-amber-600/40">
-                          {overviewData.genre}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
-                            overviewData.difficulty === 'HARD'
-                              ? 'text-red-300 border-red-700 bg-red-950/60'
-                              : overviewData.difficulty === 'EASY'
-                              ? 'text-green-300 border-green-700 bg-green-950/60'
-                              : 'text-amber-300 border-amber-700 bg-amber-950/60'
-                          }`}
-                        >
-                          {overviewData.difficulty || 'NORMAL'}
-                        </span>
-                      </div>
-                      <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-tight drop-shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-serif text-white tracking-tight drop-shadow-lg">
                         {overviewData.title}
                       </h2>
                     </div>
@@ -1476,45 +1518,50 @@ export const Game: React.FC<GameProps> = ({
                 );
               })()}
 
-              {/* Case details */}
-              <div className="p-6 space-y-5">
-                <p className="text-sm text-slate-300 font-mono leading-relaxed">
+              {/* Case Synopsis */}
+              <div className="p-4 rounded-2xl bg-[#fdfbf7] border-2 border-[#b89e7c] shadow-sm">
+                <div className="text-[10px] font-mono font-bold text-[#7a5839] uppercase tracking-wider mb-1">
+                  OFFICIAL INVESTIGATION SUMMARY
+                </div>
+                <p className="text-xs sm:text-sm text-[#3e2b1b] font-serif leading-relaxed">
                   {overviewData.description}
                 </p>
+              </div>
 
-                {/* Suspects preview */}
-                {overviewData.suspects && overviewData.suspects.length > 0 && (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                      <Users className="w-3.5 h-3.5" />
-                      Key Suspects ({overviewData.suspects.length})
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {overviewData.suspects.slice(0, 6).map((s: any, idx: number) => (
-                        <div
-                          key={s.id || idx}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/80"
-                        >
-                          <span className="text-xl">{s.avatar || '🕵️'}</span>
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-slate-200 truncate">{s.name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono truncate">
-                              {s.role_description || s.role || 'Suspect'}
-                            </div>
+              {/* Suspects preview */}
+              {overviewData.suspects && overviewData.suspects.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#7a5839] uppercase tracking-wider">
+                    <Users className="w-3.5 h-3.5 text-red-800" />
+                    Key Suspects Under Surveillance ({overviewData.suspects.length})
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {overviewData.suspects.slice(0, 6).map((s: any, idx: number) => (
+                      <div
+                        key={s.id || idx}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#fdfbf7] border-2 border-[#d8c5aa] shadow-xs"
+                      >
+                        <span className="text-xl">{s.avatar || '🕵️'}</span>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold font-serif text-[#1a110a] truncate">
+                            {s.name}
+                          </div>
+                          <div className="text-[10px] text-[#7a5839] font-mono truncate">
+                            {s.role_description || s.role || 'Suspect'}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* Objective */}
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-950/40 border border-amber-700/40">
-                  <Shield className="w-5 h-5 text-amber-400 shrink-0" />
-                  <p className="text-xs text-amber-200 font-mono">
-                    Draw clues, guess evidence, and identify the culprit when all detectives enter the case room!
-                  </p>
                 </div>
+              )}
+
+              {/* Objective Dossier Callout */}
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#ede0ce] border-2 border-[#bfa98e] shadow-inner">
+                <Shield className="w-5 h-5 text-red-800 shrink-0" />
+                <p className="text-xs text-[#443020] font-mono leading-snug">
+                  <strong className="font-bold text-[#1a110a]">Detective Objective:</strong> Draw clues, guess evidence, spot fabricated sketches, and identify the culprit before the mystery expires!
+                </p>
               </div>
             </div>
           </div>

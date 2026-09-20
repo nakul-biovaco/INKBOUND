@@ -496,4 +496,219 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* ======================================================== */
+  /* INVESTIGATION PAPER THEME — Unified Design System         */
+  /* ======================================================== */
+
+  /* ── Full page background: dark desk wood ── */
+  .desk-bg {
+    background-color: #0c0d12;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(140,109,72,0.07) 0%, transparent 60%),
+      radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 100% 100%, 28px 28px;
+  }
+
+  /* ── Parchment Card (main dossier panel) ── */
+  .dossier-parchment {
+    background: linear-gradient(168deg, #fbf7ee 0%, #f4ede0 40%, #eae0cc 100%);
+    border: 2px solid #d8c5aa;
+    border-radius: 0.75rem;
+    box-shadow: 0 15px 45px rgba(0,0,0,0.55), inset 0 0 50px rgba(139,94,60,0.12);
+    position: relative;
+    color: #1a110a;
+  }
+  .dossier-parchment::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180,155,120,0.13) 27px, rgba(180,155,120,0.13) 28px);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Dark dossier variant (for modals/overlays) ── */
+  .dossier-dark {
+    background: linear-gradient(168deg, #1a1816 0%, #12141a 60%, #0c0d12 100%);
+    border: 2px solid rgba(140,109,72,0.35);
+    border-radius: 0.75rem;
+    box-shadow: 0 15px 45px rgba(0,0,0,0.7), inset 0 0 50px rgba(139,94,60,0.08);
+    color: #eae0cc;
+  }
+
+  /* ── Section header: typewriter ribbon strip ── */
+  .section-ribbon {
+    background: linear-gradient(90deg, transparent 0%, rgba(140,109,72,0.15) 10%, rgba(140,109,72,0.15) 90%, transparent 100%);
+    border-top: 1px solid rgba(140,109,72,0.25);
+    border-bottom: 1px solid rgba(140,109,72,0.25);
+    padding: 0.375rem 1rem;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7a5e45;
+  }
+
+  /* ── Brass bracket decorators ── */
+  .brass-bracket-left::before,
+  .brass-bracket-right::after {
+    position: absolute;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: #8c6d48;
+    opacity: 0.7;
+    line-height: 1;
+  }
+  .brass-bracket-left::before {
+    content: '❮';
+    left: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .brass-bracket-right::after {
+    content: '❯';
+    right: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* ── Wax Seal Button (primary CTA) ── */
+  .btn-wax-seal {
+    background: linear-gradient(180deg, #9e2222 0%, #8a1c1c 50%, #6e1515 100%);
+    color: #fef3c7;
+    border: 1px solid #541010;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.5rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 14px rgba(138,28,28,0.5), inset 0 1px 2px rgba(255,255,255,0.15);
+    transition: all 0.18s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-wax-seal:hover {
+    background: linear-gradient(180deg, #ae2828 0%, #9e2222 50%, #7a1919 100%);
+    box-shadow: 0 6px 20px rgba(138,28,28,0.65), inset 0 1px 3px rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+  }
+  .btn-wax-seal:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(138,28,28,0.4);
+  }
+  .btn-wax-seal:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Brass Button (secondary) ── */
+  .btn-brass {
+    background: linear-gradient(180deg, #a67c52 0%, #8c6d48 50%, #6e533d 100%);
+    color: #fdfbf7;
+    border: 1px solid #5c4632;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    box-shadow: 0 3px 10px rgba(110,83,61,0.5), inset 0 1px 2px rgba(255,255,255,0.15);
+    transition: all 0.18s ease;
+    cursor: pointer;
+  }
+  .btn-brass:hover {
+    background: linear-gradient(180deg, #b8895c 0%, #a67c52 50%, #7a5e45 100%);
+    box-shadow: 0 5px 16px rgba(110,83,61,0.65);
+    transform: translateY(-1px);
+  }
+  .btn-brass:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 4px rgba(110,83,61,0.4);
+  }
+
+  /* ── Ink Field Input (parchment feel) ── */
+  .ink-field {
+    background: rgba(253,251,247,0.65);
+    border: 1.5px solid #d8c5aa;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-family: 'Courier Prime', monospace;
+    color: #1a110a;
+    box-shadow: inset 0 2px 6px rgba(139,94,60,0.1);
+    transition: all 0.2s ease;
+  }
+  .ink-field:focus {
+    outline: none;
+    border-color: #8c6d48;
+    box-shadow: inset 0 2px 6px rgba(139,94,60,0.15), 0 0 0 3px rgba(140,109,72,0.15);
+  }
+  .ink-field::placeholder {
+    color: #b89e7c;
+    font-style: italic;
+  }
+
+  /* ── Dark Ink Field (for dark panels) ── */
+  .ink-field-dark {
+    background: rgba(12,13,18,0.7);
+    border: 1.5px solid rgba(140,109,72,0.3);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-family: 'Courier Prime', monospace;
+    color: #eae0cc;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+  }
+  .ink-field-dark:focus {
+    outline: none;
+    border-color: #8c6d48;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 0 0 3px rgba(140,109,72,0.2);
+  }
+  .ink-field-dark::placeholder {
+    color: #7a5e45;
+    font-style: italic;
+  }
+
+  /* ── Coffee stain decoration ── */
+  .coffee-stain {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 45% 40%, transparent 55%, rgba(139,94,60,0.08) 65%, transparent 75%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Pin / Tack dot ── */
+  .tack-pin {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #8c6d48 0%, #5c4632 80%);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* ── Dossier tab / folder tab header ── */
+  .folder-tab {
+    background: linear-gradient(180deg, #d8c5aa 0%, #c4a882 100%);
+    color: #2c2016;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.25rem 1rem;
+    border-radius: 0.375rem 0.375rem 0 0;
+    border: 1.5px solid #b89e7c;
+    border-bottom: none;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+  }
 }

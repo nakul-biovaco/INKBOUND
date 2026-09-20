@@ -160,7 +160,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
   return (
     <>
-      <header className="w-full relative z-40 bg-[#07080c]/90 border-b border-slate-800/80 backdrop-blur-md select-none">
+      <header className="w-full relative z-40 bg-desk-900/95 border-b border-ink-800/60 backdrop-blur-md select-none">
         {/* IN-GAME SINGLE STREAMLINED TOPBAR */}
         {currentPhase !== 'LOBBY' ? (
           <>
@@ -213,7 +213,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                             ? 'bg-red-800 text-white shadow-md border border-red-600'
                             : isPast
                             ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/60'
-                            : 'bg-[#151922] text-slate-400 border border-slate-700/60'
+                            : 'bg-desk-850 text-slate-400 border border-slate-700/60'
                         }`}
                       >
                         <span className="w-3.5 h-3.5 flex items-center justify-center">
@@ -236,7 +236,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               {/* Right: Room Code, Live Player Counter, Audio, Profile, Exit */}
               <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                 {/* Room Code with 1-click copy */}
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[#141824] border border-[#8c6d48]/50 text-xs font-mono">
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-desk-850 border border-[#8c6d48]/50 text-xs font-mono">
                   <span className="text-amber-200/80 text-[10px] hidden sm:inline font-bold">ROOM:</span>
                   <span className="font-bold text-white tracking-wider sm:tracking-widest text-xs">{roomCode}</span>
                   <button
@@ -249,7 +249,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 </div>
 
                 {/* Live Reactive Player Count badge */}
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[#141824] border border-[#8c6d48]/50 text-xs font-mono text-slate-200">
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-desk-850 border border-[#8c6d48]/50 text-xs font-mono text-slate-200">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -275,7 +275,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                     }
                   }}
                   title="Edit Detective Identity"
-                  className="flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl bg-[#141824] border border-[#8c6d48]/50 hover:border-[#8c6d48] text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
+                  className="flex items-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl bg-desk-850 border border-[#8c6d48]/50 hover:border-[#8c6d48] text-xs text-slate-200 transition-all cursor-pointer max-w-[140px]"
                 >
                   <AvatarBadge avatar={currentUser.avatar} size="xs" />
                   <span className="font-medium text-white truncate max-w-[70px] hidden sm:inline">
@@ -301,7 +301,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </div>
 
             {/* DEDICATED MOBILE STORY TITLE & ROUND RIBBON (< sm) */}
-            <div className="sm:hidden w-full px-3 py-1.5 bg-[#0f1422] border-t border-slate-800/90 flex items-center justify-between gap-2 select-none">
+            <div className="sm:hidden w-full px-3 py-1.5 bg-desk-900 border-t border-slate-800/90 flex items-center justify-between gap-2 select-none">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <span className="px-1.5 py-0.5 rounded bg-red-950/90 border border-red-800/70 text-[9px] font-mono text-red-300 font-bold uppercase tracking-wider shrink-0">
                   CASE FILE

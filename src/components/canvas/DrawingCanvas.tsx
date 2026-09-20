@@ -1166,13 +1166,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   );
 
   return (
-    <div className="relative min-h-screen w-full bg-[#07080d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
+    <div className="relative min-h-screen w-full desk-bg text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
         className="fixed inset-0 bg-cover bg-center opacity-30 mix-blend-screen pointer-events-none"
         style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
       />
-      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/90 via-[#08090d]/80 to-[#08090d]/95 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-desk-950/90 via-desk-950/80 to-desk-950/95 pointer-events-none" />
 
       {/* 1. UNIFIED IN-GAME TOPBAR */}
       <GameHeader
@@ -1189,28 +1189,41 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       {/* WAITING FOR ALL DETECTIVES TO ENTER THE ROOM BANNER */}
       {!isRoundActive && (
         <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-2 animate-fadeIn">
-          <div className="bg-slate-900/95 border-2 border-amber-500/60 shadow-[0_10px_35px_rgba(0,0,0,0.85)] backdrop-blur-md rounded-2xl px-5 py-3 flex items-center justify-between gap-4 text-center">
+          <div
+            className="relative text-[#221711] border-3 border-[#8c6d48] rounded-2xl px-5 py-3.5 shadow-[0_12px_35px_rgba(0,0,0,0.6),inset_0_0_40px_rgba(139,94,60,0.15)] backdrop-blur-md flex items-center justify-between gap-4 select-none overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #fbf7ee 0%, #f4ede0 50%, #eae0cc 100%)',
+              backgroundImage: `radial-gradient(#b89f80 0.75px, transparent 0.75px), linear-gradient(135deg, #fbf7ee 0%, #f3ebdd 60%, #e8ddc9 100%)`,
+              backgroundSize: '16px 16px, 100% 100%',
+            }}
+          >
+            {/* Corner Decorative Accents */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#8c6d48]/70 pointer-events-none" />
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#8c6d48]/70 pointer-events-none" />
+
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-amber-400 animate-pulse" />
+              <div className="w-10 h-10 rounded-xl bg-[#ede0ce] border border-[#bfa98e] flex items-center justify-center shrink-0 shadow-inner text-red-800">
+                <Users className="w-5 h-5 animate-pulse" />
               </div>
               <div className="text-left">
-                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2">
-                  <span>Staging Case Room</span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-900 flex items-center gap-2">
+                  <span className="px-1.5 py-0.2 rounded bg-red-800/10 border border-red-800">STAGING CASE ROOM</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-red-600 animate-ping" />
                 </div>
-                <p className="text-sm font-serif font-bold text-white">
+                <p className="text-sm font-serif font-black text-[#1a110a] mt-0.5">
                   Waiting for all detectives to enter... ({gameWindowSync?.arrivedCount || 1}/{gameWindowSync?.totalCount || gameState.players.length} Ready)
                 </p>
                 {gameWindowSync?.waitingFor && gameWindowSync.waitingFor.length > 0 && (
-                  <p className="text-[11px] font-mono text-slate-400">
+                  <p className="text-[11px] font-mono text-[#7a5839]">
                     Connecting: {gameWindowSync.waitingFor.join(', ')}
                   </p>
                 )}
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-xs font-mono text-slate-300">
-              <Clock className="w-4 h-4 text-amber-400" />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#ede0ce] border border-[#bfa98e] text-xs font-mono text-[#443020] shadow-xs">
+              <Clock className="w-4 h-4 text-red-800" />
               <span>Timer starts when all arrive</span>
             </div>
           </div>

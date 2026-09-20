@@ -71,13 +71,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   const tabs: ResultTab[] = ['Scoreboard', 'Player Theories', 'Case Recap'];
 
   return (
-    <div className="relative min-h-screen w-full bg-[#08090d] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
+    <div className="relative min-h-screen w-full desk-bg text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* ATMOSPHERIC DETECTIVE DESK BACKGROUND */}
       <div
         className="fixed inset-0 bg-cover bg-center opacity-35 mix-blend-screen pointer-events-none"
         style={{ backgroundImage: `url('/assets/detective_hero_exact.jpg')` }}
       />
-      <div className="fixed inset-0 bg-gradient-to-b from-[#08090d]/85 via-[#08090d]/70 to-[#08090d]/95 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-desk-950/85 via-desk-950/70 to-desk-950/95 pointer-events-none" />
 
       {/* TOP UNIVERSAL HEADER */}
       <GameHeader

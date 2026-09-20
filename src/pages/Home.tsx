@@ -162,7 +162,7 @@ export const Home: React.FC<HomeProps> = ({
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full bg-[#07090e] text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
+    <div className="relative min-h-screen w-full desk-bg text-slate-100 flex flex-col justify-between select-none overflow-x-hidden">
       {/* 1. ATMOSPHERIC FULL-SCREEN NOIR DESK BACKGROUND */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-luminosity filter contrast-125 brightness-75 pointer-events-none"
@@ -226,9 +226,9 @@ export const Home: React.FC<HomeProps> = ({
               SoundService.playCardFlip();
               setIsRulesModalOpen(true);
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ede0ce]/90 hover:bg-[#fffdf9] text-[#3e2b1b] hover:text-[#1a110a] border border-[#b89e7c] backdrop-blur-xl text-xs font-mono font-bold transition-all shadow-md cursor-pointer hover:border-[#8c6d48]"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+            <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
             <span>Rules</span>
           </button>
 
@@ -237,9 +237,9 @@ export const Home: React.FC<HomeProps> = ({
               SoundService.playCardFlip();
               setIsLeaderboardModalOpen(true);
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ede0ce]/90 hover:bg-[#fffdf9] text-[#3e2b1b] hover:text-[#1a110a] border border-[#b89e7c] backdrop-blur-xl text-xs font-mono font-bold transition-all shadow-md cursor-pointer hover:border-[#8c6d48]"
           >
-            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+            <Trophy className="w-3.5 h-3.5 text-amber-700" />
             <span>Leaderboard</span>
           </button>
 
@@ -248,9 +248,9 @@ export const Home: React.FC<HomeProps> = ({
               SoundService.playCardFlip();
               setIsAboutModalOpen(true);
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 backdrop-blur-xl text-xs font-mono transition-all shadow-md cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ede0ce]/90 hover:bg-[#fffdf9] text-[#3e2b1b] hover:text-[#1a110a] border border-[#b89e7c] backdrop-blur-xl text-xs font-mono font-bold transition-all shadow-md cursor-pointer hover:border-[#8c6d48]"
           >
-            <Shield className="w-3.5 h-3.5 text-red-400" />
+            <Shield className="w-3.5 h-3.5 text-red-800" />
             <span>About</span>
           </button>
 
